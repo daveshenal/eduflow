@@ -270,14 +270,16 @@ body::before {
 }
 
 .btn-secondary {
-  background-color: rgba(243, 244, 246, 0.8);
-  color: #374151;
-  border: 1px solid rgba(209, 213, 219, 0.5);
+  background: rgba(249, 101, 89, 0.1);
+  color: #f96559;
+  border: 1px solid rgba(249, 101, 89, 0.3);
+  backdrop-filter: blur(10px);
 }
 
 .btn-secondary:hover {
-  background-color: rgba(229, 231, 235, 0.9);
-  border-color: rgba(209, 213, 219, 0.8);
+  background: rgba(249, 101, 89, 0.15);
+  border-color: rgba(249, 101, 89, 0.4);
+  box-shadow: 0 12px 40px rgba(249, 101, 89, 0.2);
 }
 
 .btn:disabled {
@@ -726,7 +728,7 @@ body::before {
 .scrollable-content {
   flex: 1;
   overflow-y: auto;
-  padding: 1.5rem;
+  padding: 0.5rem;
 }
 
 .prompts-list {

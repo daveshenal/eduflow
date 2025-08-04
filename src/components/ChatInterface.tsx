@@ -5,7 +5,7 @@ import Dropdown from './Dropdown';
 import ChatMessages from './ChatMessages';
 import ChatInput from './ChatInput';
 import DocumentUpload from './DocumentUpload';
-import PromptEditor from './PromptsPage';
+import PromptEditor from './PromptsEditor';
 import { DropdownOption} from '../types';
 
 const userTypeOptions: DropdownOption[] = [

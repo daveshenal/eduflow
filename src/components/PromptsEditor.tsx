@@ -4,7 +4,6 @@ import APIService from '../services/api';
 import Dropdown from './Dropdown';
 import { DropdownOption, PromptTemplate } from '../types';
 
-
 const promptTypeOptions: DropdownOption[] = [
   { value: 'base_prompts', label: 'Main Prompts', active: true },
   { value: 'use_case_prompts', label: 'Use Case Prompts' },
@@ -388,22 +387,7 @@ const PromptEditor: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           <>
             <div className="chat-header">
               <div className="chat-title">{selectedPrompt.name}</div>
-              <div className="metric">
-                <button
-                  className="btn-single"
-                  onClick={handleUpdatePrompt}
-                  style={{ marginRight: '8px' }}
-                >
-                  Save
-                </button>
-                <button
-                  className="btn-single"
-                  onClick={handleDeletePrompt}
-                  style={{ backgroundColor: '#ef4444', color: 'white' }}
-                >
-                  Delete
-                </button>
-              </div>
+    
             </div>
 
             <div className="editor-container" style={{ padding: '20px' }}>
@@ -418,7 +402,7 @@ const PromptEditor: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                     onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
                   />
                 </div>
-                <div className="form-group" style={{ maxWidth: '10%' }}>
+                <div className="form-group" style={{ maxWidth: '7.5%' }}>
                   <label htmlFor="editPromptVersion" className="config-label">Version</label>
                   <input
                     type="text"
@@ -428,7 +412,7 @@ const PromptEditor: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                     onChange={(e) => setEditForm({ ...editForm, version: e.target.value })}
                   />
                 </div>
-                <div className="form-group" style={{ maxWidth: '10%' }}>
+                <div className="form-group" style={{ maxWidth: '7.5%' }}>
                   <label className="config-label">Status</label>
                   <select
                     className="config-input"
@@ -449,6 +433,20 @@ const PromptEditor: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                     onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
                   />
                 </div>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end'}}>
+                <button
+                  className="btn btn-primary"
+                  onClick={handleUpdatePrompt}
+                >
+                  Save
+                </button>
+                <button
+                  className="btn btn-secondary"
+                  onClick={handleDeletePrompt}
+                >
+                  Delete
+                </button>
+              </div>
               </div>
 
               <div className="form-group" style={{ flex: 1 }}>
@@ -460,7 +458,7 @@ const PromptEditor: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                     placeholder="Enter your system prompt here..."
                     value={editForm.content}
                     onChange={(e) => setEditForm({ ...editForm, content: e.target.value })}
-                    style={{ minHeight: '400px', resize: 'none' }}
+                    style={{ minHeight: '490px', resize: 'none', padding: '1.5rem 2.5rem', fontFamily: 'monospace' }}
                   />
                   <button
                     className="copy-button"
@@ -468,7 +466,7 @@ const PromptEditor: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                     style={{
                       position: 'absolute',
                       top: '10px',
-                      right: '10px',
+                      right: '15px',
                       padding: '4px 8px',
                       fontSize: '12px',
                       backgroundColor: '#f3f4f6',
@@ -487,9 +485,6 @@ const PromptEditor: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           <>
             <div className="chat-header">
               <div className="chat-title">Create New Prompt</div>
-              <div className="metric">
-                <p style={{ color: '#6b7280', margin: '5px 0' }}>Enter your system prompt content below</p>
-              </div>
             </div>
 
             <div className="editor-container" style={{ padding: '20px' }}>
@@ -502,7 +497,7 @@ const PromptEditor: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                     placeholder="Enter your system prompt content here..."
                     value={createForm.content}
                     onChange={(e) => setCreateForm({ ...createForm, content: e.target.value })}
-                    style={{ minHeight: '400px', resize: 'none' }}
+                    style={{ minHeight: '580px', resize: 'none' }}
                   />
                   <button
                     className="copy-button"
@@ -541,9 +536,9 @@ const PromptEditor: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           style={{
             position: 'fixed',
             top: '20px',
-            right: '20px',
+            right: '10px',
             zIndex: 1000,
-            padding: '15px 20px',
+            padding: '10px 10px',
             borderRadius: '6px',
             fontWeight: '500',
             backgroundColor: message.type === 'success' ? '#10b981' : '#ef4444',
