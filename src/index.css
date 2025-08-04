@@ -565,9 +565,8 @@ body::before {
   color: #dc2626;
   border: 1px solid rgba(239, 68, 68, 0.3);
   border-left: 4px solid #ef4444;
-  padding: 1rem 1.5rem;
   border-radius: 0.5rem;
-  margin: 1rem 0;
+  margin-right: auto;
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   font-size: 0.875rem;
@@ -729,7 +728,7 @@ body::before {
   flex: 1;
   overflow-y: auto;
   padding: 0.5rem;
-  direction: rtl;
+    direction: rtl;
   scrollbar-width: thin; /* optional: for Firefox */
 
   /* Fix content alignment */

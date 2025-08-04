@@ -3,9 +3,10 @@ import { ChatMessage } from '../types';
 
 interface ChatMessagesProps {
   messages?: ChatMessage[];
+  error?: string;
 }
 
-const ChatMessages: React.FC<ChatMessagesProps> = ({ messages = [] }) => {
+const ChatMessages: React.FC<ChatMessagesProps> = ({ messages = [], error }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [localMessages, setLocalMessages] = useState<ChatMessage[]>([
     {
@@ -30,10 +31,6 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({ messages = [] }) => {
     }
   }, [messages]);
 
-  const formatTime = (timestamp: Date) => {
-    return timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  };
-
   return (
     <div className="chat-messages">
       {localMessages.map((message) => (
@@ -42,18 +39,18 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({ messages = [] }) => {
           className={`message ${message.isUser ? 'user' : 'assistant'}`}
         >
           <div className="message-header">
-            <strong>
-              {message.isUser ? 'You' : 'HOP AI'}
-            </strong>
-            <span>
-              {formatTime(message.timestamp)}
-            </span>
+            <strong>{message.isUser ? 'You' : 'HOP AI'}</strong>
           </div>
           <div className="message-content">
             {message.content}
           </div>
         </div>
       ))}
+      {error && (
+        <div className="error-message message">
+          Error: {error}
+        </div>
+      )}
       <div ref={messagesEndRef} />
     </div>
   );

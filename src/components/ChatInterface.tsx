@@ -208,14 +208,7 @@ const ChatInterface: React.FC = () => {
           </div>
         </div>
 
-        {/* Error Message */}
-        {error && (
-          <div className="error-message">
-            {error}
-          </div>
-        )}
-
-        <ChatMessages />
+        <ChatMessages error={error} />
 
         <ChatInput
           onSendMessage={handleSendMessage}
