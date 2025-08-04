@@ -6,7 +6,7 @@ import ChatMessages from './ChatMessages';
 import ChatInput from './ChatInput';
 import DocumentUpload from './DocumentUpload';
 import PromptEditor from './PromptsEditor';
-import { DropdownOption} from '../types';
+import { DropdownOption, ChatMessage} from '../types';
 
 const userTypeOptions: DropdownOption[] = [
   { value: 'developer', label: 'Developer' },
@@ -29,6 +29,14 @@ const ChatInterface: React.FC = () => {
   const [apiService] = useState(() => new APIService(state.backendUrl));
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>('');
+  const [messages, setMessages] = useState<ChatMessage[]>([
+    {
+      id: '1',
+      content: "Hello! I'm ready to help you test your backend. The interface is configured to connect to your streaming chat endpoint. Try sending me a message!",
+      isUser: false,
+      timestamp: new Date(),
+    },
+  ]);
 
   useEffect(() => {
     apiService.setBaseUrl(state.backendUrl);
@@ -42,15 +50,44 @@ const ChatInterface: React.FC = () => {
     setIsLoading(true);
     setError('');
 
+    // Add user message to chat
+    const userMessage: ChatMessage = {
+      id: Date.now().toString(),
+      content: message,
+      isUser: true,
+      timestamp: new Date(),
+    };
+
+    // Add assistant message placeholder for streaming
+    const assistantMessage: ChatMessage = {
+      id: (Date.now() + 1).toString(),
+      content: '',
+      isUser: false,
+      timestamp: new Date(),
+    };
+
+    setMessages(prev => [...prev, userMessage, assistantMessage]);
+
     try {
       await apiService.sendStreamingMessage(
         message,
         (fullContent, newChunk) => {
           console.log('Streaming chunk:', newChunk);
+          // Update the assistant message with the streaming content
+          setMessages(prev => {
+            const newMessages = [...prev];
+            const lastMessage = newMessages[newMessages.length - 1];
+            if (!lastMessage.isUser) {
+              lastMessage.content = fullContent;
+            }
+            return newMessages;
+          });
         },
         (error) => {
           console.error('Streaming error:', error);
           setError('Streaming error occurred. Please try again.');
+          // Remove the empty assistant message on error
+          setMessages(prev => prev.slice(0, -1));
         },
         {
           userType: state.userType,
@@ -64,6 +101,8 @@ const ChatInterface: React.FC = () => {
     } catch (error) {
       console.error('Error sending message:', error);
       setError('Failed to send message. Please check your connection and try again.');
+      // Remove the empty assistant message on error
+      setMessages(prev => prev.slice(0, -1));
     } finally {
       setStreaming(false);
       setIsLoading(false);
@@ -78,6 +117,15 @@ const ChatInterface: React.FC = () => {
       const result = await apiService.clearSession();
       if (result.success) {
         console.log('Chat cleared successfully');
+        // Reset messages to initial state
+        setMessages([
+          {
+            id: '1',
+            content: "Hello! I'm ready to help you test your backend. The interface is configured to connect to your streaming chat endpoint. Try sending me a message!",
+            isUser: false,
+            timestamp: new Date(),
+          },
+        ]);
       } else {
         console.error('Failed to clear chat:', result.error);
         setError('Failed to clear chat. Please try again.');
@@ -208,7 +256,7 @@ const ChatInterface: React.FC = () => {
           </div>
         </div>
 
-        <ChatMessages error={error} />
+        <ChatMessages messages={messages} error={error} />
 
         <ChatInput
           onSendMessage={handleSendMessage}
