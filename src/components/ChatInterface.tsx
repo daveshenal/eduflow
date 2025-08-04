@@ -377,7 +377,7 @@ const PromptEditor: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             {!showCreateForm ? (
               <>
                 <button className="btn btn-primary" onClick={handleShowCreateForm}>
-                  + New Prompt
+                  Add New
                 </button>
                 <button className="btn btn-secondary" onClick={onBack}>
                   Back

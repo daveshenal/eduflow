@@ -72,7 +72,7 @@ const PromptEditor: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     setError('');
     try {
       // Use direct table endpoint like your working JS version
-      const baseUrl = state.backendUrl || 'http://localhost:8002';
+      const baseUrl = state.backendUrl;
       const response = await fetch(`${baseUrl}/${selectedPromptType}/`);
       if (!response.ok) throw new Error('Failed to load prompts');
       
