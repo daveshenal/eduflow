@@ -1,6 +1,14 @@
 import React, { useEffect, useRef } from 'react';
 import { ChatMessage } from '../types';
 
+const TypingIndicator: React.FC = () => (
+  <div className="typing-indicator">
+    <div className="typing-dot"></div>
+    <div className="typing-dot"></div>
+    <div className="typing-dot"></div>
+  </div>
+);
+
 interface ChatMessagesProps {
   messages?: ChatMessage[];
   error?: string;
@@ -18,15 +26,18 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({ messages = [], error }) => 
   }, [messages]);
 
   // Function to render message content as HTML if it contains HTML tags
-  const renderMessageContent = (content: string) => {
+  const renderMessageContent = (content: string, isUser: boolean) => {
+    // Show typing indicator for empty assistant messages
+    if (!content && !isUser) {
+      return <TypingIndicator />;
+    }
+    
     // Check if content contains HTML tags
     const hasHTMLTags = /<[^>]*>/g.test(content);
     
     if (hasHTMLTags) {
-      // Render as HTML (be careful with this in production - consider sanitizing)
       return <div dangerouslySetInnerHTML={{ __html: content }} />;
     } else {
-      // Render as plain text
       return <div>{content}</div>;
     }
   };
@@ -39,7 +50,7 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({ messages = [], error }) => 
           className={`message ${message.isUser ? 'user' : 'assistant'}`}
         >
           <div className="message-content">
-            {renderMessageContent(message.content)}
+            {renderMessageContent(message.content, message.isUser)}
           </div>
         </div>
       ))}

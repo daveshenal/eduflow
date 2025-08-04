@@ -32,7 +32,8 @@ const ChatInterface: React.FC = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: '1',
-      content: "Hello! I'm ready to help you test your backend. The interface is configured to connect to your streaming chat endpoint. Try sending me a message!",
+      content: `<strong>HOP AI</strong><br /> Hello! I'm ready to help you test your backend. 
+      The interface is configured to connect to your streaming chat endpoint. Try sending me a message!`,      
       isUser: false,
       timestamp: new Date(),
     },
@@ -72,7 +73,6 @@ const ChatInterface: React.FC = () => {
       await apiService.sendStreamingMessage(
         message,
         (fullContent, newChunk) => {
-          console.log('Streaming chunk:', newChunk);
           // Update the assistant message with the streaming content
           setMessages(prev => {
             const newMessages = [...prev];
@@ -121,7 +121,8 @@ const ChatInterface: React.FC = () => {
         setMessages([
           {
             id: '1',
-            content: "Hello! I'm ready to help you test your backend. The interface is configured to connect to your streaming chat endpoint. Try sending me a message!",
+            content: `<strong>HOP AI</strong><br /> Hello! I'm ready to help you test your backend. 
+            The interface is configured to connect to your streaming chat endpoint. Try sending me a message!`,
             isUser: false,
             timestamp: new Date(),
           },
