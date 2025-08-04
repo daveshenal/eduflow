@@ -3,7 +3,7 @@ import { APIResponse } from '../types';
 class APIService {
   private baseUrl: string;
 
-  constructor(baseUrl: string = 'http://localhost:8000') {
+  constructor(baseUrl: string = 'http://localhost:8002') {
     this.baseUrl = baseUrl;
   }
 
