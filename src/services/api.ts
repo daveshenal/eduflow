@@ -124,7 +124,7 @@ class APIService {
     // Match the JS version's clear session endpoint with hardcoded fallback
     const providerIdToUse = providerId || '595959';
     const endpoint = `/clear-session/${providerIdToUse}`;
-    
+
     return this.makeRequest(endpoint, {
       method: 'DELETE',
     });
@@ -161,7 +161,7 @@ class APIService {
     onProgress?: (progress: { loaded: number; total: number; percentage: number }) => void
   ): Promise<APIResponse> {
     const formData = new FormData();
-    
+
     files.forEach((file) => {
       formData.append('files', file);
     });
@@ -175,7 +175,7 @@ class APIService {
 
     try {
       const xhr = new XMLHttpRequest();
-      
+
       return new Promise((resolve, reject) => {
         xhr.upload.addEventListener('progress', (event) => {
           if (event.lengthComputable && onProgress) {
@@ -257,6 +257,132 @@ class APIService {
       method: 'DELETE',
     });
   }
+
+
+  async generateTrainingPDF(config: {
+    topic: string;
+    role: string;
+    discipline: string;
+    duration: string;
+    objectives: string[];
+    userType: string;
+    providerId: string;
+  }): Promise<{ success: boolean; pdfUrl?: string; error?: string }> {
+    try {
+      const response = await fetch(`${this.baseUrl}/api/generate-training-pdf`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...config,
+          timestamp: new Date().toISOString(),
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (data.success) {
+        return {
+          success: true,
+          pdfUrl: data.pdfUrl || data.downloadUrl,
+        };
+      } else {
+        return {
+          success: false,
+          error: data.error || 'Unknown error occurred',
+        };
+      }
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Network error occurred',
+      };
+    }
+  }
+
+  // Alternative method if you want to handle streaming PDF generation
+  async generateTrainingPDFStream(
+    config: {
+      topic: string;
+      role: string;
+      discipline: string;
+      duration: string;
+      objectives: string[];
+      userType: string;
+      providerId: string;
+    },
+    onProgress: (progress: { stage: string; percentage: number }) => void,
+    onComplete: (result: { success: boolean; pdfUrl?: string; error?: string }) => void
+  ): Promise<void> {
+    try {
+      const response = await fetch(`${this.baseUrl}/api/generate-training-pdf-stream`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...config,
+          timestamp: new Date().toISOString(),
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error('No response body');
+      }
+
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (line.trim() === '') continue;
+
+          try {
+            const data = JSON.parse(line);
+
+            if (data.type === 'progress') {
+              onProgress(data.data);
+            } else if (data.type === 'complete') {
+              onComplete(data.data);
+              return;
+            } else if (data.type === 'error') {
+              onComplete({ success: false, error: data.error });
+              return;
+            }
+          } catch (parseError) {
+            console.warn('Failed to parse streaming response:', line);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error in streaming PDF generation:', error);
+      onComplete({
+        success: false,
+        error: error instanceof Error ? error.message : 'Network error occurred',
+      });
+    }
+  }
 }
+
+
 
 export default APIService;

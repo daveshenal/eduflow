@@ -1225,3 +1225,110 @@ body::before {
     opacity: 1;
   }
 }
+
+/* Add these styles to your existing CSS file */
+
+/* PDF Generator View Styles */
+.pdf-generator-view {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  padding: 2rem;
+  overflow-y: auto;
+}
+
+.pdf-welcome {
+  text-align: center;
+  max-width: 600px;
+  background: white;
+  padding: 3rem 2rem;
+  border-radius: 1rem;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  border: 1px solid #e5e7eb;
+}
+
+.pdf-icon {
+  font-size: 4rem;
+  margin-bottom: 1.5rem;
+  opacity: 0.8;
+}
+
+.pdf-welcome h2 {
+  font-size: 2rem;
+  font-weight: bold;
+  margin-bottom: 0.75rem;
+  color: #1f2937;
+}
+
+.pdf-welcome p {
+  color: #6b7280;
+  margin-bottom: 2rem;
+  font-size: 1.1rem;
+  line-height: 1.6;
+}
+
+/* Recent Generations Section */
+.recent-generations {
+  margin: 2rem 0;
+  padding: 1.5rem;
+  background: #f9fafb;
+  border-radius: 0.75rem;
+  border: 1px solid #e5e7eb;
+}
+
+.recent-generations h3 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: #374151;
+}
+
+.messages-preview {
+  max-height: 200px;
+  overflow-y: auto;
+  text-align: left;
+}
+
+.message-preview {
+  padding: 0.75rem;
+  margin-bottom: 0.75rem;
+  background: white;
+  border-radius: 0.5rem;
+  border: 1px solid #e5e7eb;
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+.message-preview:last-child {
+  margin-bottom: 0;
+}
+
+/* PDF Actions */
+.pdf-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: center;
+}
+
+.btn-large {
+  padding: 1rem 2.5rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  border-radius: 0.75rem;
+  transition: all 0.2s ease-in-out;
+  min-width: 200px;
+}
+
+.btn-large:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+.btn-large:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
