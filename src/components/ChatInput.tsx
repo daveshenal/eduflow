@@ -12,6 +12,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
   disabled = false,
 }) => {
   const [message, setMessage] = useState('');
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [isTyping, setIsTyping] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 

@@ -1,5 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { ChatMessage } from '../types';
+
+const TypingIndicator: React.FC = () => (
+  <div className="typing-indicator">
+    <div className="typing-dot"></div>
+    <div className="typing-dot"></div>
+    <div className="typing-dot"></div>
+  </div>
+);
 
 interface ChatMessagesProps {
   messages?: ChatMessage[];
@@ -8,14 +16,6 @@ interface ChatMessagesProps {
 
 const ChatMessages: React.FC<ChatMessagesProps> = ({ messages = [], error }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [localMessages, setLocalMessages] = useState<ChatMessage[]>([
-    {
-      id: '1',
-      content: "Hello! I'm ready to help you test your backend. The interface is configured to connect to your streaming chat endpoint. Try sending me a message!",
-      isUser: false,
-      timestamp: new Date(),
-    },
-  ]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -23,26 +23,34 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({ messages = [], error }) => 
 
   useEffect(() => {
     scrollToBottom();
-  }, [localMessages]);
-
-  useEffect(() => {
-    if (messages.length > 0) {
-      setLocalMessages(messages);
-    }
   }, [messages]);
+
+  // Function to render message content as HTML if it contains HTML tags
+  const renderMessageContent = (content: string, isUser: boolean) => {
+    // Show typing indicator for empty assistant messages
+    if (!content && !isUser) {
+      return <TypingIndicator />;
+    }
+    
+    // Check if content contains HTML tags
+    const hasHTMLTags = /<[^>]*>/g.test(content);
+    
+    if (hasHTMLTags) {
+      return <div dangerouslySetInnerHTML={{ __html: content }} />;
+    } else {
+      return <div>{content}</div>;
+    }
+  };
 
   return (
     <div className="chat-messages">
-      {localMessages.map((message) => (
+      {messages.map((message) => (
         <div
           key={message.id}
           className={`message ${message.isUser ? 'user' : 'assistant'}`}
         >
-          <div className="message-header">
-            <strong>{message.isUser ? 'You' : 'HOP AI'}</strong>
-          </div>
           <div className="message-content">
-            {message.content}
+            {renderMessageContent(message.content, message.isUser)}
           </div>
         </div>
       ))}
@@ -56,4 +64,4 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({ messages = [], error }) => 
   );
 };
 
-export default ChatMessages; 
+export default ChatMessages;

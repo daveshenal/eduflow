@@ -3,7 +3,7 @@ import { APIResponse } from '../types';
 class APIService {
   private baseUrl: string;
 
-  constructor(baseUrl: string = 'http://localhost:8002') {
+  constructor(baseUrl: string = 'http://localhost:8000') {
     this.baseUrl = baseUrl;
   }
 
@@ -42,26 +42,45 @@ class APIService {
   async sendStreamingMessage(
     message: string,
     onChunk: (fullContent: string, newChunk: string) => void,
-    onError: (error: any) => void,
+    onError: (error: string) => void,
     config: { userType?: string; mode?: string; providerId?: string } = {}
-  ): Promise<void> {
+  ): Promise<string> {
     try {
-      const response = await fetch(`${this.baseUrl}/chat`, {
+      const requestBody = {
+        message: message,
+        provider_id: config.providerId || '595959', // Use hardcoded fallback
+        mode: config.mode || 'chatbot',
+      };
+
+      // Debug logging
+      console.log('Request URL:', `${this.baseUrl}/chat-stream`);
+      console.log('Request body:', requestBody);
+      console.log('Provider ID:', config.providerId || '595959');
+      console.log('Mode:', config.mode);
+
+      // Use the same endpoint as your working JS version
+      const response = await fetch(`${this.baseUrl}/chat-stream`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          message,
-          user_type: config.userType || 'regular',
-          mode: config.mode || 'chatbot',
-          provider_id: config.providerId || '',
-        }),
+        // Match the request body structure from your working JS version
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.detail || `HTTP ${response.status}: ${response.statusText}`);
+        // Try to get the error message from the response
+        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        try {
+          const errorData = await response.text();
+          console.log('Server error response:', errorData);
+          if (errorData) {
+            errorMessage += ` - ${errorData}`;
+          }
+        } catch (e) {
+          console.log('Could not parse error response');
+        }
+        throw new Error(errorMessage);
       }
 
       const reader = response.body?.getReader();
@@ -70,25 +89,63 @@ class APIService {
       }
 
       const decoder = new TextDecoder();
-      let fullContent = '';
+      let assistantContent = '';
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
 
-        const chunk = decoder.decode(value, { stream: true });
-        fullContent += chunk;
-        onChunk(fullContent, chunk);
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n');
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6);
+            if (data && !data.includes('[ERROR]')) {
+              assistantContent += data;
+              onChunk(assistantContent, data);
+            } else if (data.includes('[ERROR]')) {
+              onError(data);
+            }
+          }
+        }
       }
+
+      return assistantContent;
     } catch (error) {
-      onError(error);
+      // Fix the error handling to avoid [object Object] logging
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      onError(errorMessage);
+      throw error;
     }
   }
 
-  async clearSession(): Promise<APIResponse> {
-    return this.makeRequest('/clear-session', {
-      method: 'POST',
+  async clearSession(providerId?: string): Promise<APIResponse> {
+    // Match the JS version's clear session endpoint with hardcoded fallback
+    const providerIdToUse = providerId || '595959';
+    const endpoint = `/clear-session/${providerIdToUse}`;
+    
+    return this.makeRequest(endpoint, {
+      method: 'DELETE',
     });
+  }
+
+  async uploadFile(file: File, providerId?: string): Promise<Response> {
+    const formData = new FormData();
+    formData.append('file', file);
+    // Use hardcoded fallback for provider_id
+    formData.append('provider_id', providerId || '595959');
+
+    const response = await fetch(`${this.baseUrl}/upload`, {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error(`Upload failed: ${response.statusText}`);
+    }
+
+    return response;
   }
 
   async uploadDocuments(
@@ -202,4 +259,4 @@ class APIService {
   }
 }
 
-export default APIService; 
+export default APIService;
