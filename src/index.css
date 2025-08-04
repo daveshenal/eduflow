@@ -729,6 +729,11 @@ body::before {
   flex: 1;
   overflow-y: auto;
   padding: 0.5rem;
+  direction: rtl;
+  scrollbar-width: thin; /* optional: for Firefox */
+
+  /* Fix content alignment */
+  text-align: left;
 }
 
 .prompts-list {

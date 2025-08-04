@@ -321,10 +321,11 @@ const PromptEditor: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                       style={{
                         padding: '12px',
                         border: '1px solid #e5e7eb',
+                        borderColor: selectedPrompt?.id === prompt.id ? '#f96559' : '#e5e7eb',
                         borderRadius: '8px',
                         marginBottom: '8px',
                         cursor: 'pointer',
-                        backgroundColor: selectedPrompt?.id === prompt.id ? '#f3f4f6' : 'white',
+                        backgroundColor: 'white',
                       }}
                     >
                       <div className="prompt-item-name" style={{ fontWeight: '500', marginBottom: '4px' }}>
@@ -521,11 +522,17 @@ const PromptEditor: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             </div>
           </>
         ) : (
+          <div>
+          <div className="chat-header">
+            <div className="chat-title">Prompt Manager - Edit System Prompts</div>
+          </div>
+
           <div className="editor-container">
-            <div className="empty-state" style={{ textAlign: 'center', padding: '60px 20px', color: '#6b7280' }}>
+            <div className="empty-state" style={{ textAlign: 'center', padding: '15rem', color: '#6b7280' }}>
               <h3 style={{ fontSize: '18px', fontWeight: '500', marginBottom: '8px' }}>Select a prompt to edit</h3>
               <p>Choose a prompt from the sidebar to view and edit its content</p>
             </div>
+          </div>
           </div>
         )}
       </div>
