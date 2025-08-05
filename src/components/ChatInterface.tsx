@@ -37,8 +37,7 @@ const ChatInterface: React.FC = () => {
   const [, setSelectedItem] = useState<string>('');
 
   const items = [
-    { id: 1, name: 'Apple', description: 'Red fruit' },
-    { id: 2, name: 'Banana', description: 'Yellow fruit' }
+    'Apple', 'Banana', 'Cherry', 'Date', 'Elderberry', 'Fig', 'Grape'
   ];
 
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -433,18 +432,20 @@ const ChatInterface: React.FC = () => {
                     <div className="form-row" style={{ display: 'flex', gap: '1rem' }}>
                       <div className="config-group" style={{ flex: 1, width: '30%' }}>
                         <p className="huddle-label">Select Role</p>
-                        <Dropdown
-                          options={modeOptions}
-                          value={state.mode}
-                          onChange={handleModeChange}
+                        <ScrollableMenu
+                          items={items}
+                          height="200px"
+                          placeholder="Search items..."
+                          onSelect={handleItemSelect}
                         />
                       </div>
                       <div className="config-group" style={{ flex: 1, width: '30%' }}>
                         <p className="huddle-label">Select Discipline</p>
-                        <Dropdown
-                          options={modeOptions}
-                          value={state.mode}
-                          onChange={handleModeChange}
+                        <ScrollableMenu
+                          items={items}
+                          height="200px"
+                          placeholder="Search items..."
+                          onSelect={handleItemSelect}
                         />
                       </div>
                     </div>
@@ -464,13 +465,6 @@ const ChatInterface: React.FC = () => {
                       ))}
                     </div>
                   </div>
-
-                  <ScrollableMenu
-                    items={items}
-                    height="200px"
-                    placeholder="Search items..."
-                    onSelect={handleItemSelect}
-                  />
                 </div>
               )}
 
@@ -498,8 +492,6 @@ const ChatInterface: React.FC = () => {
               </div>
             </div>
           </div>
-
-
         ) : (
           <>
             <ChatMessages messages={messages} error={error} />
