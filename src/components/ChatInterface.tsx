@@ -352,67 +352,89 @@ const ChatInterface: React.FC = () => {
 
         {/* MODIFY THIS: Show different content based on mode */}
         {state.mode === 'pdf' ? (
-          <div className="chat-messages">
-            <div className="config-section-title">Learning Focus</div>
-            <div className="form-row" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '20px' }}>
-              <div className="form-group" style={{ flex: 1, maxWidth: '50%' }}>
-                <label htmlFor="huddleTopic" className="config-label">What specific skill or knowledge should learners gain?</label>
-                <input
-                  type="text"
-                  className="config-input"
-                  id="editPromptDescription"
-                  value={"Clinical Assessment"}
-                />
-              </div>
-              <div className="form-group" style={{ flex: 1, maxWidth: '50%' }}>
-                <label htmlFor="editPromptVersion" className="config-label">Description</label>
-                <input
-                  type="text"
-                  className="config-input"
-                  id="editPromptVersion"
-                  value={"Patient evaluation and monitoring skills"}
-                />
-              </div>
-            </div>
-            <div className="config-section-title">Specific Topic</div>
-            <div className="form-row" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '20px' }}>
-              <div className="form-group" style={{ flex: 1, maxWidth: '50%' }}>
-                <label htmlFor="huddleTopic" className="config-label">What is the main subject for this training?</label>
-                <input
-                  type="text"
-                  className="config-input"
-                  id="editPromptDescription"
-                  value={"Comprehensive nursing assessment techniques"}
-                />
-              </div>
-            </div>
-            <div className="config-section-title">Clinical Context</div>
-            <div className="form-row" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '20px' }}>
-              <div className="form-group" style={{ flex: 1, maxWidth: '50%' }}>
-                <label htmlFor="huddleTopic" className="config-label">What specific patient scenario or situation should be emphasized?</label>
-                <input
-                  type="text"
-                  className="config-input"
-                  id="editPromptDescription"
-                  value={"Post-hospitalization patients"}
-                />
-              </div>
-            </div>
-            <div className="config-section-title">Expected Learning Outcomes</div>
-            <div className="form-row" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '20px' }}>
-              <div className="form-group" style={{ flex: 1, maxWidth: '50%' }}>
-                <label htmlFor="huddleTopic" className="config-label">After this training, staff should be able to:</label>
-                <input
-                  type="text"
-                  className="config-input"
-                  id="editPromptDescription"
-                  value={"Clinical Assessment"}
-                />
-              </div>
-            </div>
+          // Parent wrapper - assumes this is inside a component that spans full screen
+          <div className="huddles">
+            {/* Scrollable Main Content */}
+            <div className='huddles-body flex flex-col min-h-screen' style={{ flex: 1, overflowY: 'auto' }}>
 
+              <div className="huddle-inputs-1 mr-20">
+
+                <div className='config-section'>
+                  <div className="config-section-title">Learning Focus</div>
+                  <div className="config-group">
+                    <label htmlFor="huddleTopic" className="config-label">What specific skill or knowledge should learners gain?</label>
+                    <input
+                      type="text"
+                      className="config-input"
+                      id="learningFocus"
+                      placeholder={'Clinical Assessment - Patient evaluation and monitoring skills'}
+                      // value={state.providerId || "Clinical Assessment - Patient evaluation and monitoring skills"}
+                    />
+                  </div>
+                </div>
+                <div className='config-section'>
+                  <div className="config-section-title">Specific Topic</div>
+                  <div className="config-group">
+                    <label htmlFor="huddleTopic" className="config-label">What is the main subject for this training?</label>
+                    <input
+                      type="text"
+                      className="config-input"
+                      id="editPromptDescription"
+                      // value={state.providerId || "Comprehensive nursing assessment techniques"}
+                      placeholder={"Comprehensive nursing assessment techniques"}
+                    />
+                  </div>
+                </div>
+
+                <div className='config-section'>
+                  <div className="config-section-title">Expected Learning Outcomes</div>
+                  <div className="form-group">
+                    <label htmlFor="huddleTopic" className="config-label">After this training, staff should be able to:</label>
+                    <textarea
+                      className="config-input"
+                      id="editPromptDescription"
+                      // value={state.backendUrl ||``}
+                      placeholder={
+                        `- Patients recently discharged from hospital
+- Patients with multiple risk factors
+- Multiple comorbidities and ongoing management
+- Initial assessment and care planning
+- High fall risk, medication issues, etc.
+- Communication, compliance, or support issues`}
+                      style={{ height: '150px', resize: "none" }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+                        
+              
+            </div>
+            {/* Sticky Footer */}
+            <div className="main-footer border-t border-gray-300 bg-white sticky bottom-0">
+              <div className=" bg-white bg-opacity-20 h-1.5 rounded-full overflow-hidden">
+                <div
+                  className="bg-red-400 h-full rounded-full transition-all duration-300"
+                  style={{ width: `70%` }}
+                />
+              </div>
+              <div className="flex justify-center items-center space-x-10 mt-3">
+                <button className="px-5 py-3 rounded-lg text-sm font-semibold transition-colors">
+                  Previous
+                </button>
+
+                <div className="text-xs text-gray-600">
+                  Step {1} of {4}
+                </div>
+
+                <button className="px-5 py-3 rounded-lg text-sm font-semibold transition-colors">
+                  Next Step
+                </button>
+              </div>
+            </div>
           </div>
-          
+
+
         ) : (
           <>
             <ChatMessages messages={messages} error={error} />

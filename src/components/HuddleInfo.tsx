@@ -489,3 +489,28 @@ const TrainingWizard: React.FC<TrainingWizardProps> = ({ isVisible, onClose, onG
 };
 
 export default TrainingWizard;
+
+
+//               <div className="w-1/2 p-8 bg-blue-100">
+//                 <div className='config-section'>
+//                   <div className="config-section-title">Expected Learning Outcomes</div>
+//                   <div className="form-group">
+//                     <label htmlFor="huddleTopic" className="config-label">After this training, staff should be able to:</label>
+//                     <textarea
+//                       className="config-input"
+//                       id="editPromptDescription"
+//                       //                       value={state.backendUrl ||
+//                       //                         `- Identify key assessment criteria and documentation requirements
+//                       // - Demonstrate proper technique and safety protocols
+//                       // - Apply evidence-based practices to patient care scenarios
+//                       // - Recognize complications and implement appropriate interventions`}
+//                       placeholder={
+//                         `- Identify key assessment criteria and documentation requirements
+// - Demonstrate proper technique and safety protocols
+// - Apply evidence-based practices to patient care scenarios
+// - Recognize complications and implement appropriate interventions`}
+//                       style={{ height: '200px', resize: "none" }}
+//                     />
+//                   </div>
+//                 </div>
+//               </div>
