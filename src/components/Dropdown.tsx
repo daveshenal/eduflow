@@ -16,7 +16,7 @@ const Dropdown = <T extends string>({
   onChange,
   placeholder = 'Select an option',
   disabled = false,
-  className = '',
+  className = 'dropdown',
 }: DropdownProps<T>) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -52,7 +52,7 @@ const Dropdown = <T extends string>({
       <div className="relative">
         <div
           className={`
-            flex items-center justify-between w-full px-3 py-2 text-left
+            flex items-center justify-between w-full px-3 py-3 text-left
             bg-white border border-gray-300 rounded-t-lg shadow-sm
             ${disabled 
               ? 'opacity-50 cursor-not-allowed bg-gray-50' 
@@ -90,7 +90,7 @@ const Dropdown = <T extends string>({
             <div 
               className="pt-3"
               style={{
-                maxHeight: `${3 * 40 + 12}px`, // 3 items * 40px + 12px top padding
+                maxHeight: `${5 * 40 + 12}px`, // 3 items * 40px + 12px top padding
                 overflowY: options.length > 3 ? 'auto' : 'visible'
               }}
             >

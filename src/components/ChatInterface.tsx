@@ -7,7 +7,7 @@ import ChatInput from './ChatInput';
 import DocumentUpload from './DocumentUpload';
 import PromptEditor from './PromptsEditor';
 // import TrainingWizard from './HuddleInfo'; // Import the new component
-import { DropdownOption, ChatMessage, UserType, ApplicationMode, } from '../types';
+import { DropdownOption, ChatMessage, UserType, ApplicationMode } from '../types';
 
 const userTypeOptions: DropdownOption[] = [
   { value: 'developer', label: 'Developer' },
@@ -22,7 +22,24 @@ const modeOptions: DropdownOption[] = [
   { value: 'voice', label: 'Voiceover' },
 ];
 
+const roleOptions: DropdownOption[] = [
+  { value: "frontline-staff", label: "Frontline Staff", active: true },
+  { value: "clinical-manager", label: "Clinical Manager" },
+  { value: "educator", label: "Educator" },
+  { value: "director", label: "Director" }
+];
 
+const disciplineOptions: DropdownOption[] = [
+  { value: "rn", label: "RN - Registered Nurse", active: true },
+  { value: "lpn", label: "LPN - Licensed Practical Nurse" },
+  { value: "pt", label: "PT - Physical Therapist" },
+  { value: "pta", label: "PTA - Physical Therapist Assistant" },
+  { value: "ot", label: "OT - Occupational Therapist" },
+  { value: "ota", label: "OTA - Occupational Therapist Assistant" },
+  { value: "slp", label: "SLP - Speech-Language Pathologist" },
+  { value: "msw", label: "MSW - Medical Social Worker" },
+  { value: "hha", label: "HHA - Home Health Aide" }
+];
 
 // Main Chat Interface Component
 const ChatInterface: React.FC = () => {
@@ -143,55 +160,6 @@ const ChatInterface: React.FC = () => {
     }
   };
 
-  // ADD THIS: Handle PDF content generation
-  // const handleGenerateTrainingContent = async (config: any) => {
-  //   console.log('Generating PDF training content with config:', config);
-
-  //   // Close the wizard
-  //   setShowTrainingWizard(false);
-
-  //   // Show loading state
-  //   setIsLoading(true);
-  //   setError('');
-
-  //   try {
-  //     // Add this to your API service or call your backend directly
-  //     // Example API call:
-  //     const response = await apiService.generateTrainingPDF({
-  //       topic: config.topic,
-  //       role: config.role,
-  //       discipline: config.discipline,
-  //       duration: config.duration,
-  //       objectives: config.objectives,
-  //       userType: state.userType,
-  //       providerId: state.providerId
-  //     });
-
-  //     if (response.success) {
-  //       // Handle successful PDF generation
-  //       // You might want to show a download link or success message
-  //       const successMessage: ChatMessage = {
-  //         id: Date.now().toString(),
-  //         content: `<strong>PDF Generated Successfully!</strong><br/>
-  //         Topic: ${config.topic}<br/>
-  //         Duration: ${config.duration}<br/>
-  //         Audience: ${config.role} - ${config.discipline}<br/>
-  //         <a href="${response.pdfUrl}" target="_blank" class="text-blue-500 underline">Download PDF</a>`,
-  //         isUser: false,
-  //         timestamp: new Date(),
-  //       };
-  //       setMessages(prev => [...prev, successMessage]);
-  //     } else {
-  //       setError('Failed to generate PDF. Please try again.');
-  //     }
-  //   } catch (error) {
-  //     console.error('Error generating PDF:', error);
-  //     setError('Failed to generate PDF. Please check your connection and try again.');
-  //   } finally {
-  //     setIsLoading(false);
-  //   }
-  // };
-
   // Show prompt editor
   if (showPromptEditor) {
     return <PromptEditor onBack={() => setShowPromptEditor(false)} />;
@@ -276,7 +244,7 @@ const ChatInterface: React.FC = () => {
 
   const DurationCard: React.FC<DurationCardProps> = ({ duration, isSelected, onSelect }) => (
     <div
-      className={`p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 bg-white relative hover:border-red-400 hover:-translate-y-0.5 ${isSelected ? 'border-red-400 bg-red-50' : 'border-gray-200'
+      className={`p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 bg-white relative hover:border-red-400 ${isSelected ? 'border-red-400 bg-red-50' : 'border-gray-200'
         }`}
       onClick={() => onSelect(duration)}
     >
@@ -468,7 +436,7 @@ const ChatInterface: React.FC = () => {
                       <div className="config-group" style={{ flex: 1, width: '30%' }}>
                         <p className="huddle-label">Select Role</p>
                         <Dropdown
-                          options={modeOptions}
+                          options={roleOptions}
                           value={state.mode}
                           onChange={handleModeChange}
                         />
@@ -476,7 +444,7 @@ const ChatInterface: React.FC = () => {
                       <div className="config-group" style={{ flex: 1, width: '30%' }}>
                         <p className="huddle-label">Select Discipline</p>
                         <Dropdown
-                          options={modeOptions}
+                          options={disciplineOptions}
                           value={state.mode}
                           onChange={handleModeChange}
                         />
@@ -497,16 +465,6 @@ const ChatInterface: React.FC = () => {
                         />
                       ))}
                     </div>
-                  </div>
-
-                  <div className="h-64 overflow-y-auto border border-gray-300 p-4">
-                    <ul className="space-y-2">
-                      {Array.from({ length: 20 }).map((_, index) => (
-                        <li key={index} className="p-2 bg-gray-100 hover:bg-gray-200 rounded">
-                          Menu Item {index + 1}
-                        </li>
-                      ))}
-                    </ul>
                   </div>
                 </div>
               )}
