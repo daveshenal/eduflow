@@ -1,4 +1,4 @@
-import React, { useState, useEffect} from 'react';
+import React, { useState, useEffect } from 'react';
 import { useConfig } from '../contexts/ConfigContext';
 import APIService from '../services/api';
 import Dropdown from './Dropdown';
@@ -6,7 +6,8 @@ import ChatMessages from './ChatMessages';
 import ChatInput from './ChatInput';
 import DocumentUpload from './DocumentUpload';
 import PromptEditor from './PromptsEditor';
-import { DropdownOption, ChatMessage} from '../types';
+// import TrainingWizard from './HuddleInfo'; // Import the new component
+import { DropdownOption, ChatMessage, UserType, ApplicationMode } from '../types';
 
 const userTypeOptions: DropdownOption[] = [
   { value: 'developer', label: 'Developer' },
@@ -26,6 +27,7 @@ const ChatInterface: React.FC = () => {
   const { state, setUserType, setMode, setBackendUrl, setProviderId, setStreaming, updateResponseTime } = useConfig();
   const [showDocumentUpload, setShowDocumentUpload] = useState(false);
   const [showPromptEditor, setShowPromptEditor] = useState(false);
+  // const [showTrainingWizard, setShowTrainingWizard] = useState(false); // Add this state
   const [apiService] = useState(() => new APIService(state.backendUrl));
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>('');
@@ -33,7 +35,7 @@ const ChatInterface: React.FC = () => {
     {
       id: '1',
       content: `<strong>HOP AI</strong><br /> Hello! I'm ready to help you test your backend. 
-      The interface is configured to connect to your streaming chat endpoint. Try sending me a message!`,      
+      The interface is configured to connect to your streaming chat endpoint. Try sending me a message!`,
       isUser: false,
       timestamp: new Date(),
     },
@@ -139,6 +141,55 @@ const ChatInterface: React.FC = () => {
     }
   };
 
+  // ADD THIS: Handle PDF content generation
+  // const handleGenerateTrainingContent = async (config: any) => {
+  //   console.log('Generating PDF training content with config:', config);
+
+  //   // Close the wizard
+  //   setShowTrainingWizard(false);
+
+  //   // Show loading state
+  //   setIsLoading(true);
+  //   setError('');
+
+  //   try {
+  //     // Add this to your API service or call your backend directly
+  //     // Example API call:
+  //     const response = await apiService.generateTrainingPDF({
+  //       topic: config.topic,
+  //       role: config.role,
+  //       discipline: config.discipline,
+  //       duration: config.duration,
+  //       objectives: config.objectives,
+  //       userType: state.userType,
+  //       providerId: state.providerId
+  //     });
+
+  //     if (response.success) {
+  //       // Handle successful PDF generation
+  //       // You might want to show a download link or success message
+  //       const successMessage: ChatMessage = {
+  //         id: Date.now().toString(),
+  //         content: `<strong>PDF Generated Successfully!</strong><br/>
+  //         Topic: ${config.topic}<br/>
+  //         Duration: ${config.duration}<br/>
+  //         Audience: ${config.role} - ${config.discipline}<br/>
+  //         <a href="${response.pdfUrl}" target="_blank" class="text-blue-500 underline">Download PDF</a>`,
+  //         isUser: false,
+  //         timestamp: new Date(),
+  //       };
+  //       setMessages(prev => [...prev, successMessage]);
+  //     } else {
+  //       setError('Failed to generate PDF. Please try again.');
+  //     }
+  //   } catch (error) {
+  //     console.error('Error generating PDF:', error);
+  //     setError('Failed to generate PDF. Please check your connection and try again.');
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
+
   // Show prompt editor
   if (showPromptEditor) {
     return <PromptEditor onBack={() => setShowPromptEditor(false)} />;
@@ -161,8 +212,48 @@ const ChatInterface: React.FC = () => {
     );
   }
 
+  const handleUserTypeChange = (newValue: UserType) => {
+    setUserType(newValue);
+
+    switch (newValue) {
+      case "developer":
+        console.log("Developer user type selected");
+        break;
+      case "educator":
+        console.log("Educator (Agency Level) user type selected");
+        break;
+      case "regular":
+        console.log("Regular User type selected");
+        break;
+      default:
+        console.log(`Unknown user type: ${newValue}`);
+    }
+  };
+
+  const handleModeChange = (newValue: ApplicationMode) => {
+    setMode(newValue);
+
+    switch (newValue) {
+      case "chatbot":
+        console.log("Chatbot mode selected");
+        break;
+      case "quiz":
+        console.log("Quiz generator mode selected");
+        break;
+      case "pdf":
+        console.log("PDF generator mode selected");
+        break;
+      case "voice":
+        console.log("Voiceover mode selected");
+        break;
+      default:
+        console.log(`Unknown mode: ${newValue}`);
+    }
+  }
+
   return (
     <div className="app-container">
+
       {/* Main Sidebar */}
       <div className="sidebar">
         <div className="sidebar-header">
@@ -178,7 +269,7 @@ const ChatInterface: React.FC = () => {
               <Dropdown
                 options={userTypeOptions}
                 value={state.userType}
-                onChange={setUserType}
+                onChange={handleUserTypeChange}
               />
             </div>
           </div>
@@ -190,7 +281,7 @@ const ChatInterface: React.FC = () => {
               <Dropdown
                 options={modeOptions}
                 value={state.mode}
-                onChange={setMode}
+                onChange={handleModeChange}
               />
             </div>
           </div>
@@ -250,20 +341,110 @@ const ChatInterface: React.FC = () => {
       {/* Chat Container */}
       <div className="chat-container">
         <div className="chat-header">
-          <div className="chat-title">RAG System Testing Interface</div>
+          <div className="chat-title">
+            {state.mode === 'pdf' ? 'Huddle Generator' : 'RAG System Testing Interface'}
+          </div>
           <div className="metric">
             <span>⚡</span>
-            <span>{state.responseTime}ms</span>
+            <span>{state.responseTime}s</span>
           </div>
         </div>
 
-        <ChatMessages messages={messages} error={error} />
+        {/* MODIFY THIS: Show different content based on mode */}
+        {state.mode === 'pdf' ? (
+          // Parent wrapper - assumes this is inside a component that spans full screen
+          <div className="huddles">
+            {/* Scrollable Main Content */}
+            <div className='huddles-body flex flex-col min-h-screen' style={{ flex: 1, overflowY: 'auto' }}>
 
-        <ChatInput
-          onSendMessage={handleSendMessage}
-          onClearChat={handleClearChat}
-          disabled={state.isStreaming || isLoading}
-        />
+              <div className="huddle-inputs-1 mr-20">
+
+                <div className='config-section'>
+                  <div className="config-section-title">Learning Focus</div>
+                  <div className="config-group">
+                    <label htmlFor="huddleTopic" className="config-label">What specific skill or knowledge should learners gain?</label>
+                    <input
+                      type="text"
+                      className="config-input"
+                      id="learningFocus"
+                      placeholder={'Clinical Assessment - Patient evaluation and monitoring skills'}
+                      // value={state.providerId || "Clinical Assessment - Patient evaluation and monitoring skills"}
+                    />
+                  </div>
+                </div>
+                <div className='config-section'>
+                  <div className="config-section-title">Specific Topic</div>
+                  <div className="config-group">
+                    <label htmlFor="huddleTopic" className="config-label">What is the main subject for this training?</label>
+                    <input
+                      type="text"
+                      className="config-input"
+                      id="editPromptDescription"
+                      // value={state.providerId || "Comprehensive nursing assessment techniques"}
+                      placeholder={"Comprehensive nursing assessment techniques"}
+                    />
+                  </div>
+                </div>
+
+                <div className='config-section'>
+                  <div className="config-section-title">Expected Learning Outcomes</div>
+                  <div className="form-group">
+                    <label htmlFor="huddleTopic" className="config-label">After this training, staff should be able to:</label>
+                    <textarea
+                      className="config-input"
+                      id="editPromptDescription"
+                      // value={state.backendUrl ||``}
+                      placeholder={
+                        `- Patients recently discharged from hospital
+- Patients with multiple risk factors
+- Multiple comorbidities and ongoing management
+- Initial assessment and care planning
+- High fall risk, medication issues, etc.
+- Communication, compliance, or support issues`}
+                      style={{ height: '150px', resize: "none" }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+                        
+              
+            </div>
+            {/* Sticky Footer */}
+            <div className="main-footer border-t border-gray-300 bg-white sticky bottom-0">
+              <div className=" bg-white bg-opacity-20 h-1.5 rounded-full overflow-hidden">
+                <div
+                  className="bg-red-400 h-full rounded-full transition-all duration-300"
+                  style={{ width: `70%` }}
+                />
+              </div>
+              <div className="flex justify-center items-center space-x-10 mt-3">
+                <button className="px-5 py-3 rounded-lg text-sm font-semibold transition-colors">
+                  Previous
+                </button>
+
+                <div className="text-xs text-gray-600">
+                  Step {1} of {4}
+                </div>
+
+                <button className="px-5 py-3 rounded-lg text-sm font-semibold transition-colors">
+                  Next Step
+                </button>
+              </div>
+            </div>
+          </div>
+
+
+        ) : (
+          <>
+            <ChatMessages messages={messages} error={error} />
+            <ChatInput
+              onSendMessage={handleSendMessage}
+              onClearChat={handleClearChat}
+              disabled={state.isStreaming || isLoading}
+            />
+          </>
+        )}
       </div>
     </div>
   );

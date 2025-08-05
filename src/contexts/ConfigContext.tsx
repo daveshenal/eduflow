@@ -103,9 +103,10 @@ export const ConfigProvider: React.FC<ConfigProviderProps> = ({ children }) => {
     dispatch({ type: 'SET_STREAMING', payload: streaming });
   };
 
-  const updateResponseTime = (time: number) => {
-    dispatch({ type: 'UPDATE_RESPONSE_TIME', payload: time });
-  };
+const updateResponseTime = (time: number) => {
+  const timeInSeconds = +(time / 1000).toFixed(1);
+  dispatch({ type: 'UPDATE_RESPONSE_TIME', payload: timeInSeconds });
+};
 
   const loadSettings = (settings: ConfigSettings) => {
     dispatch({ type: 'LOAD_SETTINGS', payload: settings });
