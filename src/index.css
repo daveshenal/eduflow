@@ -189,11 +189,10 @@ body::before {
 }
 
 .config-section-title {
-  font-size: 0.86rem;
+  font-size: 1rem;
   font-weight: 600;
-  color: #1f2937;
+  color: rgb(17 24 39 / var(--tw-text-opacity));
   margin-bottom: 0.7rem;
-  text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
@@ -1342,7 +1341,7 @@ body::before {
   height: 5.8rem;
 }
 
-.huddles{
+.huddles {
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -1361,4 +1360,21 @@ body::before {
   flex-direction: column;
   gap: 1rem;
   background: rgba(255, 255, 255, 0.3);
+}
+
+.huddle-section-title {
+  font-size: 1.125rem /* 18px */;
+  line-height: 1.75rem /* 28px */;
+  font-weight: 600;
+  margin-bottom: 0.7rem;
+  --tw-text-opacity: 1;
+  color: rgb(17 24 39 / var(--tw-text-opacity));
+}
+
+.huddle-label {
+  font-size: 0.875rem /* 14px */;
+  line-height: 1.25rem /* 20px */;
+  --tw-text-opacity: 1;
+  color: rgb(75 85 99 / var(--tw-text-opacity)) /* #4b5563 */;
+  margin-bottom: 0.8rem /* 24px */;
 }
