@@ -22,6 +22,25 @@ const modeOptions: DropdownOption[] = [
   { value: 'voice', label: 'Voiceover' },
 ];
 
+const roleOptions: DropdownOption[] = [
+  { value: "frontline-staff", label: "Frontline Staff", active: true },
+  { value: "clinical-manager", label: "Clinical Manager" },
+  { value: "educator", label: "Educator" },
+  { value: "director", label: "Director" }
+];
+
+const disciplineOptions: DropdownOption[] = [
+  { value: "rn", label: "RN - Registered Nurse", active: true },
+  { value: "lpn", label: "LPN - Licensed Practical Nurse" },
+  { value: "pt", label: "PT - Physical Therapist" },
+  { value: "pta", label: "PTA - Physical Therapist Assistant" },
+  { value: "ot", label: "OT - Occupational Therapist" },
+  { value: "ota", label: "OTA - Occupational Therapist Assistant" },
+  { value: "slp", label: "SLP - Speech-Language Pathologist" },
+  { value: "msw", label: "MSW - Medical Social Worker" },
+  { value: "hha", label: "HHA - Home Health Aide" }
+];
+
 // Main Chat Interface Component
 const ChatInterface: React.FC = () => {
   const { state, setUserType, setMode, setBackendUrl, setProviderId, setStreaming, updateResponseTime } = useConfig();
@@ -141,55 +160,6 @@ const ChatInterface: React.FC = () => {
     }
   };
 
-  // ADD THIS: Handle PDF content generation
-  // const handleGenerateTrainingContent = async (config: any) => {
-  //   console.log('Generating PDF training content with config:', config);
-
-  //   // Close the wizard
-  //   setShowTrainingWizard(false);
-
-  //   // Show loading state
-  //   setIsLoading(true);
-  //   setError('');
-
-  //   try {
-  //     // Add this to your API service or call your backend directly
-  //     // Example API call:
-  //     const response = await apiService.generateTrainingPDF({
-  //       topic: config.topic,
-  //       role: config.role,
-  //       discipline: config.discipline,
-  //       duration: config.duration,
-  //       objectives: config.objectives,
-  //       userType: state.userType,
-  //       providerId: state.providerId
-  //     });
-
-  //     if (response.success) {
-  //       // Handle successful PDF generation
-  //       // You might want to show a download link or success message
-  //       const successMessage: ChatMessage = {
-  //         id: Date.now().toString(),
-  //         content: `<strong>PDF Generated Successfully!</strong><br/>
-  //         Topic: ${config.topic}<br/>
-  //         Duration: ${config.duration}<br/>
-  //         Audience: ${config.role} - ${config.discipline}<br/>
-  //         <a href="${response.pdfUrl}" target="_blank" class="text-blue-500 underline">Download PDF</a>`,
-  //         isUser: false,
-  //         timestamp: new Date(),
-  //       };
-  //       setMessages(prev => [...prev, successMessage]);
-  //     } else {
-  //       setError('Failed to generate PDF. Please try again.');
-  //     }
-  //   } catch (error) {
-  //     console.error('Error generating PDF:', error);
-  //     setError('Failed to generate PDF. Please check your connection and try again.');
-  //   } finally {
-  //     setIsLoading(false);
-  //   }
-  // };
-
   // Show prompt editor
   if (showPromptEditor) {
     return <PromptEditor onBack={() => setShowPromptEditor(false)} />;
@@ -250,6 +220,55 @@ const ChatInterface: React.FC = () => {
         console.log(`Unknown mode: ${newValue}`);
     }
   }
+
+
+
+
+  var currentStep = 2; // Assuming this is a constant for now, can be dynamic later
+
+  // Duration Card Component
+  type Duration = {
+    value: string;
+    label: string;
+    description: string;
+    wordCount: string;
+    icon: string;
+    recommended?: boolean;
+  };
+
+  type DurationCardProps = {
+    duration: Duration;
+    isSelected: boolean;
+    onSelect: (duration: Duration) => void;
+  };
+
+  const DurationCard: React.FC<DurationCardProps> = ({ duration, isSelected, onSelect }) => (
+    <div
+      className={`p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 bg-white relative hover:border-red-400 ${isSelected ? 'border-red-400 bg-red-50' : 'border-gray-200'
+        }`}
+      onClick={() => onSelect(duration)}
+    >
+      {duration.recommended && (
+        <div className="absolute -top-2 right-3 bg-red-400 text-white text-xs font-semibold px-2 py-1 rounded">
+          Recommended
+        </div>
+      )}
+      <div className="flex items-center gap-3 mb-2">
+        <span className="text-xl">{duration.icon}</span>
+        <span className="text-base font-semibold text-gray-900">{duration.label}</span>
+      </div>
+      <div className="text-xs text-gray-600 mb-1">{duration.description}</div>
+      <div className="text-xs text-gray-600">{duration.wordCount}</div>
+    </div>
+  );
+
+  const durations = [
+    { value: "5-minutes", label: "5 Minutes", description: "Quick, focused learning", wordCount: "~625-750 words", icon: "⚡" },
+    { value: "10-minutes", label: "10 Minutes", description: "Comprehensive coverage", wordCount: "~1,250-1,500 words", icon: "📚", recommended: true },
+    { value: "15-minutes", label: "15 Minutes", description: "In-depth exploration", wordCount: "~1,875-2,250 words", icon: "🎓" }
+  ];
+
+
 
   return (
     <div className="app-container">
@@ -352,63 +371,106 @@ const ChatInterface: React.FC = () => {
 
         {/* MODIFY THIS: Show different content based on mode */}
         {state.mode === 'pdf' ? (
-          // Parent wrapper - assumes this is inside a component that spans full screen
           <div className="huddles">
             {/* Scrollable Main Content */}
             <div className='huddles-body flex flex-col min-h-screen' style={{ flex: 1, overflowY: 'auto' }}>
+              {/* Step 1: Topic Inputs */}
+              {currentStep === 1 && (
+                <div className="huddle-inputs-1 mr-20">
 
-              <div className="huddle-inputs-1 mr-20">
-
-                <div className='config-section'>
-                  <div className="config-section-title">Learning Focus</div>
-                  <div className="config-group">
-                    <label htmlFor="huddleTopic" className="config-label">What specific skill or knowledge should learners gain?</label>
-                    <input
-                      type="text"
-                      className="config-input"
-                      id="learningFocus"
-                      placeholder={'Clinical Assessment - Patient evaluation and monitoring skills'}
+                  <div className='config-section'>
+                    <div className="huddle-section-title">Learning Focus</div>
+                    <div className="config-group">
+                      <p className="huddle-label">What specific skill or knowledge should learners gain?</p>
+                      <input
+                        type="text"
+                        className="config-input"
+                        id="learningFocus"
+                        placeholder={'Clinical Assessment - Patient evaluation and monitoring skills'}
                       // value={state.providerId || "Clinical Assessment - Patient evaluation and monitoring skills"}
-                    />
+                      />
+                    </div>
                   </div>
-                </div>
-                <div className='config-section'>
-                  <div className="config-section-title">Specific Topic</div>
-                  <div className="config-group">
-                    <label htmlFor="huddleTopic" className="config-label">What is the main subject for this training?</label>
-                    <input
-                      type="text"
-                      className="config-input"
-                      id="editPromptDescription"
-                      // value={state.providerId || "Comprehensive nursing assessment techniques"}
-                      placeholder={"Comprehensive nursing assessment techniques"}
-                    />
+                  <div className='config-section'>
+                    <div className="huddle-section-title">Specific Topic</div>
+                    <div className="config-group">
+                      <p className="huddle-label">What is the main subject for this training?</p>
+                      <input
+                        type="text"
+                        className="config-input"
+                        id="editPromptDescription"
+                        // value={state.providerId || "Comprehensive nursing assessment techniques"}
+                        placeholder={"Comprehensive nursing assessment techniques"}
+                      />
+                    </div>
                   </div>
-                </div>
 
-                <div className='config-section'>
-                  <div className="config-section-title">Expected Learning Outcomes</div>
-                  <div className="form-group">
-                    <label htmlFor="huddleTopic" className="config-label">After this training, staff should be able to:</label>
-                    <textarea
-                      className="config-input"
-                      id="editPromptDescription"
-                      // value={state.backendUrl ||``}
-                      placeholder={
-                        `- Patients recently discharged from hospital
+                  <div className='config-section'>
+                    <div className="huddle-section-title">Expected Learning Outcomes</div>
+                    <div className="form-group">
+                      <p className="huddle-label">After this training, staff should be able to:</p>
+                      <textarea
+                        className="config-input"
+                        id="editPromptDescription"
+                        // value={state.backendUrl ||``}
+                        placeholder={
+                          `- Patients recently discharged from hospital
 - Patients with multiple risk factors
 - Multiple comorbidities and ongoing management
 - Initial assessment and care planning
 - High fall risk, medication issues, etc.
 - Communication, compliance, or support issues`}
-                      style={{ height: '150px', resize: "none" }}
-                    />
+                        style={{ height: '120px', resize: "none" }}
+                      />
+                    </div>
+                  </div>
+                </div>)}
+
+              {/* Step 2: Target Audiance and Time */}
+              {currentStep === 2 && (
+                <div className="huddle-inputs-1 mr-20">
+
+                  <div className="config-section">
+                    <div className="huddle-section-title">Define Your Audience - Who will be taking this training?</div>
+                    <div className="form-row" style={{ display: 'flex', gap: '1rem' }}>
+                      <div className="config-group" style={{ flex: 1, width: '30%' }}>
+                        <p className="huddle-label">Select Role</p>
+                        <Dropdown
+                          options={roleOptions}
+                          value={state.mode}
+                          onChange={handleModeChange}
+                        />
+                      </div>
+                      <div className="config-group" style={{ flex: 1, width: '30%' }}>
+                        <p className="huddle-label">Select Discipline</p>
+                        <Dropdown
+                          options={disciplineOptions}
+                          value={state.mode}
+                          onChange={handleModeChange}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    <div className="huddle-section-title">Choose Training Duration</div>
+                    <div className="huddle-label">How long should this training be?</div>
+
+                    <div className="grid grid-cols-3 gap-3">
+                      {durations.map(duration => (
+                        <DurationCard
+                          key={duration.value}
+                          duration={duration}
+                          isSelected={false} // Replace with your selection logic if needed
+                          onSelect={() => { }} // Replace with your handler function if needed
+                        />
+                      ))}
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
 
-                        
-              
+
+
             </div>
             {/* Sticky Footer */}
             <div className="main-footer border-t border-gray-300 bg-white sticky bottom-0">

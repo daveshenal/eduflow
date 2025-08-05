@@ -16,7 +16,7 @@ const Dropdown = <T extends string>({
   onChange,
   placeholder = 'Select an option',
   disabled = false,
-  className = '',
+  className = 'dropdown',
 }: DropdownProps<T>) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -48,17 +48,28 @@ const Dropdown = <T extends string>({
   };
 
   return (
-    <div className={`custom-select-wrapper ${className}`} ref={dropdownRef}>
-      <div className={`custom-select ${isOpen ? 'open' : ''}`}>
+    <div className={`relative ${className}`} ref={dropdownRef}>
+      <div className="relative">
         <div
-          className={`custom-select-trigger ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+          className={`
+            flex items-center justify-between w-full px-3 py-3 text-left
+            bg-white border border-gray-300 rounded-t-lg shadow-sm
+            ${disabled 
+              ? 'opacity-50 cursor-not-allowed bg-gray-50' 
+              : 'cursor-pointer hover:border-gray-400'
+            }
+            ${isOpen ? 'border-gray-400' : ''}
+          `}
+          style={isOpen ? { borderColor: '#f96559' } : {}}
           onClick={handleToggle}
         >
-          <span className="custom-select-text">
+          <span className="block truncate text-gray-900">
             {selectedOption ? selectedOption.label : placeholder}
           </span>
           <svg
-            className="custom-select-arrow"
+            className={`w-4 h-4 text-gray-500 transform transition-transform duration-200 ${
+              isOpen ? 'rotate-180' : ''
+            }`}
             width="16"
             height="16"
             viewBox="0 0 20 20"
@@ -73,20 +84,51 @@ const Dropdown = <T extends string>({
             />
           </svg>
         </div>
-        <div className="custom-select-options">
-          {options.map((option) => (
-            <div
-              key={option.value}
-              className={`custom-select-option ${option.active ? 'active' : ''}`}
-              onClick={() => handleOptionClick(option.value)}
+        
+        {isOpen && (
+          <div className="absolute z-10 w-full bg-white border border-gray-300 rounded-b-lg shadow-lg overflow-hidden">
+            <div 
+              className="pt-3"
+              style={{
+                maxHeight: `${5 * 40 + 12}px`, // 3 items * 40px + 12px top padding
+                overflowY: options.length > 3 ? 'auto' : 'visible'
+              }}
             >
-              {option.label}
+              {options.map((option, index) => (
+                <div
+                  key={option.value}
+                  className={`
+                    px-3 py-2 text-gray-900 cursor-pointer select-none
+                    ${option.value === value ? 'text-white font-medium' : ''}
+                    ${option.active ? 'bg-gray-50' : ''}
+                  `}
+                  style={{ 
+                    minHeight: '40px', 
+                    display: 'flex', 
+                    alignItems: 'center',
+                    backgroundColor: option.value === value ? '#f96559' : undefined
+                  }}
+                  onMouseEnter={(e) => {
+                    if (option.value !== value) {
+                      e.currentTarget.style.backgroundColor = 'rgba(249, 101, 89, 0.1)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (option.value !== value) {
+                      e.currentTarget.style.backgroundColor = '';
+                    }
+                  }}
+                  onClick={() => handleOptionClick(option.value)}
+                >
+                  {option.label}
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );
 };
 
-export default Dropdown; 
+export default Dropdown;
