@@ -6,8 +6,8 @@ import ChatMessages from './ChatMessages';
 import ChatInput from './ChatInput';
 import DocumentUpload from './DocumentUpload';
 import PromptEditor from './PromptsEditor';
-import TrainingWizard from './HuddleInfo'; // Import the new component
-import { DropdownOption, ChatMessage, UserType, ApplicationMode} from '../types';
+// import TrainingWizard from './HuddleInfo'; // Import the new component
+import { DropdownOption, ChatMessage, UserType, ApplicationMode } from '../types';
 
 const userTypeOptions: DropdownOption[] = [
   { value: 'developer', label: 'Developer' },
@@ -27,7 +27,7 @@ const ChatInterface: React.FC = () => {
   const { state, setUserType, setMode, setBackendUrl, setProviderId, setStreaming, updateResponseTime } = useConfig();
   const [showDocumentUpload, setShowDocumentUpload] = useState(false);
   const [showPromptEditor, setShowPromptEditor] = useState(false);
-  const [showTrainingWizard, setShowTrainingWizard] = useState(false); // Add this state
+  // const [showTrainingWizard, setShowTrainingWizard] = useState(false); // Add this state
   const [apiService] = useState(() => new APIService(state.backendUrl));
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>('');
@@ -142,53 +142,53 @@ const ChatInterface: React.FC = () => {
   };
 
   // ADD THIS: Handle PDF content generation
-  const handleGenerateTrainingContent = async (config: any) => {
-    console.log('Generating PDF training content with config:', config);
-    
-    // Close the wizard
-    setShowTrainingWizard(false);
-    
-    // Show loading state
-    setIsLoading(true);
-    setError('');
+  // const handleGenerateTrainingContent = async (config: any) => {
+  //   console.log('Generating PDF training content with config:', config);
 
-    try {
-      // Add this to your API service or call your backend directly
-      // Example API call:
-      const response = await apiService.generateTrainingPDF({
-        topic: config.topic,
-        role: config.role,
-        discipline: config.discipline,
-        duration: config.duration,
-        objectives: config.objectives,
-        userType: state.userType,
-        providerId: state.providerId
-      });
+  //   // Close the wizard
+  //   setShowTrainingWizard(false);
 
-      if (response.success) {
-        // Handle successful PDF generation
-        // You might want to show a download link or success message
-        const successMessage: ChatMessage = {
-          id: Date.now().toString(),
-          content: `<strong>PDF Generated Successfully!</strong><br/>
-          Topic: ${config.topic}<br/>
-          Duration: ${config.duration}<br/>
-          Audience: ${config.role} - ${config.discipline}<br/>
-          <a href="${response.pdfUrl}" target="_blank" class="text-blue-500 underline">Download PDF</a>`,
-          isUser: false,
-          timestamp: new Date(),
-        };
-        setMessages(prev => [...prev, successMessage]);
-      } else {
-        setError('Failed to generate PDF. Please try again.');
-      }
-    } catch (error) {
-      console.error('Error generating PDF:', error);
-      setError('Failed to generate PDF. Please check your connection and try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  //   // Show loading state
+  //   setIsLoading(true);
+  //   setError('');
+
+  //   try {
+  //     // Add this to your API service or call your backend directly
+  //     // Example API call:
+  //     const response = await apiService.generateTrainingPDF({
+  //       topic: config.topic,
+  //       role: config.role,
+  //       discipline: config.discipline,
+  //       duration: config.duration,
+  //       objectives: config.objectives,
+  //       userType: state.userType,
+  //       providerId: state.providerId
+  //     });
+
+  //     if (response.success) {
+  //       // Handle successful PDF generation
+  //       // You might want to show a download link or success message
+  //       const successMessage: ChatMessage = {
+  //         id: Date.now().toString(),
+  //         content: `<strong>PDF Generated Successfully!</strong><br/>
+  //         Topic: ${config.topic}<br/>
+  //         Duration: ${config.duration}<br/>
+  //         Audience: ${config.role} - ${config.discipline}<br/>
+  //         <a href="${response.pdfUrl}" target="_blank" class="text-blue-500 underline">Download PDF</a>`,
+  //         isUser: false,
+  //         timestamp: new Date(),
+  //       };
+  //       setMessages(prev => [...prev, successMessage]);
+  //     } else {
+  //       setError('Failed to generate PDF. Please try again.');
+  //     }
+  //   } catch (error) {
+  //     console.error('Error generating PDF:', error);
+  //     setError('Failed to generate PDF. Please check your connection and try again.');
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
 
   // Show prompt editor
   if (showPromptEditor) {
@@ -253,12 +253,6 @@ const ChatInterface: React.FC = () => {
 
   return (
     <div className="app-container">
-      {/* ADD THIS: Training Wizard Component */}
-      <TrainingWizard
-        isVisible={showTrainingWizard}
-        onClose={() => setShowTrainingWizard(false)}
-        onGenerateContent={handleGenerateTrainingContent}
-      />
 
       {/* Main Sidebar */}
       <div className="sidebar">
@@ -348,36 +342,77 @@ const ChatInterface: React.FC = () => {
       <div className="chat-container">
         <div className="chat-header">
           <div className="chat-title">
-            {state.mode === 'pdf' ? 'PDF Training Generator' : 'RAG System Testing Interface'}
+            {state.mode === 'pdf' ? 'Huddle Generator' : 'RAG System Testing Interface'}
           </div>
           <div className="metric">
             <span>⚡</span>
-            <span>{state.responseTime}ms</span>
+            <span>{state.responseTime}s</span>
           </div>
         </div>
 
         {/* MODIFY THIS: Show different content based on mode */}
         {state.mode === 'pdf' ? (
-          <div className="pdf-generator-view">
-            <div className="pdf-welcome">
-              <div className="pdf-icon">📄</div>
-              <h2>PDF Training Generator</h2>
-              <p>Create personalized healthcare training PDFs with our guided wizard</p>
-              <button 
-                className="btn btn-primary btn-large"
-                onClick={() => setShowTrainingWizard(true)}
-                disabled={isLoading}
-              >
-                {isLoading ? 'Generating...' : 'Start Training Wizard'}
-              </button>
-              
-              {error && (
-                <div className="error-message">
-                  {error}
-                </div>
-              )}
+          <div className="chat-messages">
+            <div className="config-section-title">Learning Focus</div>
+            <div className="form-row" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '20px' }}>
+              <div className="form-group" style={{ flex: 1, maxWidth: '50%' }}>
+                <label htmlFor="huddleTopic" className="config-label">What specific skill or knowledge should learners gain?</label>
+                <input
+                  type="text"
+                  className="config-input"
+                  id="editPromptDescription"
+                  value={"Clinical Assessment"}
+                />
+              </div>
+              <div className="form-group" style={{ flex: 1, maxWidth: '50%' }}>
+                <label htmlFor="editPromptVersion" className="config-label">Description</label>
+                <input
+                  type="text"
+                  className="config-input"
+                  id="editPromptVersion"
+                  value={"Patient evaluation and monitoring skills"}
+                />
+              </div>
             </div>
+            <div className="config-section-title">Specific Topic</div>
+            <div className="form-row" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '20px' }}>
+              <div className="form-group" style={{ flex: 1, maxWidth: '50%' }}>
+                <label htmlFor="huddleTopic" className="config-label">What is the main subject for this training?</label>
+                <input
+                  type="text"
+                  className="config-input"
+                  id="editPromptDescription"
+                  value={"Comprehensive nursing assessment techniques"}
+                />
+              </div>
+            </div>
+            <div className="config-section-title">Clinical Context</div>
+            <div className="form-row" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '20px' }}>
+              <div className="form-group" style={{ flex: 1, maxWidth: '50%' }}>
+                <label htmlFor="huddleTopic" className="config-label">What specific patient scenario or situation should be emphasized?</label>
+                <input
+                  type="text"
+                  className="config-input"
+                  id="editPromptDescription"
+                  value={"Post-hospitalization patients"}
+                />
+              </div>
+            </div>
+            <div className="config-section-title">Expected Learning Outcomes</div>
+            <div className="form-row" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '20px' }}>
+              <div className="form-group" style={{ flex: 1, maxWidth: '50%' }}>
+                <label htmlFor="huddleTopic" className="config-label">After this training, staff should be able to:</label>
+                <input
+                  type="text"
+                  className="config-input"
+                  id="editPromptDescription"
+                  value={"Clinical Assessment"}
+                />
+              </div>
+            </div>
+
           </div>
+          
         ) : (
           <>
             <ChatMessages messages={messages} error={error} />

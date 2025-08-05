@@ -18,7 +18,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({ id, defaultText, options, o
   const handleSelect = (option: CustomSelectOption) => {
     const optionLabel = typeof option === 'object' ? option.label : option;
     const optionValue = typeof option === 'object' ? option.value : option;
-    
+
     setSelected(optionLabel);
     setIsOpen(false);
     if (onSelect) {
@@ -41,26 +41,24 @@ const CustomSelect: React.FC<CustomSelectProps> = ({ id, defaultText, options, o
   return (
     <div id={id} className="relative w-full">
       <div
-        className={`flex items-center justify-between p-3 border-2 rounded-lg bg-white text-sm text-gray-700 cursor-pointer transition-all duration-200 hover:border-red-400 ${
-          isOpen ? 'border-red-400' : 'border-gray-200'
-        }`}
+        className={`flex items-center justify-between p-3 border-2 rounded-lg bg-white text-sm text-gray-700 cursor-pointer transition-all duration-200 hover:border-red-400 ${isOpen ? 'border-red-400' : 'border-gray-200'
+          }`}
         onClick={() => setIsOpen(!isOpen)}
       >
         <span className="font-medium">{selected}</span>
-        <ChevronDown 
-          className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${
-            isOpen ? 'rotate-180' : ''
-          }`} 
+        <ChevronDown
+          className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''
+            }`}
         />
       </div>
-      
+
       {isOpen && (
         <div className="absolute top-full left-0 right-0 z-50 bg-white border-2 border-red-400 border-t-0 rounded-b-lg shadow-lg max-h-48 overflow-y-auto opacity-100 visible transform translate-y-0 transition-all duration-200">
           {options.map((option, index) => {
             const isObject = typeof option === 'object';
             const label = isObject ? option.label : option;
             const description = isObject ? option.description : null;
-            
+
             return (
               <div
                 key={index}
@@ -96,9 +94,8 @@ type TopicCardProps = {
 
 const TopicCard: React.FC<TopicCardProps> = ({ topic, isSelected, onSelect }) => (
   <div
-    className={`p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 bg-white hover:border-red-400 hover:-translate-y-0.5 hover:shadow-lg ${
-      isSelected ? 'border-red-400 bg-red-50' : 'border-gray-200'
-    }`}
+    className={`p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 bg-white hover:border-red-400 hover:-translate-y-0.5 hover:shadow-lg ${isSelected ? 'border-red-400 bg-red-50' : 'border-gray-200'
+      }`}
     onClick={() => onSelect(topic)}
   >
     <div className="flex items-center gap-3 mb-2">
@@ -127,9 +124,8 @@ type DurationCardProps = {
 
 const DurationCard: React.FC<DurationCardProps> = ({ duration, isSelected, onSelect }) => (
   <div
-    className={`p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 bg-white relative hover:border-red-400 hover:-translate-y-0.5 ${
-      isSelected ? 'border-red-400 bg-red-50' : 'border-gray-200'
-    }`}
+    className={`p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 bg-white relative hover:border-red-400 hover:-translate-y-0.5 ${isSelected ? 'border-red-400 bg-red-50' : 'border-gray-200'
+      }`}
     onClick={() => onSelect(duration)}
   >
     {duration.recommended && (
@@ -264,30 +260,30 @@ const TrainingWizard: React.FC<TrainingWizardProps> = ({ isVisible, onClose, onG
         "Monitor patient responses and adjust interventions accordingly"
       ]
     ];
-    
+
     const randomIndex = Math.floor(Math.random() * objectiveTemplates.length);
     const objectives = objectiveTemplates[randomIndex];
     setSelections(prev => ({ ...prev, objectives }));
   };
 
-interface ValidateStepFn {
+  interface ValidateStepFn {
     (step: number): boolean;
-}
+  }
 
-const validateStep: ValidateStepFn = (step) => {
-    switch(step) {
-        case 1:
-            return selections.topic !== null && (selections.topic !== 'custom-topic' || selections.customTopic.trim().length > 0);
-        case 2:
-            return selections.role !== null && selections.discipline !== null;
-        case 3:
-            return selections.duration !== null;
-        case 4:
-            return selections.objectives.length > 0;
-        default:
-            return false;
+  const validateStep: ValidateStepFn = (step) => {
+    switch (step) {
+      case 1:
+        return selections.topic !== null && (selections.topic !== 'custom-topic' || selections.customTopic.trim().length > 0);
+      case 2:
+        return selections.role !== null && selections.discipline !== null;
+      case 3:
+        return selections.duration !== null;
+      case 4:
+        return selections.objectives.length > 0;
+      default:
+        return false;
     }
-};
+  };
 
   const nextStep = () => {
     if (currentStep < totalSteps) {
@@ -314,7 +310,7 @@ const validateStep: ValidateStepFn = (step) => {
       duration: selections.duration,
       objectives: selections.objectives
     };
-    
+
     onGenerateContent(config);
   };
 
@@ -325,62 +321,46 @@ const validateStep: ValidateStepFn = (step) => {
 
   return (
     <div className="fixed inset-0 z-50 flex">
-      {/* Background overlay */}
-      <div 
-        className="flex-1 bg-black bg-opacity-50 flex items-center justify-center cursor-pointer" 
-        onClick={onClose}
-      >
-        <div className="text-white text-center pointer-events-none">
-          <div className="text-2xl font-bold mb-2">PDF Training Generator</div>
-          <div className="text-lg opacity-90">Configure your training content using the wizard</div>
-        </div>
-      </div>
-      
+
       {/* Training Wizard Sidebar */}
-      <div className="w-96 h-screen bg-white shadow-2xl flex flex-col overflow-hidden">
-        
+      <div className="sidebar">
+
         {/* Header */}
-        <div className="bg-gradient-to-r from-red-400 to-red-500 text-white p-6 pb-4 relative">
+        <div className="sidebar-header">
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 w-8 h-8 bg-white bg-opacity-20 rounded-lg flex items-center justify-center hover:bg-opacity-30 transition-colors"
+            className="absolute top-4 right-4 w-8 h-8 text-white  bg-white bg-opacity-20 rounded-lg flex items-center justify-center hover:bg-opacity-30 transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
-          <div className="text-xl font-bold mb-1">PDF Training Generator</div>
-          <div className="text-sm opacity-90">Create personalized healthcare training PDFs</div>
-          <div className="mt-4 bg-white bg-opacity-20 h-1 rounded-full overflow-hidden">
-            <div 
-              className="bg-white h-full rounded-full transition-all duration-300"
-              style={{ width: `${progressWidth}%` }}
-            />
-          </div>
+          <div className="sidebar-title">Huddle Generator</div>
+          <div className="sidebar-subtitle">Create Personalized Huddle</div>
         </div>
 
         {/* Content */}
-        <div className="flex-1 p-6 overflow-y-auto">
-          
+        <div className="sidebar-content">
+
           {/* Step 1: Topic Selection */}
           {currentStep === 1 && (
             <div>
               <div className="text-lg font-semibold text-gray-900 mb-2">Select Training Topic</div>
               <div className="text-sm text-gray-600 mb-6">What subject do you want to create training for?</div>
-              
+
               <div className="grid grid-cols-1 gap-3 max-h-96 overflow-y-auto pr-2">
                 {topics.map(topic => (
                   <TopicCard
                     key={topic.id}
                     topic={topic}
                     isSelected={selections.topic === topic.id}
-                    onSelect={(topic) => setSelections(prev => ({ 
-                      ...prev, 
+                    onSelect={(topic) => setSelections(prev => ({
+                      ...prev,
                       topic: topic.id,
                       customTopic: topic.id === 'custom-topic' ? prev.customTopic : ''
                     }))}
                   />
                 ))}
               </div>
-              
+
               {selections.topic === 'custom-topic' && (
                 <input
                   type="text"
@@ -398,7 +378,7 @@ const validateStep: ValidateStepFn = (step) => {
             <div>
               <div className="text-lg font-semibold text-gray-900 mb-2">Define Your Audience</div>
               <div className="text-sm text-gray-600 mb-6">Who will be taking this training?</div>
-              
+
               <div className="space-y-5">
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">Role</label>
@@ -428,7 +408,7 @@ const validateStep: ValidateStepFn = (step) => {
             <div>
               <div className="text-lg font-semibold text-gray-900 mb-2">Choose Training Duration</div>
               <div className="text-sm text-gray-600 mb-6">How long should this training be?</div>
-              
+
               <div className="grid grid-cols-1 gap-3">
                 {durations.map(duration => (
                   <DurationCard
@@ -447,7 +427,7 @@ const validateStep: ValidateStepFn = (step) => {
             <div>
               <div className="text-lg font-semibold text-gray-900 mb-2">Review Learning Objectives</div>
               <div className="text-sm text-gray-600 mb-6">AI-generated learning objectives based on your selections</div>
-              
+
               <div className="bg-gray-50 rounded-xl p-5 mb-5">
                 <div className="text-base font-semibold text-gray-900 mb-4">After completing this training, learners will be able to:</div>
                 <ul className="space-y-3 mb-4">
@@ -469,33 +449,38 @@ const validateStep: ValidateStepFn = (step) => {
           )}
         </div>
 
+        <div className="mt-1 bg-white bg-opacity-20 h-1 rounded-full overflow-hidden">
+          <div
+            className="bg-red-400 h-full rounded-full transition-all duration-300"
+            style={{ width: `${progressWidth}%` }}
+          />
+        </div>
+
         {/* Navigation */}
         <div className="p-4 border-t border-gray-200 bg-gray-50 flex justify-between items-center">
           <button
             onClick={prevStep}
-            className={`px-5 py-3 rounded-lg text-sm font-semibold transition-colors ${
-              currentStep === 1 
-                ? 'invisible' 
+            className={`px-5 py-3 rounded-lg text-sm font-semibold transition-colors ${currentStep === 1
+                ? 'invisible'
                 : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
-            }`}
+              }`}
           >
             Previous
           </button>
-          
+
           <div className="text-xs text-gray-600">
             Step {currentStep} of {totalSteps}
           </div>
-          
+
           <button
             onClick={nextStep}
             disabled={!isStepValid}
-            className={`px-5 py-3 rounded-lg text-sm font-semibold transition-colors ${
-              isStepValid
+            className={`px-5 py-3 rounded-lg text-sm font-semibold transition-colors ${isStepValid
                 ? 'bg-red-400 text-white hover:bg-red-500'
                 : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-            }`}
+              }`}
           >
-            {currentStep === totalSteps ? 'Generate PDF' : 'Next Step'}
+            {currentStep === totalSteps ? 'Generate Huddle' : 'Next Step'}
           </button>
         </div>
       </div>
