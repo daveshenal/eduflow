@@ -22,7 +22,7 @@ type ConfigAction =
 const initialState: ConfigState = {
   userType: 'regular',
   mode: 'chatbot',
-  backendUrl: 'http://localhost:8000',
+  backendUrl: 'http://localhost:5000',
   providerId: '',
   isStreaming: false,
   responseTime: 0,

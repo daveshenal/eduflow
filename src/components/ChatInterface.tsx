@@ -94,28 +94,32 @@ const ChatInterface: React.FC = () => {
       await apiService.sendStreamingMessage(
         message,
         (fullContent, newChunk) => {
-          // Update the assistant message with the streaming content
           setMessages(prev => {
             const newMessages = [...prev];
-            const lastMessage = newMessages[newMessages.length - 1];
-            if (!lastMessage.isUser) {
-              lastMessage.content = fullContent;
+            const lastIndex = newMessages.length - 1;
+
+            if (lastIndex >= 0 && !newMessages[lastIndex].isUser) {
+              newMessages[lastIndex] = {
+                ...newMessages[lastIndex],
+                content: fullContent,
+              };
             }
+
             return newMessages;
           });
         },
         (error) => {
           console.error('Streaming error:', error);
           setError('Streaming error occurred. Please try again.');
+
           // Remove the empty assistant message on error
-          setMessages(prev => prev.slice(0, -1));
-        },
-        {
-          userType: state.userType,
-          mode: state.mode,
-          providerId: state.providerId,
+          setMessages(prev => {
+            const lastMessage = prev[prev.length - 1];
+            return lastMessage && !lastMessage.isUser ? prev.slice(0, -1) : prev;
+          });
         }
       );
+
 
       const endTime = Date.now();
       updateResponseTime(endTime - startTime);
@@ -268,7 +272,7 @@ const ChatInterface: React.FC = () => {
     { value: "15-minutes", label: "15 Minutes", description: "In-depth exploration", wordCount: "~1,875-2,250 words", icon: "🎓" }
   ];
 
-  
+
 
   return (
     <div className="app-container">
