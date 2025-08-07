@@ -224,7 +224,7 @@ const ChatInterface: React.FC = () => {
 
 
 
-  var currentStep = 2; // Assuming this is a constant for now, can be dynamic later
+  var currentStep = 1; // Assuming this is a constant for now, can be dynamic later
 
   // Duration Card Component
   type Duration = {
@@ -268,7 +268,7 @@ const ChatInterface: React.FC = () => {
     { value: "15-minutes", label: "15 Minutes", description: "In-depth exploration", wordCount: "~1,875-2,250 words", icon: "🎓" }
   ];
 
-
+  
 
   return (
     <div className="app-container">
@@ -468,8 +468,6 @@ const ChatInterface: React.FC = () => {
                   </div>
                 </div>
               )}
-
-
 
             </div>
             {/* Sticky Footer */}

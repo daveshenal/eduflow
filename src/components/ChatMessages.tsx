@@ -25,21 +25,15 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({ messages = [], error }) => 
     scrollToBottom();
   }, [messages]);
 
-  // Function to render message content as HTML if it contains HTML tags
+  // Function to render raw message content without any processing
   const renderMessageContent = (content: string, isUser: boolean) => {
     // Show typing indicator for empty assistant messages
     if (!content && !isUser) {
       return <TypingIndicator />;
     }
     
-    // Check if content contains HTML tags
-    const hasHTMLTags = /<[^>]*>/g.test(content);
-    
-    if (hasHTMLTags) {
-      return <div dangerouslySetInnerHTML={{ __html: content }} />;
-    } else {
-      return <div>{content}</div>;
-    }
+    // Always display content as raw text, preserving whitespace
+    return <pre style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{content}</pre>;
   };
 
   return (
