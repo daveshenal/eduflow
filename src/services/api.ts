@@ -42,83 +42,44 @@ class APIService {
   async sendStreamingMessage(
     message: string,
     onChunk: (fullContent: string, newChunk: string) => void,
-    onError: (error: string) => void,
-    config: { userType?: string; mode?: string; providerId?: string } = {}
+    onError: (error: string) => void
   ): Promise<string> {
     try {
-      const requestBody = {
-        message: message,
-        provider_id: config.providerId || '595959', // Use hardcoded fallback
-        mode: config.mode || 'chatbot',
-      };
-
-      // Debug logging
-      console.log('Request URL:', `${this.baseUrl}/chat-stream`);
-      console.log('Request body:', requestBody);
-      console.log('Provider ID:', config.providerId || '595959');
-      console.log('Mode:', config.mode);
-
-      // Use the same endpoint as your working JS version
-      const response = await fetch(`${this.baseUrl}/chat-stream`, {
+      const response = await fetch(`${this.baseUrl}/stream`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        // Match the request body structure from your working JS version
-        body: JSON.stringify(requestBody),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: message }),
       });
 
       if (!response.ok) {
-        // Try to get the error message from the response
-        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-        try {
-          const errorData = await response.text();
-          console.log('Server error response:', errorData);
-          if (errorData) {
-            errorMessage += ` - ${errorData}`;
-          }
-        } catch (e) {
-          console.log('Could not parse error response');
-        }
-        throw new Error(errorMessage);
+        const errorText = await response.text();
+        throw new Error(`HTTP ${response.status}: ${response.statusText} - ${errorText}`);
       }
 
-      const reader = response.body?.getReader();
-      if (!reader) {
-        throw new Error('No response body available');
-      }
+      if (!response.body) throw new Error('No response body');
 
+      const reader = response.body.getReader();
       const decoder = new TextDecoder();
-      let assistantContent = '';
+      let fullContent = '';
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
 
-        const chunk = decoder.decode(value);
-        const lines = chunk.split('\n');
-
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const data = line.slice(6);
-            if (data && !data.includes('[ERROR]')) {
-              assistantContent += data;
-              onChunk(assistantContent, data);
-            } else if (data.includes('[ERROR]')) {
-              onError(data);
-            }
-          }
-        }
+        const chunk = decoder.decode(value, { stream: true });
+        fullContent += chunk;
+        onChunk(fullContent, chunk);
       }
 
-      return assistantContent;
+      return fullContent;
+
     } catch (error) {
-      // Fix the error handling to avoid [object Object] logging
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      onError(errorMessage);
+      const errMsg = error instanceof Error ? error.message : String(error);
+      onError(errMsg);
       throw error;
     }
   }
+
 
   async clearSession(providerId?: string): Promise<APIResponse> {
     // Match the JS version's clear session endpoint with hardcoded fallback
@@ -382,7 +343,6 @@ class APIService {
     }
   }
 }
-
 
 
 export default APIService;

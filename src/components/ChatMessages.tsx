@@ -27,14 +27,24 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({ messages = [], error }) => 
 
   // Function to render raw message content without any processing
   const renderMessageContent = (content: string, isUser: boolean) => {
-    // Show typing indicator for empty assistant messages
     if (!content && !isUser) {
       return <TypingIndicator />;
     }
-    
-    // Always display content as raw text, preserving whitespace
-    return <pre style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{content}</pre>;
+
+    if (isUser) {
+      // For user messages, render as plain text safely
+      return content;
+    } else {
+      // For assistant messages, render HTML content
+      return (
+        <div
+          dangerouslySetInnerHTML={{ __html: content }}
+          style={{ whiteSpace: 'normal', margin: 0 }}
+        />
+      );
+    }
   };
+
 
   return (
     <div className="chat-messages">
