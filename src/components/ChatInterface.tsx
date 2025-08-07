@@ -93,7 +93,7 @@ const ChatInterface: React.FC = () => {
     try {
       await apiService.sendStreamingMessage(
         message,
-        (fullContent, newChunk) => {
+        (fullContent) => {
           setMessages(prev => {
             const newMessages = [...prev];
             const lastIndex = newMessages.length - 1;
