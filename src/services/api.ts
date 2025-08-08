@@ -42,13 +42,26 @@ class APIService {
   async sendStreamingMessage(
     message: string,
     onChunk: (fullContent: string, newChunk: string) => void,
-    onError: (error: string) => void
+    onError: (error: string) => void,
+    config: { userType?: string; mode?: string; providerId?: string } = {}
   ): Promise<string> {
     try {
+      const requestBody = {
+        message: message,
+        provider_id: config.providerId || '595959', // Use hardcoded fallback
+        mode: config.mode || 'chatbot',
+      };
+
+      // Debug logging
+      console.log('Request URL:', `${this.baseUrl}/chat-stream`);
+      console.log('Request body:', requestBody);
+      console.log('Provider ID:', config.providerId || '595959');
+      console.log('Mode:', config.mode);
+
       const response = await fetch(`${this.baseUrl}/stream`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: message }),
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {
