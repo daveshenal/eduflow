@@ -107,16 +107,16 @@ class APIService {
   ): Promise<string> {
     try {
       const requestBody = {
-        learning_focus: config.learningFocus,
+        learningFocus: config.learningFocus,
         topic: config.topic,
-        clinical_context: config.clinicalContext,
-        expected_outcomes: config.expectedOutcomes,
+        clinicalContext: config.clinicalContext,
+        expectedOutcomes: config.expectedOutcomes,
         role: config.role,
-        role_value: config.roleValue,
+        roleValue: config.roleValue,
         discipline: config.discipline,
-        discipline_value: config.disciplineValue,
+        disciplineValue: config.disciplineValue,
         duration: config.duration,
-        provider_id: config.providerId,
+        providerId: config.providerId,
       };
 
       const response = await fetch(`${this.baseUrl}/huddles/stream`, {
