@@ -3,7 +3,7 @@ import { APIResponse } from '../types';
 class APIService {
   private baseUrl: string;
 
-  constructor(baseUrl: string = 'http://localhost:8000') {
+  constructor(baseUrl: string) {
     this.baseUrl = baseUrl;
   }
 
@@ -39,26 +39,23 @@ class APIService {
     }
   }
 
-  async sendStreamingMessage(
-    message: string,
+  async sendChatMessage(
+    config: {
+      message: string;
+      userType: string;
+      providerId?: string;
+    },
     onChunk: (fullContent: string, newChunk: string) => void,
-    onError: (error: string) => void,
-    config: { userType?: string; mode?: string; providerId?: string } = {}
+    onError: (error: string) => void
   ): Promise<string> {
     try {
       const requestBody = {
-        message: message,
-        provider_id: config.providerId || '595959', // Use hardcoded fallback
-        mode: config.mode || 'chatbot',
+        message: config.message,
+        userType: config.userType,
+        providerId: config.providerId,
       };
 
-      // Debug logging
-      console.log('Request URL:', `${this.baseUrl}/chat-stream`);
-      console.log('Request body:', requestBody);
-      console.log('Provider ID:', config.providerId || '595959');
-      console.log('Mode:', config.mode);
-
-      const response = await fetch(`${this.baseUrl}/stream`, {
+      const response = await fetch(`${this.baseUrl}/chat/stream`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestBody),
@@ -85,7 +82,6 @@ class APIService {
       }
 
       return fullContent;
-
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : String(error);
       onError(errMsg);
@@ -93,33 +89,78 @@ class APIService {
     }
   }
 
+  async sendHuddleStream(
+    config: {
+      learningFocus: string;
+      topic: string;
+      clinicalContext: string;
+      expectedOutcomes: string;
+      role: string;
+      roleValue: string;
+      discipline: string;
+      disciplineValue: string;
+      duration: string;
+      providerId?: string;
+    },
+    onChunk: (fullContent: string, newChunk: string) => void,
+    onError: (error: string) => void
+  ): Promise<string> {
+    try {
+      const requestBody = {
+        learning_focus: config.learningFocus,
+        topic: config.topic,
+        clinical_context: config.clinicalContext,
+        expected_outcomes: config.expectedOutcomes,
+        role: config.role,
+        role_value: config.roleValue,
+        discipline: config.discipline,
+        discipline_value: config.disciplineValue,
+        duration: config.duration,
+        provider_id: config.providerId,
+      };
+
+      const response = await fetch(`${this.baseUrl}/huddles/stream`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`HTTP ${response.status}: ${response.statusText} - ${errorText}`);
+      }
+
+      if (!response.body) throw new Error('No response body');
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let fullContent = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        fullContent += chunk;
+        onChunk(fullContent, chunk);
+      }
+
+      return fullContent;
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      onError(errMsg);
+      throw error;
+    }
+  }
 
   async clearSession(providerId?: string): Promise<APIResponse> {
     // Match the JS version's clear session endpoint with hardcoded fallback
-    const providerIdToUse = providerId || '595959';
+    const providerIdToUse = providerId;
     const endpoint = `/clear-session/${providerIdToUse}`;
 
     return this.makeRequest(endpoint, {
       method: 'DELETE',
     });
-  }
-
-  async uploadFile(file: File, providerId?: string): Promise<Response> {
-    const formData = new FormData();
-    formData.append('file', file);
-    // Use hardcoded fallback for provider_id
-    formData.append('provider_id', providerId || '595959');
-
-    const response = await fetch(`${this.baseUrl}/upload`, {
-      method: 'POST',
-      body: formData,
-    });
-
-    if (!response.ok) {
-      throw new Error(`Upload failed: ${response.statusText}`);
-    }
-
-    return response;
   }
 
   async uploadDocuments(
@@ -131,6 +172,7 @@ class APIService {
       globalFederal?: string;
       globalState?: string;
       providerCategory?: string;
+      providerId?: string;
     },
     onProgress?: (progress: { loaded: number; total: number; percentage: number }) => void
   ): Promise<APIResponse> {
@@ -146,6 +188,7 @@ class APIService {
     if (config.globalFederal) formData.append('global_federal', config.globalFederal);
     if (config.globalState) formData.append('global_state', config.globalState);
     if (config.providerCategory) formData.append('provider_category', config.providerCategory);
+    if (config.providerId) formData.append('provider_id', config.providerId);
 
     try {
       const xhr = new XMLHttpRequest();
@@ -231,131 +274,6 @@ class APIService {
       method: 'DELETE',
     });
   }
-
-
-  async generateTrainingPDF(config: {
-    topic: string;
-    role: string;
-    discipline: string;
-    duration: string;
-    objectives: string[];
-    userType: string;
-    providerId: string;
-  }): Promise<{ success: boolean; pdfUrl?: string; error?: string }> {
-    try {
-      const response = await fetch(`${this.baseUrl}/api/generate-training-pdf`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...config,
-          timestamp: new Date().toISOString(),
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-
-      if (data.success) {
-        return {
-          success: true,
-          pdfUrl: data.pdfUrl || data.downloadUrl,
-        };
-      } else {
-        return {
-          success: false,
-          error: data.error || 'Unknown error occurred',
-        };
-      }
-    } catch (error) {
-      console.error('Error generating PDF:', error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Network error occurred',
-      };
-    }
-  }
-
-  // Alternative method if you want to handle streaming PDF generation
-  async generateTrainingPDFStream(
-    config: {
-      topic: string;
-      role: string;
-      discipline: string;
-      duration: string;
-      objectives: string[];
-      userType: string;
-      providerId: string;
-    },
-    onProgress: (progress: { stage: string; percentage: number }) => void,
-    onComplete: (result: { success: boolean; pdfUrl?: string; error?: string }) => void
-  ): Promise<void> {
-    try {
-      const response = await fetch(`${this.baseUrl}/api/generate-training-pdf-stream`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...config,
-          timestamp: new Date().toISOString(),
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const reader = response.body?.getReader();
-      if (!reader) {
-        throw new Error('No response body');
-      }
-
-      const decoder = new TextDecoder();
-      let buffer = '';
-
-      while (true) {
-        const { done, value } = await reader.read();
-
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
-
-        for (const line of lines) {
-          if (line.trim() === '') continue;
-
-          try {
-            const data = JSON.parse(line);
-
-            if (data.type === 'progress') {
-              onProgress(data.data);
-            } else if (data.type === 'complete') {
-              onComplete(data.data);
-              return;
-            } else if (data.type === 'error') {
-              onComplete({ success: false, error: data.error });
-              return;
-            }
-          } catch (parseError) {
-            console.warn('Failed to parse streaming response:', line);
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Error in streaming PDF generation:', error);
-      onComplete({
-        success: false,
-        error: error instanceof Error ? error.message : 'Network error occurred',
-      });
-    }
-  }
 }
-
 
 export default APIService;

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import APIService from '../services/api';
 import Dropdown from './Dropdown';
 import { DropdownOption, DocumentUploadConfig, UploadProgress } from '../types';
+import { useConfig } from '../contexts/ConfigContext';
 
 interface DocumentUploadProps {
   onBack: () => void;
@@ -32,11 +33,12 @@ const globalFederalOptions: DropdownOption[] = [
 
 const providerCategoryOptions: DropdownOption[] = [
   { value: 'accreditations', label: 'Accreditations' },
-  { value: 'clinical', label: 'Clinical Protocols' },
-  { value: 'hr', label: 'HR Policies' },
+  { value: 'clinical-protocols', label: 'Clinical Protocols' },
+  { value: 'hr-policies', label: 'HR Policies' },
 ];
 
 const DocumentUpload: React.FC<DocumentUploadProps> = ({ onBack, apiService }) => {
+  const { state } = useConfig();
   const [config, setConfig] = useState<DocumentUploadConfig>({
     indexType: 'global',
   });
@@ -45,13 +47,19 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({ onBack, apiService }) =
   const [uploadStatus, setUploadStatus] = useState<string>('');
   const [isUploading, setIsUploading] = useState(false);
 
-  const isUploadReady = () => {
+  const isConfigReady = () => {
     if (config.indexType === 'global') {
-      return config.globalCategory && selectedFiles.length > 0;
-    } else {
-      return config.providerCategory && selectedFiles.length > 0;
+      if (!config.globalCategory) return false;
+      if (config.globalCategory === 'accreditations') return !!config.globalAccreditation;
+      if (config.globalCategory === 'federal') return !!config.globalFederal;
+      if (config.globalCategory === 'state') return !!config.globalState;
+      return true;
     }
+    // provider
+    return !!config.providerCategory;
   };
+
+  const isUploadReady = () => isConfigReady() && selectedFiles.length > 0;
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
@@ -74,6 +82,7 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({ onBack, apiService }) =
           globalFederal: config.globalFederal,
           globalState: config.globalState,
           providerCategory: config.providerCategory,
+          providerId: state.providerId,
         },
         (progress) => {
           setUploadProgress(progress);
@@ -201,11 +210,11 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({ onBack, apiService }) =
         {/* File Upload Section */}
         <div className="config-section">
           <div className="config-section-title">Document Upload</div>
-          <div className={`file-upload-area ${!isUploadReady() ? 'disabled' : ''}`}>
+          <div className={`file-upload-area ${!isConfigReady() ? 'disabled' : ''}`}>
             <div className="file-upload-text">Select files to upload</div>
             <label
               htmlFor="fileInput"
-              className={`file-upload-button ${!isUploadReady() ? 'disabled' : ''}`}
+              className={`file-upload-button ${!isConfigReady() ? 'disabled' : ''}`}
             >
               Choose Files
             </label>
@@ -215,7 +224,7 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({ onBack, apiService }) =
               className="file-upload-input"
               multiple
               accept=".pdf,.doc,.docx,.txt"
-              disabled={!isUploadReady()}
+              disabled={!isConfigReady()}
               onChange={handleFileSelect}
             />
             <div className="selected-files">
