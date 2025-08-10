@@ -6,7 +6,7 @@ import ChatMessages from './ChatMessages';
 import ChatInput from './ChatInput';
 import DocumentUpload from './DocumentUpload';
 import PromptEditor from './PromptsEditor';
-// import TrainingWizard from './HuddleInfo'; // Import the new component
+import TrainingWizard from './HuddleInfo';
 import { DropdownOption, ChatMessage, UserType, ApplicationMode } from '../types';
 
 const userTypeOptions: DropdownOption[] = [
@@ -18,27 +18,8 @@ const userTypeOptions: DropdownOption[] = [
 const modeOptions: DropdownOption[] = [
   { value: 'chatbot', label: 'Chatbot', active: true },
   { value: 'quiz', label: 'Quiz Generator' },
-  { value: 'pdf', label: 'PDF Generator' },
+  { value: 'pdf', label: 'Huddle Generator' },
   { value: 'voice', label: 'Voiceover' },
-];
-
-const roleOptions: DropdownOption[] = [
-  { value: "frontline-staff", label: "Frontline Staff", active: true },
-  { value: "clinical-manager", label: "Clinical Manager" },
-  { value: "educator", label: "Educator" },
-  { value: "director", label: "Director" }
-];
-
-const disciplineOptions: DropdownOption[] = [
-  { value: "rn", label: "RN - Registered Nurse", active: true },
-  { value: "lpn", label: "LPN - Licensed Practical Nurse" },
-  { value: "pt", label: "PT - Physical Therapist" },
-  { value: "pta", label: "PTA - Physical Therapist Assistant" },
-  { value: "ot", label: "OT - Occupational Therapist" },
-  { value: "ota", label: "OTA - Occupational Therapist Assistant" },
-  { value: "slp", label: "SLP - Speech-Language Pathologist" },
-  { value: "msw", label: "MSW - Medical Social Worker" },
-  { value: "hha", label: "HHA - Home Health Aide" }
 ];
 
 // Main Chat Interface Component
@@ -46,7 +27,6 @@ const ChatInterface: React.FC = () => {
   const { state, setUserType, setMode, setBackendUrl, setProviderId, setStreaming, updateResponseTime } = useConfig();
   const [showDocumentUpload, setShowDocumentUpload] = useState(false);
   const [showPromptEditor, setShowPromptEditor] = useState(false);
-  // const [showTrainingWizard, setShowTrainingWizard] = useState(false); // Add this state
   const [apiService] = useState(() => new APIService(state.backendUrl));
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>('');
@@ -59,6 +39,12 @@ const ChatInterface: React.FC = () => {
       timestamp: new Date(),
     },
   ]);
+  const [showHuddleWizard, setShowHuddleWizard] = useState(false);
+
+  useEffect(() => {
+    // Ensure wizard is closed when switching modes
+    setShowHuddleWizard(false);
+  }, [state.mode]);
 
   useEffect(() => {
     apiService.setBaseUrl(state.backendUrl);
@@ -91,27 +77,28 @@ const ChatInterface: React.FC = () => {
     setMessages(prev => [...prev, userMessage, assistantMessage]);
 
     try {
-      await apiService.sendStreamingMessage(
-        message,
+      await apiService.sendChatMessage(
+        {
+          message: message,
+          userType: state.userType,
+          providerId: state.providerId,
+        },
         (fullContent) => {
           setMessages(prev => {
             const newMessages = [...prev];
             const lastIndex = newMessages.length - 1;
-
             if (lastIndex >= 0 && !newMessages[lastIndex].isUser) {
               newMessages[lastIndex] = {
                 ...newMessages[lastIndex],
                 content: fullContent,
               };
             }
-
             return newMessages;
           });
         },
-        (error) => {
-          console.error('Streaming error:', error);
-          setError('Streaming error occurred. Please try again.');
-
+        (err) => {
+          console.error('Huddle streaming error:', err);
+          setError('Huddle generation failed. Please try again.');
           // Remove the empty assistant message on error
           setMessages(prev => {
             const lastMessage = prev[prev.length - 1];
@@ -119,16 +106,11 @@ const ChatInterface: React.FC = () => {
           });
         }
       );
-
-
-      const endTime = Date.now();
-      updateResponseTime(endTime - startTime);
-    } catch (error) {
-      console.error('Error sending message:', error);
-      setError('Failed to send message. Please check your connection and try again.');
-      // Remove the empty assistant message on error
-      setMessages(prev => prev.slice(0, -1));
+    } catch (e) {
+      console.error('Huddle generation error:', e);
     } finally {
+      // Update response time metric regardless of success or error
+      updateResponseTime(Date.now() - startTime);
       setStreaming(false);
       setIsLoading(false);
     }
@@ -164,6 +146,14 @@ const ChatInterface: React.FC = () => {
     }
   };
 
+  const handleUserTypeChange = (newValue: UserType) => {
+    setUserType(newValue);
+  };
+
+  const handleModeChange = (newValue: ApplicationMode) => {
+    setMode(newValue);
+  };
+
   // Show prompt editor
   if (showPromptEditor) {
     return <PromptEditor onBack={() => setShowPromptEditor(false)} />;
@@ -179,104 +169,15 @@ const ChatInterface: React.FC = () => {
         />
         <div className="chat-container">
           <div className="chat-header">
-            <div className="chat-title">Document Upload</div>
+            <div className="chat-title">Document Manager - Update Knowledgebase</div>
           </div>
         </div>
       </div>
     );
   }
 
-  const handleUserTypeChange = (newValue: UserType) => {
-    setUserType(newValue);
-
-    switch (newValue) {
-      case "developer":
-        console.log("Developer user type selected");
-        break;
-      case "educator":
-        console.log("Educator (Agency Level) user type selected");
-        break;
-      case "regular":
-        console.log("Regular User type selected");
-        break;
-      default:
-        console.log(`Unknown user type: ${newValue}`);
-    }
-  };
-
-  const handleModeChange = (newValue: ApplicationMode) => {
-    setMode(newValue);
-
-    switch (newValue) {
-      case "chatbot":
-        console.log("Chatbot mode selected");
-        break;
-      case "quiz":
-        console.log("Quiz generator mode selected");
-        break;
-      case "pdf":
-        console.log("PDF generator mode selected");
-        break;
-      case "voice":
-        console.log("Voiceover mode selected");
-        break;
-      default:
-        console.log(`Unknown mode: ${newValue}`);
-    }
-  }
-
-
-
-
-  var currentStep = 1; // Assuming this is a constant for now, can be dynamic later
-
-  // Duration Card Component
-  type Duration = {
-    value: string;
-    label: string;
-    description: string;
-    wordCount: string;
-    icon: string;
-    recommended?: boolean;
-  };
-
-  type DurationCardProps = {
-    duration: Duration;
-    isSelected: boolean;
-    onSelect: (duration: Duration) => void;
-  };
-
-  const DurationCard: React.FC<DurationCardProps> = ({ duration, isSelected, onSelect }) => (
-    <div
-      className={`p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 bg-white relative hover:border-red-400 ${isSelected ? 'border-red-400 bg-red-50' : 'border-gray-200'
-        }`}
-      onClick={() => onSelect(duration)}
-    >
-      {duration.recommended && (
-        <div className="absolute -top-2 right-3 bg-red-400 text-white text-xs font-semibold px-2 py-1 rounded">
-          Recommended
-        </div>
-      )}
-      <div className="flex items-center gap-3 mb-2">
-        <span className="text-xl">{duration.icon}</span>
-        <span className="text-base font-semibold text-gray-900">{duration.label}</span>
-      </div>
-      <div className="text-xs text-gray-600 mb-1">{duration.description}</div>
-      <div className="text-xs text-gray-600">{duration.wordCount}</div>
-    </div>
-  );
-
-  const durations = [
-    { value: "5-minutes", label: "5 Minutes", description: "Quick, focused learning", wordCount: "~625-750 words", icon: "⚡" },
-    { value: "10-minutes", label: "10 Minutes", description: "Comprehensive coverage", wordCount: "~1,250-1,500 words", icon: "📚", recommended: true },
-    { value: "15-minutes", label: "15 Minutes", description: "In-depth exploration", wordCount: "~1,875-2,250 words", icon: "🎓" }
-  ];
-
-
-
   return (
     <div className="app-container">
-
       {/* Main Sidebar */}
       <div className="sidebar">
         <div className="sidebar-header">
@@ -373,132 +274,96 @@ const ChatInterface: React.FC = () => {
           </div>
         </div>
 
-        {/* MODIFY THIS: Show different content based on mode */}
         {state.mode === 'pdf' ? (
-          <div className="huddles">
-            {/* Scrollable Main Content */}
-            <div className='huddles-body flex flex-col min-h-screen' style={{ flex: 1, overflowY: 'auto' }}>
-              {/* Step 1: Topic Inputs */}
-              {currentStep === 1 && (
-                <div className="huddle-inputs-1 mr-20">
+          <>
+            {showHuddleWizard ? (
+              <div className="huddle-pane">
+                <TrainingWizard
+                  onGenerateContent={async (cfg) => {
+                    const providerId = state.providerId || '595959';
+                    setIsLoading(true);
+                    setError('');
+                    const startTime = Date.now();
+                    setStreaming(true);
+                    setShowHuddleWizard(false);
 
-                  <div className='config-section'>
-                    <div className="huddle-section-title">Learning Focus</div>
-                    <div className="config-group">
-                      <p className="huddle-label">What specific skill or knowledge should learners gain?</p>
-                      <input
-                        type="text"
-                        className="config-input"
-                        id="learningFocus"
-                        placeholder={'Clinical Assessment - Patient evaluation and monitoring skills'}
-                      // value={state.providerId || "Clinical Assessment - Patient evaluation and monitoring skills"}
-                      />
-                    </div>
-                  </div>
-                  <div className='config-section'>
-                    <div className="huddle-section-title">Specific Topic</div>
-                    <div className="config-group">
-                      <p className="huddle-label">What is the main subject for this training?</p>
-                      <input
-                        type="text"
-                        className="config-input"
-                        id="editPromptDescription"
-                        // value={state.providerId || "Comprehensive nursing assessment techniques"}
-                        placeholder={"Comprehensive nursing assessment techniques"}
-                      />
-                    </div>
-                  </div>
+                    // Add user summary message then assistant placeholder for streaming
+                    const timestamp = new Date();
+                    const userSummary = `Generate Huddle with\n- Learning Focus: ${cfg.learningFocus}\n- Topic: ${cfg.topic}\n- Clinical Context: ${cfg.clinicalContext}\n- Expected Outcomes: ${cfg.expectedOutcomes}\n- Role: ${cfg.role} (${cfg.roleValue})\n- Discipline: ${cfg.discipline} (${cfg.disciplineValue})\n- Duration: ${cfg.duration}\n- Provider ID: ${providerId}`;
+                    const userMsg: ChatMessage = {
+                      id: `${Date.now()}`,
+                      content: userSummary,
+                      isUser: true,
+                      timestamp,
+                    };
+                    const assistantMsg: ChatMessage = {
+                      id: `${Date.now() + 1}`,
+                      content: '',
+                      isUser: false,
+                      timestamp,
+                    };
+                    setMessages(prev => [...prev, userMsg, assistantMsg]);
 
-                  <div className='config-section'>
-                    <div className="huddle-section-title">Expected Learning Outcomes</div>
-                    <div className="form-group">
-                      <p className="huddle-label">After this training, staff should be able to:</p>
-                      <textarea
-                        className="config-input"
-                        id="editPromptDescription"
-                        // value={state.backendUrl ||``}
-                        placeholder={
-                          `- Patients recently discharged from hospital
-- Patients with multiple risk factors
-- Multiple comorbidities and ongoing management
-- Initial assessment and care planning
-- High fall risk, medication issues, etc.
-- Communication, compliance, or support issues`}
-                        style={{ height: '120px', resize: "none" }}
-                      />
-                    </div>
-                  </div>
-                </div>)}
-
-              {/* Step 2: Target Audiance and Time */}
-              {currentStep === 2 && (
-                <div className="huddle-inputs-1 mr-20">
-
-                  <div className="config-section">
-                    <div className="huddle-section-title">Define Your Audience - Who will be taking this training?</div>
-                    <div className="form-row" style={{ display: 'flex', gap: '1rem' }}>
-                      <div className="config-group" style={{ flex: 1, width: '30%' }}>
-                        <p className="huddle-label">Select Role</p>
-                        <Dropdown
-                          options={roleOptions}
-                          value={state.mode}
-                          onChange={handleModeChange}
-                        />
-                      </div>
-                      <div className="config-group" style={{ flex: 1, width: '30%' }}>
-                        <p className="huddle-label">Select Discipline</p>
-                        <Dropdown
-                          options={disciplineOptions}
-                          value={state.mode}
-                          onChange={handleModeChange}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                  <div>
-                    <div className="huddle-section-title">Choose Training Duration</div>
-                    <div className="huddle-label">How long should this training be?</div>
-
-                    <div className="grid grid-cols-3 gap-3">
-                      {durations.map(duration => (
-                        <DurationCard
-                          key={duration.value}
-                          duration={duration}
-                          isSelected={false} // Replace with your selection logic if needed
-                          onSelect={() => { }} // Replace with your handler function if needed
-                        />
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-            </div>
-            {/* Sticky Footer */}
-            <div className="main-footer border-t border-gray-300 bg-white sticky bottom-0">
-              <div className=" bg-white bg-opacity-20 h-1.5 rounded-full overflow-hidden">
-                <div
-                  className="bg-red-400 h-full rounded-full transition-all duration-300"
-                  style={{ width: `70%` }}
+                    try {
+                      await apiService.sendHuddleStream(
+                        {
+                          learningFocus: cfg.learningFocus,
+                          topic: cfg.topic,
+                          clinicalContext: cfg.clinicalContext,
+                          expectedOutcomes: cfg.expectedOutcomes,
+                          role: cfg.role,
+                          roleValue: cfg.roleValue,
+                          discipline: cfg.discipline,
+                          disciplineValue: cfg.disciplineValue,
+                          duration: cfg.duration,
+                          providerId,
+                        },
+                        (fullContent) => {
+                          setMessages(prev => {
+                            const newMessages = [...prev];
+                            const lastIndex = newMessages.length - 1;
+                            if (lastIndex >= 0 && !newMessages[lastIndex].isUser) {
+                              newMessages[lastIndex] = {
+                                ...newMessages[lastIndex],
+                                content: fullContent,
+                              };
+                            }
+                            return newMessages;
+                          });
+                        },
+                        (err) => {
+                          console.error('Huddle streaming error:', err);
+                          setError('Huddle generation failed. Please try again.');
+                          // Remove the empty assistant message on error
+                          setMessages(prev => {
+                            const lastMessage = prev[prev.length - 1];
+                            return lastMessage && !lastMessage.isUser ? prev.slice(0, -1) : prev;
+                          });
+                        }
+                      );
+                    } catch (e) {
+                      console.error('Huddle generation error:', e);
+                    } finally {
+                      // Update response time metric regardless of success or error
+                      updateResponseTime(Date.now() - startTime);
+                      setStreaming(false);
+                      setIsLoading(false);
+                    }
+                  }}
                 />
               </div>
-              <div className="flex justify-center items-center space-x-10 mt-3">
-                <button className="px-5 py-3 rounded-lg text-sm font-semibold transition-colors">
-                  Previous
-                </button>
+            ) : (
+              <ChatMessages messages={messages} error={error} />
+            )}
 
-                <div className="text-xs text-gray-600">
-                  Step {1} of {4}
-                </div>
-
-                <button className="px-5 py-3 rounded-lg text-sm font-semibold transition-colors">
-                  Next Step
-                </button>
-              </div>
-            </div>
-          </div>
-
-
+            <button
+              className="fixed bottom-6 right-6 bg-red-400 hover:bg-red-500 text-white rounded-full shadow-lg px-5 py-3 font-semibold"
+              onClick={() => setShowHuddleWizard(prev => !prev)}
+              title={showHuddleWizard ? 'Back to Messages' : 'Open Huddle Generator'}
+            >
+              {showHuddleWizard ? 'Cancel' : '+ New Huddle'}
+            </button>
+          </>
         ) : (
           <>
             <ChatMessages messages={messages} error={error} />

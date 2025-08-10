@@ -20,10 +20,10 @@ type ConfigAction =
   | { type: 'LOAD_SETTINGS'; payload: ConfigSettings };
 
 const initialState: ConfigState = {
-  userType: 'regular',
+  userType: 'developer',
   mode: 'chatbot',
-  backendUrl: 'http://localhost:8000',
-  providerId: '',
+  backendUrl: 'http://localhost:8000', // 'https://hoprag-backend-dev.mangostone-63a7804a.centralus.azurecontainerapps.io',
+  providerId: '595959',
   isStreaming: false,
   responseTime: 0,
 };
@@ -43,8 +43,8 @@ const configReducer = (state: ConfigState, action: ConfigAction): ConfigState =>
     case 'UPDATE_RESPONSE_TIME':
       return { ...state, responseTime: action.payload };
     case 'LOAD_SETTINGS':
-      return { 
-        ...state, 
+      return {
+        ...state,
         userType: action.payload.userType as UserType,
         mode: action.payload.mode as ApplicationMode,
         backendUrl: action.payload.backendUrl,
@@ -103,10 +103,10 @@ export const ConfigProvider: React.FC<ConfigProviderProps> = ({ children }) => {
     dispatch({ type: 'SET_STREAMING', payload: streaming });
   };
 
-const updateResponseTime = (time: number) => {
-  const timeInSeconds = +(time / 1000).toFixed(1);
-  dispatch({ type: 'UPDATE_RESPONSE_TIME', payload: timeInSeconds });
-};
+  const updateResponseTime = (time: number) => {
+    const timeInSeconds = +(time / 1000).toFixed(1);
+    dispatch({ type: 'UPDATE_RESPONSE_TIME', payload: timeInSeconds });
+  };
 
   const loadSettings = (settings: ConfigSettings) => {
     dispatch({ type: 'LOAD_SETTINGS', payload: settings });
