@@ -163,6 +163,17 @@ class APIService {
     });
   }
 
+  async generateVoiceover(payload: {
+    huddleHtml: string;
+    tone?: string;
+    paceWpm?: number;
+  }): Promise<APIResponse> {
+    return this.makeRequest('/huddles/voiceover', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  }
+
   async uploadDocuments(
     files: File[],
     config: {

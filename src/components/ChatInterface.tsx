@@ -266,7 +266,7 @@ const ChatInterface: React.FC = () => {
       <div className="chat-container">
         <div className="chat-header">
           <div className="chat-title">
-            {state.mode === 'pdf' ? 'Huddle Generator' : 'RAG System Testing Interface'}
+            {state.mode === 'pdf' ? 'Huddle Generator' : state.mode === 'voice' ? 'Voiceover' : 'RAG System Testing Interface'}
           </div>
           <div className="metric">
             <span>⚡</span>
@@ -362,6 +362,57 @@ const ChatInterface: React.FC = () => {
               title={showHuddleWizard ? 'Back to Messages' : 'Open Huddle Generator'}
             >
               {showHuddleWizard ? 'Cancel' : '+ New Huddle'}
+            </button>
+          </>
+        ) : state.mode === 'voice' ? (
+          <>
+            <ChatMessages messages={messages} error={error} />
+            {/* No ChatInput in Voiceover mode */}
+            <button
+              className="fixed bottom-6 right-6 bg-red-400 hover:bg-red-500 text-white rounded-full shadow-lg px-5 py-3 font-semibold"
+              onClick={async () => {
+                if (state.isStreaming || isLoading) return;
+                setIsLoading(true);
+                setError('');
+                const timestamp = new Date();
+                try {
+                  // find last assistant message as Huddle HTML
+                  const lastAssistant = [...messages].reverse().find(m => !m.isUser && m.content?.trim());
+                  if (!lastAssistant) {
+                    setError('No assistant message found to convert. Generate a Huddle first.');
+                    return;
+                  }
+
+                  // insert placeholder message for voiceover result
+                  const voicePlaceholderId = `${Date.now()}`;
+                  setMessages(prev => ([...prev, {
+                    id: voicePlaceholderId,
+                    content: '',
+                    isUser: false,
+                    timestamp,
+                  }]));
+
+                  const res = await apiService.generateVoiceover({
+                    huddleHtml: lastAssistant.content,
+                  });
+                  if (!res.success) {
+                    setError(res.error || 'Voiceover generation failed');
+                    // remove placeholder
+                    setMessages(prev => prev.filter(m => m.id !== voicePlaceholderId));
+                    return;
+                  }
+                  const script: string = res.data?.script || '';
+                  setMessages(prev => prev.map(m => m.id === voicePlaceholderId ? { ...m, content: script } : m));
+                } catch (e) {
+                  console.error('Voiceover generation error', e);
+                  setError('Voiceover generation failed.');
+                } finally {
+                  setIsLoading(false);
+                }
+              }}
+              title={'+ Voiceover'}
+            >
+              + Voiceover
             </button>
           </>
         ) : (
