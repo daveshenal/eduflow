@@ -22,8 +22,8 @@ type DurationCardProps = {
 const DurationCard: React.FC<DurationCardProps> = ({ duration, isSelected, onSelect }) => (
   <div
     className={`
-      p-4 mt-4 border-2 rounded-xl transition-all duration-200 bg-white relative
-      ${duration.locked ? 'cursor-not-allowed opacity-50 border-gray-300' : 'cursor-pointer hover:border-red-400'}
+      p-4 mt-3 border-2 rounded-xl transition-all duration-200 bg-white relative
+      ${duration.locked ? 'cursor-not-allowed border-gray-200' : 'cursor-pointer hover:border-red-400'}
       ${isSelected && !duration.locked ? 'border-red-400 bg-red-50' : 'border-gray-200'}
     `}
     onClick={() => {
@@ -38,8 +38,8 @@ const DurationCard: React.FC<DurationCardProps> = ({ duration, isSelected, onSel
       </div>
     )}
     {duration.locked && (
-      <div className="absolute inset-0 bg-white bg-opacity-50 flex items-center justify-center font-semibold text-sm rounded-xl">
-        Locked
+      <div className="absolute inset-0 bg-white bg-opacity-70 flex items-center justify-center font-semibold text-2xl rounded-xl">
+        🔒
       </div>
     )}
     <div className="flex items-center gap-3 mb-2">
@@ -177,7 +177,7 @@ const TrainingWizard: React.FC<TrainingWizardProps> = ({ onGenerateContent, onCa
           <div className="huddle-inputs-1 mr-20">
             {/* Learning Focus */}
             <div className='config-section'>
-              <div className="huddle-section-title">Learning Focus</div>
+              <div className="huddle-section-title">🧠 Learning Focus</div>
               <div className="config-group">
                 <p className="huddle-label">What specific skill or knowledge should learners gain?</p>
                 <input
@@ -193,7 +193,7 @@ const TrainingWizard: React.FC<TrainingWizardProps> = ({ onGenerateContent, onCa
 
             {/* Specific Topic */}
             <div className='config-section'>
-              <div className="huddle-section-title">Specific Topic</div>
+              <div className="huddle-section-title">📌 Specific Topic</div>
               <div className="config-group">
                 <p className="huddle-label">What is the main subject for this training?</p>
                 <input
@@ -209,7 +209,7 @@ const TrainingWizard: React.FC<TrainingWizardProps> = ({ onGenerateContent, onCa
 
             {/* Clinical Context */}
             <div className='config-section'>
-              <div className="huddle-section-title">Clinical Context</div>
+              <div className="huddle-section-title">🏥 Clinical Context</div>
               <div className="form-group">
                 <p className="huddle-label">What specific patient scenario or situation should be emphasized?</p>
                 <textarea
@@ -228,7 +228,7 @@ const TrainingWizard: React.FC<TrainingWizardProps> = ({ onGenerateContent, onCa
         {currentStep === 2 && (
           <div className="huddle-inputs-1 mr-20">
             <div className="config-section">
-              <div className="huddle-section-title">Define Your Audience - Who will be taking this training?</div>
+              <div className="huddle-section-title">🎯 Define Your Audience - Who will be taking this training?</div>
               <div className="form-row" style={{ display: 'flex', gap: '1rem' }}>
                 <div className="config-group" style={{ flex: 1, width: '30%' }}>
                   <p className="huddle-label">Select Role</p>
@@ -275,7 +275,7 @@ const TrainingWizard: React.FC<TrainingWizardProps> = ({ onGenerateContent, onCa
 
             {/* Expected Learning Outcomes */}
             <div className='config-section'>
-              <div className="huddle-section-title">Expected Learning Outcomes</div>
+              <div className="huddle-section-title">✅ Expected Learning Outcomes</div>
               <div className="form-group">
                 <p className="huddle-label">After this training, staff should be able to:</p>
                 <textarea
@@ -294,7 +294,7 @@ const TrainingWizard: React.FC<TrainingWizardProps> = ({ onGenerateContent, onCa
         {currentStep === 3 && (
           <div className="huddle-inputs-1 mr-20">
             <div className="config-section">
-              <div className="huddle-section-title">Choose Training Duration</div>
+              <div className="huddle-section-title">⏳ Choose Training Duration</div>
               <div className="huddle-label">How long should this training be?</div>
               <div className="grid grid-cols-3 gap-3">
                 {durations.map((d) => (
@@ -306,8 +306,8 @@ const TrainingWizard: React.FC<TrainingWizardProps> = ({ onGenerateContent, onCa
                   />
                 ))}
               </div>
-              <div className="config-group mt-6">
-                <div className="huddle-section-title">Number of Huddles</div>
+              <div className="config-group mt-8">
+                <div className="huddle-section-title">🔢 Number of Huddles</div>
                 <div className="huddle-label">Select how many huddles to generate (1–10)</div>
                 <div className='w-1/4'>
                   <input
