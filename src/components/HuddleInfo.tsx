@@ -10,6 +10,7 @@ type Duration = {
   wordCount: string;
   icon: string;
   recommended?: boolean;
+  locked?: boolean;
 };
 
 type DurationCardProps = {
@@ -20,12 +21,25 @@ type DurationCardProps = {
 
 const DurationCard: React.FC<DurationCardProps> = ({ duration, isSelected, onSelect }) => (
   <div
-    className={`p-4 mt-4 border-2 rounded-xl cursor-pointer transition-all duration-200 bg-white relative hover:border-red-400 ${isSelected ? 'border-red-400 bg-red-50' : 'border-gray-200'}`}
-    onClick={() => onSelect(duration)}
+    className={`
+      p-4 mt-4 border-2 rounded-xl transition-all duration-200 bg-white relative
+      ${duration.locked ? 'cursor-not-allowed opacity-50 border-gray-300' : 'cursor-pointer hover:border-red-400'}
+      ${isSelected && !duration.locked ? 'border-red-400 bg-red-50' : 'border-gray-200'}
+    `}
+    onClick={() => {
+      if (!duration.locked) {
+        onSelect(duration);
+      }
+    }}
   >
-    {duration.recommended && (
+    {duration.recommended && !duration.locked && (
       <div className="absolute -top-2 right-3 bg-red-400 text-white text-xs font-semibold px-2 py-1 rounded">
         Recommended
+      </div>
+    )}
+    {duration.locked && (
+      <div className="absolute inset-0 bg-white bg-opacity-50 flex items-center justify-center font-semibold text-sm rounded-xl">
+        Locked
       </div>
     )}
     <div className="flex items-center gap-3 mb-2">
@@ -36,7 +50,6 @@ const DurationCard: React.FC<DurationCardProps> = ({ duration, isSelected, onSel
     <div className="text-xs text-gray-600">{duration.wordCount}</div>
   </div>
 );
-
 type TrainingWizardProps = {
   onGenerateContent?: (config: any) => void;
   onCancel?: () => void;
@@ -64,6 +77,7 @@ const disciplineOptions: DropdownOption[] = [
 const durations: Duration[] = [
   { value: '5-minutes', label: '5 Minutes', description: 'Quick, focused learning', wordCount: '~625-750 words', icon: '⚡' },
   { value: '10-minutes', label: '10 Minutes', description: 'Comprehensive coverage', wordCount: '~1,250-1,500 words', icon: '📚', recommended: true },
+  { value: '15-minutes', label: '15 Minutes', description: 'In-depth exploration', wordCount: '~1,875-2,250 words', icon: '🎓', locked: true },
 ];
 
 const TrainingWizard: React.FC<TrainingWizardProps> = ({ onGenerateContent, onCancel }) => {
