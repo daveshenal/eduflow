@@ -100,6 +100,8 @@ class APIService {
       discipline: string;
       disciplineValue: string;
       duration: string;
+      learningLevel?: string;
+      numHuddles?: number;
       providerId?: string;
     },
     onChunk: (fullContent: string, newChunk: string) => void,
@@ -116,6 +118,8 @@ class APIService {
         discipline: config.discipline,
         disciplineValue: config.disciplineValue,
         duration: config.duration,
+        learningLevel: config.learningLevel,
+        numHuddles: config.numHuddles,
         providerId: config.providerId,
       };
 
