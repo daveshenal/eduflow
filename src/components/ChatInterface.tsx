@@ -17,10 +17,10 @@ const userTypeOptions: DropdownOption[] = [
 
 const modeOptions: DropdownOption[] = [
   { value: 'chatbot', label: 'Chatbot', active: true },
-  { value: 'quiz', label: 'Quiz Generator' },
   { value: 'pdf', label: 'Huddle Sequence Planner' },
-  { value: 'voice', label: 'Voiceover' },
   { value: 'planner', label: 'Huddle Generator' },
+  { value: 'voice', label: 'Voice Script Generator' },
+  { value: 'quiz', label: 'Quiz Generator' },
 ];
 
 // Main Chat Interface Component
@@ -270,7 +270,7 @@ const ChatInterface: React.FC = () => {
             {state.mode === 'pdf'
               ? 'Huddle Sequence Planner'
               : state.mode === 'voice'
-                ? 'Voiceover'
+                ? 'Voice Script Generator'
                 : state.mode === 'planner'
                   ? 'Huddle Generator'
                   : 'RAG System Testing Interface'}
@@ -427,21 +427,30 @@ const ChatInterface: React.FC = () => {
             <ChatMessages messages={messages} error={error} />
             <div className="flex items-center justify-center h-1/2">
               <div className="p-4 text-sm text-gray-600">
-                Huddle  is selected. Awaiting configuration instructions.
+                Huddle Generator is selected. Awaiting configuration instructions.
               </div>
             </div>
           </>
         ) :
-         (
-          <>
-            <ChatMessages messages={messages} error={error} />
-            <ChatInput
-              onSendMessage={handleSendMessage}
-              onClearChat={handleClearChat}
-              disabled={state.isStreaming || isLoading}
-            />
-          </>
-        )}
+          state.mode === 'quiz' ? (
+            <>
+              <ChatMessages messages={messages} error={error} />
+              <div className="flex items-center justify-center h-1/2">
+                <div className="p-4 text-sm text-gray-600">
+                  Quiz Generator is selected. Awaiting configuration instructions.
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              <ChatMessages messages={messages} error={error} />
+              <ChatInput
+                onSendMessage={handleSendMessage}
+                onClearChat={handleClearChat}
+                disabled={state.isStreaming || isLoading}
+              />
+            </>
+          )}
       </div>
     </div>
   );
