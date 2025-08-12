@@ -18,8 +18,9 @@ const userTypeOptions: DropdownOption[] = [
 const modeOptions: DropdownOption[] = [
   { value: 'chatbot', label: 'Chatbot', active: true },
   { value: 'quiz', label: 'Quiz Generator' },
-  { value: 'pdf', label: 'Huddle Generator' },
+  { value: 'pdf', label: 'Huddle Sequence Planner' },
   { value: 'voice', label: 'Voiceover' },
+  { value: 'planner', label: 'Huddle Generator' },
 ];
 
 // Main Chat Interface Component
@@ -266,7 +267,13 @@ const ChatInterface: React.FC = () => {
       <div className="chat-container">
         <div className="chat-header">
           <div className="chat-title">
-            {state.mode === 'pdf' ? 'Huddle Generator' : state.mode === 'voice' ? 'Voiceover' : 'RAG System Testing Interface'}
+            {state.mode === 'pdf'
+              ? 'Huddle Sequence Planner'
+              : state.mode === 'voice'
+                ? 'Voiceover'
+                : state.mode === 'planner'
+                  ? 'Huddle Generator'
+                  : 'RAG System Testing Interface'}
           </div>
           <div className="metric">
             <span>⚡</span>
@@ -359,7 +366,7 @@ const ChatInterface: React.FC = () => {
             <button
               className="fixed bottom-6 right-6 bg-red-400 hover:bg-red-500 text-white rounded-full shadow-lg px-5 py-3 font-semibold"
               onClick={() => setShowHuddleWizard(prev => !prev)}
-              title={showHuddleWizard ? 'Back to Messages' : 'Open Huddle Generator'}
+              title={showHuddleWizard ? 'Back to Messages' : 'Open Huddle Planner'}
             >
               {showHuddleWizard ? 'Cancel' : '+ New Huddle'}
             </button>
@@ -415,7 +422,17 @@ const ChatInterface: React.FC = () => {
               + Voiceover
             </button>
           </>
-        ) : (
+        ) : state.mode === 'planner' ? (
+          <>
+            <ChatMessages messages={messages} error={error} />
+            <div className="flex items-center justify-center h-1/2">
+              <div className="p-4 text-sm text-gray-600">
+                Huddle  is selected. Awaiting configuration instructions.
+              </div>
+            </div>
+          </>
+        ) :
+         (
           <>
             <ChatMessages messages={messages} error={error} />
             <ChatInput
