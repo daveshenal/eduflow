@@ -117,13 +117,14 @@ const TrainingWizard: React.FC<TrainingWizardProps> = ({ onGenerateContent, onCa
     if (clinicalContext.trim()) count++;
     if (role.trim()) count++;
     if (discipline.trim()) count++;
+    if (learningLevel.trim()) count++;
     if (expectedOutcomes.trim()) count++;
     if (duration.trim()) count++;
-    if (learningLevel.trim()) count++;
+    if (numHuddles != null) count++;
     return count;
-  }, [learningFocus, specificTopic, clinicalContext, role, discipline, expectedOutcomes, duration, learningLevel]);
+  }, [learningFocus, specificTopic, clinicalContext, role, discipline, learningLevel, expectedOutcomes, duration, numHuddles]);
 
-  const progressWidth = (completedInputs / 8) * 100;
+  const progressWidth = (completedInputs / 9) * 100;
 
   const handleNext = () => {
     if (!stepValid) return;
@@ -267,7 +268,7 @@ const TrainingWizard: React.FC<TrainingWizardProps> = ({ onGenerateContent, onCa
                   className="config-input"
                   id="expectedOutcomes"
                   placeholder={`Identify key assessment criteria and documentation requirements\nDemonstrate proper technique and safety protocols\nApply evidence-based practices to patient care scenarios\nRecognize complications and implement appropriate interventions`}
-                  style={{ height: '120px', resize: 'none' }}
+                  style={{ height: '150px', resize: 'none' }}
                   value={expectedOutcomes}
                   onChange={(e) => setExpectedOutcomes(e.target.value)}
                 />
@@ -294,19 +295,23 @@ const TrainingWizard: React.FC<TrainingWizardProps> = ({ onGenerateContent, onCa
               <div className="config-group mt-6">
                 <div className="huddle-section-title">Number of Huddles</div>
                 <div className="huddle-label">Select how many huddles to generate (1–10)</div>
-                <div className='w-1/6'>
+                <div className='w-1/4'>
                   <input
                     type="number"
                     min={1}
                     max={10}
+                    placeholder='Select huddle count'
                     className="config-input mt-2 w-24"
                     value={numHuddles ?? ''}
                     onChange={(e) => {
                       const val = parseInt(e.target.value || '', 10);
+                      console.log(val)
                       if (Number.isNaN(val)) {
                         setNumHuddles(null);
+                        console.log("null")
                       } else {
                         setNumHuddles(Math.max(1, Math.min(10, val)));
+                        console.log("ok")
                       }
                     }}
                   />
@@ -337,11 +342,9 @@ const TrainingWizard: React.FC<TrainingWizardProps> = ({ onGenerateContent, onCa
           />
         </div>
         <div className="flex justify-center items-center space-x-10 mt-4">
-          <div className="flex items-center space-x-3">
-            <button className="px-5 py-3 rounded-lg text-sm font-semibold transition-colors" onClick={handlePrev} disabled={currentStep === 1}>
-              Previous
-            </button>
-          </div>
+          <button className="px-5 py-3 rounded-lg text-sm font-semibold transition-colors" onClick={handlePrev} disabled={currentStep === 1}>
+            Previous
+          </button>
           <div className="text-xs text-gray-600">Step {currentStep} of {totalSteps}</div>
           <button
             className={`px-4 py-3 w-32 rounded-lg text-sm font-semibold transition-colors ${stepValid ? 'bg-red-400 text-white hover:bg-red-500' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
