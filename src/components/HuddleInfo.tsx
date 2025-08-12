@@ -64,7 +64,6 @@ const disciplineOptions: DropdownOption[] = [
 const durations: Duration[] = [
   { value: '5-minutes', label: '5 Minutes', description: 'Quick, focused learning', wordCount: '~625-750 words', icon: '⚡' },
   { value: '10-minutes', label: '10 Minutes', description: 'Comprehensive coverage', wordCount: '~1,250-1,500 words', icon: '📚', recommended: true },
-  { value: '15-minutes', label: '15 Minutes', description: 'In-depth exploration', wordCount: '~1,875-2,250 words', icon: '🎓' },
 ];
 
 const TrainingWizard: React.FC<TrainingWizardProps> = ({ onGenerateContent, onCancel }) => {
@@ -82,6 +81,10 @@ const TrainingWizard: React.FC<TrainingWizardProps> = ({ onGenerateContent, onCa
     `Identify key assessment criteria and documentation requirements\nDemonstrate proper technique and safety protocols\nApply evidence-based practices to patient care scenarios\nRecognize complications and implement appropriate interventions`
   );
   const [duration, setDuration] = useState<string>('');
+  const [learningLevel, setLearningLevel] = useState<string>('');
+  const [numHuddles, setNumHuddles] = useState<number | null>(null);
+
+  const [learningLevelTouched, setLearningLevelTouched] = useState(true);
 
   // Per-step validation
   const stepValid = useMemo(() => {
@@ -93,15 +96,20 @@ const TrainingWizard: React.FC<TrainingWizardProps> = ({ onGenerateContent, onCa
           clinicalContext.trim().length > 0
         );
       case 2:
-        return role.trim().length > 0 && discipline.trim().length > 0 && expectedOutcomes.trim().length > 0;
+        return (
+          role.trim().length > 0 &&
+          discipline.trim().length > 0 &&
+          expectedOutcomes.trim().length > 0 &&
+          learningLevelTouched
+        );
       case 3:
-        return duration.trim().length > 0;
+        return duration.trim().length > 0 && numHuddles !== null && numHuddles >= 1 && numHuddles <= 10;
       default:
         return false;
     }
-  }, [currentStep, learningFocus, specificTopic, clinicalContext, role, discipline, expectedOutcomes, duration]);
+  }, [currentStep, learningFocus, specificTopic, clinicalContext, role, discipline, expectedOutcomes, duration, numHuddles]);
 
-  // Progress by number of inputs completed (7 total)
+  // Progress by number of inputs completed (8 total)
   const completedInputs = useMemo(() => {
     let count = 0;
     if (learningFocus.trim()) count++;
@@ -111,10 +119,11 @@ const TrainingWizard: React.FC<TrainingWizardProps> = ({ onGenerateContent, onCa
     if (discipline.trim()) count++;
     if (expectedOutcomes.trim()) count++;
     if (duration.trim()) count++;
+    if (learningLevel.trim()) count++;
     return count;
-  }, [learningFocus, specificTopic, clinicalContext, role, discipline, expectedOutcomes, duration]);
+  }, [learningFocus, specificTopic, clinicalContext, role, discipline, expectedOutcomes, duration, learningLevel]);
 
-  const progressWidth = (completedInputs / 7) * 100;
+  const progressWidth = (completedInputs / 8) * 100;
 
   const handleNext = () => {
     if (!stepValid) return;
@@ -133,6 +142,8 @@ const TrainingWizard: React.FC<TrainingWizardProps> = ({ onGenerateContent, onCa
         discipline: disciplineLabel,
         disciplineValue: discipline,
         duration,
+        learningLevel,
+        numHuddles,
       };
       // For now, log all inputs; later this will be sent to API
       console.log('Generate Huddle inputs:', config);
@@ -223,6 +234,28 @@ const TrainingWizard: React.FC<TrainingWizardProps> = ({ onGenerateContent, onCa
                   />
                 </div>
               </div>
+
+              {/* Learning Level */}
+              <div className="config-group mt-4">
+                <p className="huddle-label">Learning Level</p>
+                <div className="flex gap-6 mb-2">
+                  {['Introductory', 'Intermediate', 'Advanced'].map((level) => (
+                    <label key={level} className="inline-flex items-center gap-2 text-sm text-gray-700">
+                      <input
+                        type="radio"
+                        name="learning-level"
+                        className="form-radio h-4 w-4 text-red-400 focus:ring-red-400"
+                        checked={learningLevel === level}
+                        onChange={() => {
+                          setLearningLevel(level);
+                          setLearningLevelTouched(true);
+                        }}
+                      />
+                      <span>{level}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
             </div>
 
             {/* Expected Learning Outcomes */}
@@ -258,6 +291,27 @@ const TrainingWizard: React.FC<TrainingWizardProps> = ({ onGenerateContent, onCa
                   />
                 ))}
               </div>
+              <div className="config-group mt-6">
+                <div className="huddle-section-title">Number of Huddles</div>
+                <div className="huddle-label">Select how many huddles to generate (1–10)</div>
+                <div className='w-1/6'>
+                  <input
+                    type="number"
+                    min={1}
+                    max={10}
+                    className="config-input mt-2 w-24"
+                    value={numHuddles ?? ''}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value || '', 10);
+                      if (Number.isNaN(val)) {
+                        setNumHuddles(null);
+                      } else {
+                        setNumHuddles(Math.max(1, Math.min(10, val)));
+                      }
+                    }}
+                  />
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -290,11 +344,11 @@ const TrainingWizard: React.FC<TrainingWizardProps> = ({ onGenerateContent, onCa
           </div>
           <div className="text-xs text-gray-600">Step {currentStep} of {totalSteps}</div>
           <button
-            className={`px-5 py-3 rounded-lg text-sm font-semibold transition-colors ${stepValid ? 'bg-red-400 text-white hover:bg-red-500' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
+            className={`px-4 py-3 w-32 rounded-lg text-sm font-semibold transition-colors ${stepValid ? 'bg-red-400 text-white hover:bg-red-500' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
             onClick={handleNext}
             disabled={!stepValid}
           >
-            {currentStep === totalSteps ? 'Generate Huddle' : 'Next Step'}
+            {currentStep === totalSteps ? 'Generate' : 'Next Step'}
           </button>
         </div>
       </div>
