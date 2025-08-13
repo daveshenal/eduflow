@@ -296,7 +296,7 @@ const ChatInterface: React.FC = () => {
 
                     // Add user summary message then assistant placeholder for streaming
                     const timestamp = new Date();
-                    const userSummary = `Generate Huddle with\n- Learning Focus: ${cfg.learningFocus}\n- Topic: ${cfg.topic}\n- Clinical Context: ${cfg.clinicalContext}\n- Expected Outcomes: ${cfg.expectedOutcomes}\n- Role: ${cfg.role} (${cfg.roleValue})\n- Discipline: ${cfg.discipline} (${cfg.disciplineValue})\n- Duration: ${cfg.duration}\n- Learning Level: ${cfg.learningLevel || 'N/A'}\n- Number of Huddles: ${cfg.numHuddles ?? ''}\n- Provider ID: ${providerId}`;
+                    const userSummary = `Generate a Huddle Sequence Plan with\n- Learning Focus: ${cfg.learningFocus}\n- Topic: ${cfg.topic}\n- Clinical Context: ${cfg.clinicalContext}\n- Expected Outcomes: ${cfg.expectedOutcomes}\n- Role: ${cfg.role} (${cfg.roleValue})\n- Discipline: ${cfg.discipline} (${cfg.disciplineValue})\n- Duration: ${cfg.duration}\n- Learning Level: ${cfg.learningLevel || 'N/A'}\n- Number of Huddles: ${cfg.numHuddles ?? ''}\n- Provider ID: ${providerId}`;
                     const userMsg: ChatMessage = {
                       id: `${Date.now()}`,
                       content: userSummary,
@@ -312,7 +312,7 @@ const ChatInterface: React.FC = () => {
                     setMessages(prev => [...prev, userMsg, assistantMsg]);
 
                     try {
-                      await apiService.sendHuddleStream(
+                      await apiService.sendHuddlePlan(
                         {
                           learningFocus: cfg.learningFocus,
                           topic: cfg.topic,
@@ -362,7 +362,7 @@ const ChatInterface: React.FC = () => {
                 />
               </div>
             ) : (
-              <ChatMessages messages={messages} error={error} />
+              <ChatMessages messages={messages} error={error} isHuddlePlanMode />
             )}
 
             <button
