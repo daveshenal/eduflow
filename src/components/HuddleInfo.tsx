@@ -56,22 +56,22 @@ type TrainingWizardProps = {
 };
 
 const roleOptions: DropdownOption[] = [
-  { value: 'frontline-staff', label: 'Frontline Staff', active: true },
-  { value: 'clinical-manager', label: 'Clinical Manager' },
-  { value: 'educator', label: 'Educator' },
-  { value: 'director', label: 'Director' },
+  { value: 'Frontline Staff', label: 'Frontline Staff', active: true },
+  { value: 'Clinical Manager', label: 'Clinical Manager' },
+  { value: 'Educator', label: 'Educator' },
+  { value: 'Director', label: 'Director' },
 ];
 
 const disciplineOptions: DropdownOption[] = [
-  { value: 'rn', label: 'RN - Registered Nurse', active: true },
-  { value: 'lpn', label: 'LPN - Licensed Practical Nurse' },
-  { value: 'pt', label: 'PT - Physical Therapist' },
-  { value: 'pta', label: 'PTA - Physical Therapist Assistant' },
-  { value: 'ot', label: 'OT - Occupational Therapist' },
-  { value: 'ota', label: 'OTA - Occupational Therapist Assistant' },
-  { value: 'slp', label: 'SLP - Speech-Language Pathologist' },
-  { value: 'msw', label: 'MSW - Medical Social Worker' },
-  { value: 'hha', label: 'HHA - Home Health Aide' },
+  { value: 'RN - Registered Nurse', label: 'RN - Registered Nurse', active: true },
+  { value: 'LPN - Licensed Practical Nurse', label: 'LPN - Licensed Practical Nurse' },
+  { value: 'PT - Physical Therapist', label: 'PT - Physical Therapist' },
+  { value: 'PTA - Physical Therapist Assistant', label: 'PTA - Physical Therapist Assistant' },
+  { value: 'OT - Occupational Therapist', label: 'OT - Occupational Therapist' },
+  { value: 'OTA - Occupational Therapist Assistant', label: 'OTA - Occupational Therapist Assistant' },
+  { value: 'SLP - Speech-Language Pathologist', label: 'SLP - Speech-Language Pathologist' },
+  { value: 'MSW - Medical Social Worker', label: 'MSW - Medical Social Worker' },
+  { value: 'HHA - Home Health Aide', label: 'HHA - Home Health Aide' },
 ];
 
 const durations: Duration[] = [
@@ -319,13 +319,10 @@ const TrainingWizard: React.FC<TrainingWizardProps> = ({ onGenerateContent, onCa
                     value={numHuddles ?? ''}
                     onChange={(e) => {
                       const val = parseInt(e.target.value || '', 10);
-                      console.log(val)
                       if (Number.isNaN(val)) {
                         setNumHuddles(null);
-                        console.log("null")
                       } else {
                         setNumHuddles(Math.max(1, Math.min(10, val)));
-                        console.log("ok")
                       }
                     }}
                   />
