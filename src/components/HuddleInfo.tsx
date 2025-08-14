@@ -56,22 +56,22 @@ type TrainingWizardProps = {
 };
 
 const roleOptions: DropdownOption[] = [
-  { value: 'Frontline Staff', label: 'Frontline Staff', active: true },
-  { value: 'Clinical Manager', label: 'Clinical Manager' },
-  { value: 'Educator', label: 'Educator' },
-  { value: 'Director', label: 'Director' },
+  { value: 'frontline_staff', label: 'Frontline Staff', active: true },
+  { value: 'clinical_manager', label: 'Clinical Manager' },
+  { value: 'educator', label: 'Educator' },
+  { value: 'director', label: 'Director' },
 ];
 
 const disciplineOptions: DropdownOption[] = [
-  { value: 'RN - Registered Nurse', label: 'RN - Registered Nurse', active: true },
-  { value: 'LPN - Licensed Practical Nurse', label: 'LPN - Licensed Practical Nurse' },
-  { value: 'PT - Physical Therapist', label: 'PT - Physical Therapist' },
-  { value: 'PTA - Physical Therapist Assistant', label: 'PTA - Physical Therapist Assistant' },
-  { value: 'OT - Occupational Therapist', label: 'OT - Occupational Therapist' },
-  { value: 'OTA - Occupational Therapist Assistant', label: 'OTA - Occupational Therapist Assistant' },
-  { value: 'SLP - Speech-Language Pathologist', label: 'SLP - Speech-Language Pathologist' },
-  { value: 'MSW - Medical Social Worker', label: 'MSW - Medical Social Worker' },
-  { value: 'HHA - Home Health Aide', label: 'HHA - Home Health Aide' },
+  { value: 'registered_nurse', label: 'RN - Registered Nurse', active: true },
+  { value: 'licensed_practical_nurse', label: 'LPN - Licensed Practical Nurse' },
+  { value: 'physical_therapist', label: 'PT - Physical Therapist' },
+  { value: 'physical_therapist_assistant', label: 'PTA - Physical Therapist Assistant' },
+  { value: 'occupational_therapist', label: 'OT - Occupational Therapist' },
+  { value: 'occupational_therapist_assistant', label: 'OTA - Occupational Therapist Assistant' },
+  { value: 'speech_language_pathologist', label: 'SLP - Speech-Language Pathologist' },
+  { value: 'medical_social_worker', label: 'MSW - Medical Social Worker' },
+  { value: 'home_health_aide', label: 'HHA - Home Health Aide' },
 ];
 
 const durations: Duration[] = [
@@ -117,7 +117,7 @@ const TrainingWizard: React.FC<TrainingWizardProps> = ({ onGenerateContent, onCa
           learningLevelTouched
         );
       case 3:
-        return duration.trim().length > 0 && numHuddles !== null && numHuddles >= 1 && numHuddles <= 10;
+        return duration.trim().length > 0 && numHuddles !== null && numHuddles >= 1 && numHuddles <= 6;
       default:
         return false;
     }
@@ -308,12 +308,12 @@ const TrainingWizard: React.FC<TrainingWizardProps> = ({ onGenerateContent, onCa
               </div>
               <div className="config-group mt-8">
                 <div className="huddle-section-title">🔢 Number of Huddles</div>
-                <div className="huddle-label">Select how many huddles to generate (1–10)</div>
+                <div className="huddle-label">Select how many huddles to generate (1–6)</div>
                 <div className='w-1/4'>
                   <input
                     type="number"
                     min={1}
-                    max={10}
+                    max={6}
                     placeholder='Select huddle count'
                     className="config-input mt-2 w-24"
                     value={numHuddles ?? ''}
@@ -322,7 +322,7 @@ const TrainingWizard: React.FC<TrainingWizardProps> = ({ onGenerateContent, onCa
                       if (Number.isNaN(val)) {
                         setNumHuddles(null);
                       } else {
-                        setNumHuddles(Math.max(1, Math.min(10, val)));
+                        setNumHuddles(Math.max(1, Math.min(6, val)));
                       }
                     }}
                   />

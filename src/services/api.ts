@@ -322,39 +322,51 @@ class APIService {
     }
   }
 
-  async getPrompts(type?: string): Promise<APIResponse> {
-    const endpoint = type ? `/prompts?type=${type}` : '/prompts';
-    return this.makeRequest(endpoint);
+  async getPrompts(tableName: string, skip = 0, limit = 100): Promise<APIResponse> {
+    return this.makeRequest(`/prompts/${tableName}/?skip=${skip}&limit=${limit}`);
   }
 
-  async getPrompt(id: string): Promise<APIResponse> {
-    return this.makeRequest(`/prompts/${id}`);
+  async getActivePrompt(tableName: string, name: string): Promise<APIResponse> {
+    return this.makeRequest(`/prompts/${tableName}/active/${encodeURIComponent(name)}`);
   }
 
-  async createPrompt(prompt: {
-    name: string;
-    version: string;
-    status: string;
-    description: string;
-    content: string;
-    type: string;
-  }): Promise<APIResponse> {
-    return this.makeRequest('/prompts', {
+  async createPrompt(
+    tableName: string,
+    prompt: {
+      name: string;
+      version: string;
+      description?: string;
+      prompt: string;
+    }
+  ): Promise<APIResponse> {
+    return this.makeRequest(`/prompts/${tableName}/`, {
       method: 'POST',
       body: JSON.stringify(prompt),
     });
   }
 
-  async updatePrompt(id: string, prompt: any): Promise<APIResponse> {
-    return this.makeRequest(`/prompts/${id}`, {
+  async updatePrompt(
+    tableName: string,
+    name: string,
+    version: string,
+    promptUpdate: { prompt?: string; description?: string }
+  ): Promise<APIResponse> {
+    return this.makeRequest(`/prompts/${tableName}/${encodeURIComponent(name)}/${encodeURIComponent(version)}`, {
       method: 'PUT',
-      body: JSON.stringify(prompt),
+      body: JSON.stringify(promptUpdate),
     });
   }
 
-  async deletePrompt(id: string): Promise<APIResponse> {
-    return this.makeRequest(`/prompts/${id}`, {
+  async deletePrompt(tableName: string, name: string, version: string): Promise<APIResponse> {
+    return this.makeRequest(`/prompts/${tableName}/${encodeURIComponent(name)}/${encodeURIComponent(version)}`, {
       method: 'DELETE',
+    });
+  }
+
+  async activatePrompt(tableName: string, name: string, version: string): Promise<APIResponse> {
+    return this.makeRequest(`/prompts/${tableName}/activate`, {
+      method: 'POST',
+      body: JSON.stringify({ name, version }),
     });
   }
 }
