@@ -5,22 +5,62 @@ import Dropdown from './Dropdown';
 import { DropdownOption, PromptTemplate } from '../types';
 
 const promptTypeOptions: DropdownOption[] = [
-  { value: 'base_prompts', label: 'Main Prompts', active: true },
+  { value: 'main_prompts', label: 'Main Prompts', active: true },
   { value: 'use_case_prompts', label: 'Use Case Prompts' },
   { value: 'role_prompts', label: 'Role Based Prompts' },
   { value: 'discipline_prompts', label: 'Discipline Based Prompts' },
 ];
+
+const allowedNameOptionsByTable: Record<string, DropdownOption[]> = {
+  main_prompts: [
+    { value: 'main_prompt', label: 'Main Prompt', active: true },
+  ],
+  use_case_prompts: [
+    { value: 'developer_chatbot', label: 'Developer Chatbot', active: true },
+    { value: 'educator_chatbot', label: 'Educator Chatbot' },
+    { value: 'huddle_planner', label: 'Huddle Planner' },
+    { value: 'introduction_huddle', label: 'Introduction Huddle' },
+    { value: 'middle_huddle', label: 'Middle Huddle' },
+    { value: 'last_huddle', label: 'Last Huddle' },
+    { value: 'voice_script', label: 'Voice Script' },
+  ],
+  role_prompts: [
+    { value: 'frontline_staff', label: 'Frontline Staff', active: true },
+    { value: 'clinical_manager', label: 'Clinical Manager' },
+    { value: 'educator', label: 'Educator' },
+    { value: 'director', label: 'Director' },
+  ],
+  discipline_prompts: [
+    { value: 'registered_nurse', label: 'Registered Nurse', active: true },
+    { value: 'licensed_practical_nurse', label: 'Licensed Practical Nurse' },
+    { value: 'physical_therapist', label: 'Physical Therapist' },
+    { value: 'physical_therapist_assistant', label: 'Physical Therapist Assistant' },
+    { value: 'occupational_therapist', label: 'Occupational Therapist' },
+    { value: 'occupational_therapist_assistant', label: 'Occupational Therapist Assistant' },
+    { value: 'speech_language_pathologist', label: 'Speech Language Pathologist' },
+    { value: 'medical_social_worker', label: 'Medical Social Worker' },
+    { value: 'home_health_aide', label: 'Home Health Aide' },
+  ],
+};
 
 const statusOptions: DropdownOption[] = [
   { value: 'active', label: 'Active', active: true },
   { value: 'inactive', label: 'Inactive' },
 ];
 
+const displayPromptName = (name: string): string => {
+  if (!name) return '';
+  return name
+    .split('_')
+    .map((w) => (w ? w[0].toUpperCase() + w.slice(1) : w))
+    .join(' ');
+};
+
 // Prompt Editor Component
 const PromptEditor: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const { state } = useConfig();
   const [apiService] = useState(() => new APIService(state.backendUrl));
-  const [selectedPromptType, setSelectedPromptType] = useState('base_prompts');
+  const [selectedPromptType, setSelectedPromptType] = useState('main_prompts');
   const [prompts, setPrompts] = useState<PromptTemplate[]>([]);
   const [selectedPrompt, setSelectedPrompt] = useState<PromptTemplate | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -36,6 +76,7 @@ const PromptEditor: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     description: '',
     content: '',
   });
+  const allowedNameOptions = allowedNameOptionsByTable[selectedPromptType] || [];
 
   // Edit form state
   const [editForm, setEditForm] = useState({
@@ -55,18 +96,27 @@ const PromptEditor: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     setLoading(true);
     setError('');
     try {
-      const response = await fetch(`${state.backendUrl}/${selectedPromptType}/`);
-      if (!response.ok) throw new Error('Failed to load prompts');
-      
-      const data = await response.json();
-      setPrompts(data || []);
+      const res = await apiService.getPrompts(selectedPromptType);
+      if (!res.success) throw new Error(res.error || 'Failed to load prompts');
+      const data = Array.isArray(res.data) ? res.data : [];
+      // Map backend PromptResponse (uses 'prompt') to UI PromptTemplate (uses 'content')
+      const mapped: PromptTemplate[] = data.map((p: any) => ({
+        id: p.id,
+        name: p.name,
+        version: p.version,
+        status: p.status,
+        description: p.description || '',
+        content: p.prompt || '',
+        type: undefined as any,
+      }));
+      setPrompts(mapped);
     } catch (error) {
       setError('Database connection failed');
       setPrompts([]);
     } finally {
       setLoading(false);
     }
-  }, [selectedPromptType, state.backendUrl]);
+  }, [selectedPromptType, apiService]);
 
   useEffect(() => {
     apiService.setBaseUrl(state.backendUrl);
@@ -80,6 +130,10 @@ const PromptEditor: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const handlePromptTypeChange = (newType: string) => {
     setSelectedPromptType(newType);
     setSelectedPrompt(null);
+    if (showCreateForm) {
+      const first = (allowedNameOptionsByTable[newType] || [])[0]?.value || '';
+      setCreateForm((prev) => ({ ...prev, name: first }));
+    }
   };
 
   const handlePromptSelect = (prompt: PromptTemplate) => {
@@ -100,18 +154,33 @@ const PromptEditor: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     }
 
     try {
-      const response = await fetch(`${state.backendUrl}/${selectedPromptType}/`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(createForm),
-      });
+      const payload = {
+        name: createForm.name,
+        version: createForm.version,
+        description: createForm.description || '',
+        prompt: createForm.content,
+      };
+      const res = await apiService.createPrompt(selectedPromptType, payload);
+      if (!res.success) throw new Error(res.error || 'Failed to create prompt');
 
-      if (!response.ok) throw new Error('Failed to create prompt');
+      const created = res.data;
+      // Activate if requested
+      if (createForm.status === 'active') {
+        await apiService.activatePrompt(selectedPromptType, created.name, created.version);
+        created.status = 'active';
+      }
 
-      const newPrompt = await response.json();
-      setPrompts(prev => [newPrompt, ...prev]);
+      const mapped: PromptTemplate = {
+        id: created.id,
+        name: created.name,
+        version: created.version,
+        status: created.status,
+        description: created.description || '',
+        content: created.prompt || '',
+        type: undefined as any,
+      };
+
+      setPrompts(prev => [mapped, ...prev]);
       setShowCreateForm(false);
       setCreateForm({
         name: '',
@@ -120,7 +189,7 @@ const PromptEditor: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         description: '',
         content: '',
       });
-      handlePromptSelect(newPrompt);
+      handlePromptSelect(mapped);
       showMessage('Prompt created successfully!', 'success');
     } catch (error) {
       showMessage('Failed to create prompt', 'error');
@@ -131,22 +200,36 @@ const PromptEditor: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     if (!selectedPrompt) return;
 
     try {
-      const response = await fetch(`${state.backendUrl}/${selectedPromptType}/${selectedPrompt.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(editForm),
-      });
+      const updatePayload: { prompt?: string; description?: string } = {
+        prompt: editForm.content,
+        description: editForm.description,
+      };
+      const res = await apiService.updatePrompt(
+        selectedPromptType,
+        selectedPrompt.name,
+        selectedPrompt.version,
+        updatePayload
+      );
+      if (!res.success) throw new Error(res.error || 'Failed to save prompt');
 
-      if (!response.ok) throw new Error('Failed to save prompt');
+      let updated = res.data;
+      if (editForm.status === 'active') {
+        await apiService.activatePrompt(selectedPromptType, updated.name, updated.version);
+        updated.status = 'active';
+      }
 
-      const updatedPrompt = await response.json();
-      setSelectedPrompt(updatedPrompt);
-      
-      // Update in prompts array
-      setPrompts(prev => prev.map(p => p.id === updatedPrompt.id ? updatedPrompt : p));
-      
+      const mapped: PromptTemplate = {
+        id: updated.id,
+        name: updated.name,
+        version: updated.version,
+        status: updated.status,
+        description: updated.description || '',
+        content: updated.prompt || '',
+        type: undefined as any,
+      };
+
+      setSelectedPrompt(mapped);
+      setPrompts(prev => prev.map(p => p.id === mapped.id ? mapped : p));
       showMessage('Prompt saved successfully!', 'success');
     } catch (error) {
       showMessage('Failed to save prompt', 'error');
@@ -155,17 +238,18 @@ const PromptEditor: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
   const handleDeletePrompt = async () => {
     if (!selectedPrompt) return;
-    
-    if (!window.confirm(`Are you sure you want to delete "${selectedPrompt.name}"?`)) {
+
+    if (!window.confirm(`Are you sure you want to delete "${displayPromptName(selectedPrompt.name)}"?`)) {
       return;
     }
 
     try {
-      const response = await fetch(`${state.backendUrl}/${selectedPromptType}/${selectedPrompt.id}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) throw new Error('Failed to delete prompt');
+      const res = await apiService.deletePrompt(
+        selectedPromptType,
+        selectedPrompt.name,
+        selectedPrompt.version
+      );
+      if (!res.success) throw new Error(res.error || 'Failed to delete prompt');
 
       setPrompts(prev => prev.filter(p => p.id !== selectedPrompt.id));
       setSelectedPrompt(null);
@@ -187,8 +271,9 @@ const PromptEditor: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const handleShowCreateForm = () => {
     setShowCreateForm(true);
     setSelectedPrompt(null);
+    const first = allowedNameOptions[0]?.value || '';
     setCreateForm({
-      name: '',
+      name: first,
       version: 'v1',
       status: 'active',
       description: '',
@@ -235,7 +320,7 @@ const PromptEditor: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           {showCreateForm && (
             <div className="config-section">
               <div className="config-section-title">Prompt Details</div>
-              
+
               <div className="config-group">
                 <p className="config-label">Select Prompt Type</p>
                 <Dropdown
@@ -246,16 +331,11 @@ const PromptEditor: React.FC<{ onBack: () => void }> = ({ onBack }) => {
               </div>
 
               <div className="config-group">
-                <label className="config-label" htmlFor="newPromptName">
-                  Name
-                </label>
-                <input
-                  type="text"
-                  className="config-input"
-                  id="newPromptName"
-                  placeholder="Enter prompt name"
+                <p className="config-label">Prompt Name</p>
+                <Dropdown
+                  options={allowedNameOptions}
                   value={createForm.name}
-                  onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
+                  onChange={(val) => setCreateForm({ ...createForm, name: val })}
                 />
               </div>
 
@@ -329,7 +409,7 @@ const PromptEditor: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                       }}
                     >
                       <div className="prompt-item-name" style={{ fontWeight: '500', marginBottom: '4px' }}>
-                        {prompt.name}
+                        {displayPromptName(prompt.name)}
                       </div>
                       <div className="prompt-item-version" style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px' }}>
                         Version: {prompt.version}
@@ -337,17 +417,17 @@ const PromptEditor: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                       <div className="prompt-item-desc" style={{ fontSize: '14px', color: '#4b5563', marginBottom: '8px' }}>
                         {prompt.description || 'No description'}
                       </div>
-                      <span 
+                      <span
                         className={`prompt-item-status status-${prompt.status}`}
                         style={{
                           fontSize: '12px',
                           padding: '2px 8px',
-                          borderRadius: '12px',
+                          borderRadius: '4px',
                           backgroundColor: prompt.status === 'active' ? '#d1fae5' : '#f3f4f6',
                           color: prompt.status === 'active' ? '#065f46' : '#4b5563',
                         }}
                       >
-                        {prompt.status}
+                        {prompt.status.charAt(0).toUpperCase() + prompt.status.slice(1)}
                       </span>
                     </div>
                   ))
@@ -387,36 +467,17 @@ const PromptEditor: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         {selectedPrompt ? (
           <>
             <div className="chat-header">
-              <div className="chat-title">{selectedPrompt.name}</div>
-    
+              <div className="chat-title">{displayPromptName(selectedPrompt.name)}</div>
+
             </div>
 
-            <div className="editor-container" style={{ padding: '20px' }}>
+            <div className="editor-container">
               <div className="form-row" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '20px' }}>
-                <div className="form-group" style={{ maxWidth: '20%' }}>
-                  <label htmlFor="editPromptName" className="config-label">Name</label>
-                  <input
-                    type="text"
-                    className="config-input"
-                    id="editPromptName"
-                    value={editForm.name}
-                    onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                  />
-                </div>
-                <div className="form-group" style={{ maxWidth: '7.5%' }}>
-                  <label htmlFor="editPromptVersion" className="config-label">Version</label>
-                  <input
-                    type="text"
-                    className="config-input"
-                    id="editPromptVersion"
-                    value={editForm.version}
-                    onChange={(e) => setEditForm({ ...editForm, version: e.target.value })}
-                  />
-                </div>
-                <div className="form-group" style={{ maxWidth: '7.5%' }}>
+                <div className="form-group" style={{ width: '80px' }}>
                   <label className="config-label">Status</label>
                   <select
                     className="config-input"
+                    style={{marginBottom: '0px'}}
                     value={editForm.status}
                     onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
                   >
@@ -424,30 +485,31 @@ const PromptEditor: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                     <option value="inactive">Inactive</option>
                   </select>
                 </div>
-                <div className="form-group" style={{ flex: 1 }}>
+                <div className="form-group" style={{width: '40%', minWidth: '250px'}}>
                   <label htmlFor="editPromptDescription" className="config-label">Description</label>
                   <input
                     type="text"
                     className="config-input"
+                    style={{marginBottom: '0px'}}
                     id="editPromptDescription"
                     value={editForm.description}
                     onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
                   />
                 </div>
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end'}}>
-                <button
-                  className="btn btn-primary"
-                  onClick={handleUpdatePrompt}
-                >
-                  Save
-                </button>
-                <button
-                  className="btn btn-secondary"
-                  onClick={handleDeletePrompt}
-                >
-                  Delete
-                </button>
-              </div>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end', marginLeft: 'auto'}}>
+                  <button
+                    className="btn btn-primary"
+                    onClick={handleUpdatePrompt}
+                  >
+                    Update
+                  </button>
+                  <button
+                    className="btn btn-secondary"
+                    onClick={handleDeletePrompt}
+                  >
+                    Delete
+                  </button>
+                </div>
               </div>
 
               <div className="form-group" style={{ flex: 1 }}>
@@ -459,14 +521,14 @@ const PromptEditor: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                     placeholder="Enter your system prompt here..."
                     value={editForm.content}
                     onChange={(e) => setEditForm({ ...editForm, content: e.target.value })}
-                    style={{ minHeight: '490px', resize: 'none', padding: '1.5rem 2.5rem', fontFamily: 'monospace' }}
+                    style={{ minHeight: '460px', resize: 'none', padding: '1.5rem 2.5rem', fontFamily: 'monospace' }}
                   />
                   <button
                     className="copy-button"
                     onClick={() => copyToClipboard(editForm.content)}
                     style={{
                       position: 'absolute',
-                      top: '10px',
+                      top: '15px',
                       right: '15px',
                       padding: '4px 8px',
                       fontSize: '12px',
@@ -488,7 +550,7 @@ const PromptEditor: React.FC<{ onBack: () => void }> = ({ onBack }) => {
               <div className="chat-title">Create New Prompt</div>
             </div>
 
-            <div className="editor-container" style={{ padding: '20px' }}>
+            <div className="editor-container">
               <div className="form-group" style={{ flex: 1 }}>
                 <label htmlFor="createPromptContent" className="config-label">System Prompt Content</label>
                 <div className="textarea-container" style={{ position: 'relative' }}>
@@ -498,15 +560,15 @@ const PromptEditor: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                     placeholder="Enter your system prompt content here..."
                     value={createForm.content}
                     onChange={(e) => setCreateForm({ ...createForm, content: e.target.value })}
-                    style={{ minHeight: '580px', resize: 'none' }}
+                    style={{ minHeight: '540px', resize: 'none' }}
                   />
                   <button
                     className="copy-button"
                     onClick={() => copyToClipboard(createForm.content)}
                     style={{
                       position: 'absolute',
-                      top: '10px',
-                      right: '10px',
+                      top: '15px',
+                      right: '15px',
                       padding: '4px 8px',
                       fontSize: '12px',
                       backgroundColor: '#f3f4f6',
@@ -523,16 +585,16 @@ const PromptEditor: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           </>
         ) : (
           <div>
-          <div className="chat-header">
-            <div className="chat-title">Prompt Manager - Edit System Prompts</div>
-          </div>
-
-          <div className="editor-container">
-            <div className="empty-state" style={{ textAlign: 'center', padding: '15rem', color: '#6b7280' }}>
-              <h3 style={{ fontSize: '18px', fontWeight: '500', marginBottom: '8px' }}>Select a prompt to edit</h3>
-              <p>Choose a prompt from the sidebar to view and edit its content</p>
+            <div className="chat-header">
+              <div className="chat-title">Prompt Manager - Edit System Prompts</div>
             </div>
-          </div>
+
+            <div className="editor-container">
+              <div className="empty-state" style={{ textAlign: 'center', padding: '15rem', color: '#6b7280' }}>
+                <h3 style={{ fontSize: '18px', fontWeight: '500', marginBottom: '8px' }}>Select a prompt to edit</h3>
+                <p>Choose a prompt from the sidebar to view and edit its content</p>
+              </div>
+            </div>
           </div>
         )}
       </div>
