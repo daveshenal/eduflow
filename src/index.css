@@ -344,6 +344,7 @@ body::before {
   color: white;
   margin-left: auto;
   box-shadow: 0 4px 12px rgba(249, 101, 89, 0.3);
+  border-bottom-right-radius: 0.25rem;
 }
 
 .message.assistant {
@@ -352,6 +353,7 @@ body::before {
   margin-right: auto;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   border: 1px solid rgba(249, 101, 89, 0.1);
+  border-bottom-left-radius: 0.25rem;
 }
 
 .message-header {

@@ -91,6 +91,7 @@ class APIService {
 
   async sendHuddleStream(
     config: {
+      providerId?: string;
       learningFocus: string;
       topic: string;
       clinicalContext: string;
@@ -102,13 +103,13 @@ class APIService {
       duration: string;
       learningLevel?: string;
       numHuddles?: number;
-      providerId?: string;
     },
     onChunk: (fullContent: string, newChunk: string) => void,
     onError: (error: string) => void
   ): Promise<string> {
     try {
       const requestBody = {
+        providerId: config.providerId,
         learningFocus: config.learningFocus,
         topic: config.topic,
         clinicalContext: config.clinicalContext,
@@ -120,7 +121,6 @@ class APIService {
         duration: config.duration,
         learningLevel: config.learningLevel,
         numHuddles: config.numHuddles,
-        providerId: config.providerId,
       };
 
       const response = await fetch(`${this.baseUrl}/huddles/stream`, {
@@ -149,74 +149,6 @@ class APIService {
         onChunk(fullContent, chunk);
       }
 
-      return fullContent;
-    } catch (error) {
-      const errMsg = error instanceof Error ? error.message : String(error);
-      onError(errMsg);
-      throw error;
-    }
-  }
-
-  async sendHuddlePlan(
-    config: {
-      learningFocus: string;
-      topic: string;
-      clinicalContext: string;
-      expectedOutcomes: string;
-      role: string;
-      roleValue: string;
-      discipline: string;
-      disciplineValue: string;
-      duration: string;
-      learningLevel?: string;
-      numHuddles?: number;
-      providerId?: string;
-    },
-    onChunk: (fullContent: string, newChunk: string) => void,
-    onError: (error: string) => void
-  ): Promise<string> {
-    try {
-      const requestBody = {
-        learningFocus: config.learningFocus,
-        topic: config.topic,
-        clinicalContext: config.clinicalContext,
-        expectedOutcomes: config.expectedOutcomes,
-        role: config.role,
-        roleValue: config.roleValue,
-        discipline: config.discipline,
-        disciplineValue: config.disciplineValue,
-        duration: config.duration,
-        learningLevel: config.learningLevel,
-        numHuddles: config.numHuddles,
-        providerId: config.providerId,
-      };
-
-      const response = await fetch(`${this.baseUrl}/huddles/plan`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`HTTP ${response.status}: ${response.statusText} - ${errorText}`);
-      }
-
-      const contentType = response.headers.get('content-type') || '';
-      if (!contentType.includes('application/json')) {
-        const text = await response.text();
-        throw new Error(text || 'Unexpected non-JSON response');
-      }
-
-      let data: any;
-      try {
-        data = await response.json();
-      } catch (e) {
-        throw new Error(e instanceof Error ? e.message : 'Invalid JSON in response');
-      }
-
-      const fullContent = JSON.stringify(data?.plan ?? data);
-      onChunk(fullContent, fullContent);
       return fullContent;
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : String(error);
