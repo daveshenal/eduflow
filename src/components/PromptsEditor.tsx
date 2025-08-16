@@ -19,9 +19,7 @@ const allowedNameOptionsByTable: Record<string, DropdownOption[]> = {
     { value: 'developer_chatbot', label: 'Developer Chatbot', active: true },
     { value: 'educator_chatbot', label: 'Educator Chatbot' },
     { value: 'huddle_planner', label: 'Huddle Planner' },
-    { value: 'introduction_huddle', label: 'Introduction Huddle' },
-    { value: 'middle_huddle', label: 'Middle Huddle' },
-    { value: 'last_huddle', label: 'Last Huddle' },
+    { value: 'huddle_generator', label: 'Huddle Generator' },
     { value: 'voice_script', label: 'Voice Script' },
   ],
   role_prompts: [
@@ -473,30 +471,26 @@ const PromptEditor: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
             <div className="editor-container">
               <div className="form-row" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '20px' }}>
-                <div className="form-group" style={{ width: '80px' }}>
-                  <label className="config-label">Status</label>
-                  <select
-                    className="config-input"
-                    style={{marginBottom: '0px'}}
+                <div className="form-group" style={{ width: '100px' }}>
+                  <p className="config-label">Status</p>
+                  <Dropdown
+                    options={statusOptions}
                     value={editForm.status}
-                    onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
-                  >
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
-                  </select>
+                    onChange={(value) => setEditForm({ ...editForm, status: value })}
+                  />
                 </div>
-                <div className="form-group" style={{width: '40%', minWidth: '250px'}}>
+                <div className="form-group" style={{ width: '40%', minWidth: '250px' }}>
                   <label htmlFor="editPromptDescription" className="config-label">Description</label>
                   <input
                     type="text"
                     className="config-input"
-                    style={{marginBottom: '0px'}}
+                    style={{ marginBottom: '0px' }}
                     id="editPromptDescription"
                     value={editForm.description}
                     onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
                   />
                 </div>
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end', marginLeft: 'auto'}}>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end', marginLeft: 'auto' }}>
                   <button
                     className="btn btn-primary"
                     onClick={handleUpdatePrompt}

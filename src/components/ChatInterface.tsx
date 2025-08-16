@@ -17,8 +17,7 @@ const userTypeOptions: DropdownOption[] = [
 
 const modeOptions: DropdownOption[] = [
   { value: 'chatbot', label: 'Chatbot', active: true },
-  { value: 'pdf', label: 'Huddle Sequence Planner' },
-  { value: 'planner', label: 'Huddle Generator' },
+  { value: 'huddle', label: 'Huddle Generator' },
   { value: 'voice', label: 'Voice Script Generator' },
   { value: 'quiz', label: 'Quiz Generator' },
 ];
@@ -267,12 +266,10 @@ const ChatInterface: React.FC = () => {
       <div className="chat-container">
         <div className="chat-header">
           <div className="chat-title">
-            {state.mode === 'pdf'
-              ? 'Huddle Sequence Planner'
+            {state.mode === 'huddle'
+              ? 'Huddle Generator'
               : state.mode === 'voice'
                 ? 'Voice Script Generator'
-                : state.mode === 'planner'
-                  ? 'Huddle Generator'
                   : 'RAG System Testing Interface'}
           </div>
           <div className="metric">
@@ -281,7 +278,7 @@ const ChatInterface: React.FC = () => {
           </div>
         </div>
 
-        {state.mode === 'pdf' ? (
+        {state.mode === 'huddle' ? (
           <>
             {showHuddleWizard ? (
               <div className="huddle-pane">
@@ -312,7 +309,7 @@ const ChatInterface: React.FC = () => {
                     setMessages(prev => [...prev, userMsg, assistantMsg]);
 
                     try {
-                      await apiService.sendHuddlePlan(
+                      await apiService.sendHuddleStream(
                         {
                           learningFocus: cfg.learningFocus,
                           topic: cfg.topic,
@@ -423,15 +420,6 @@ const ChatInterface: React.FC = () => {
             >
               + Voiceover
             </button>
-          </>
-        ) : state.mode === 'planner' ? (
-          <>
-            <ChatMessages messages={messages} error={error} />
-            <div className="flex items-center justify-center h-1/2">
-              <div className="p-4 text-sm text-gray-600">
-                Huddle Generator is selected. Awaiting configuration instructions.
-              </div>
-            </div>
           </>
         ) :
           state.mode === 'quiz' ? (

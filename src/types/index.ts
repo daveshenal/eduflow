@@ -58,7 +58,7 @@ export interface FileInfo {
 }
 
 export type UserType = 'developer' | 'educator' | 'regular';
-export type ApplicationMode = 'chatbot' | 'quiz' | 'pdf' | 'voice' | 'planner';
+export type ApplicationMode = 'chatbot' | 'quiz' | 'huddle' | 'voice';
 export type IndexType = 'global' | 'provider';
 export type GlobalCategory = 'accreditations' | 'federal' | 'state';
 export type ProviderCategory = 'accreditations' | 'clinical' | 'hr'; 
