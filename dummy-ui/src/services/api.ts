@@ -92,7 +92,6 @@ class APIService {
   async sendHuddleStream(
     config: {
       providerId?: string;
-      ccn?: string;
       learningFocus: string;
       topic: string;
       clinicalContext: string;

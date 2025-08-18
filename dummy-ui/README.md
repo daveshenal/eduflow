@@ -1,4 +1,4 @@
-# RAG System Testing Interface
+# HOP AI - RAG System Testing Interface
 
 A modern React TypeScript application for testing RAG (Retrieval-Augmented Generation) systems with a beautiful UI built with Tailwind CSS.
 
