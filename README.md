@@ -14,7 +14,12 @@
 ```text
 hop-phoenix-ml/
 ├── app/                  # FastAPI application core
-│   └── main.py           # API entrypoint
+│   ├── main.py           # API entrypoint
+│   ├── core/             # Application-wide core logic
+│   ├── pipeline/         # Main workflows
+│   ├── knowledgebase/    # Index management scripts
+│   ├── prompts/          # Multiple prompts
+│   └── routes/           # API route definitions
 ├── config/               # Configuration files
 ├── docs/                 # Architecture diagrams and documentation
 ├── dummy-ui/             # Frontend placeholder (HTML, CSS, JS)
