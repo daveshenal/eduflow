@@ -1,0 +1,170 @@
+import functools
+import logging
+from langchain_community.vectorstores import AzureSearch
+from typing import List, Optional, Tuple
+from langchain.schema import Document
+from azure.search.documents.models import VectorizedQuery
+
+from config.settings import settings
+from langchain_openai import AzureOpenAIEmbeddings
+
+class CachedAzureSearch(AzureSearch):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Store index_name from kwargs or get it from parent class
+        self.index_name = kwargs.get('index_name') or getattr(self, 'index_name', None)
+    
+    @functools.cached_property
+    def _index_metadata(self):
+        return self.client.get_index(self.index_name)
+
+    def similarity_search_by_vector(
+        self,
+        embedding: List[float],
+        k: int = 4,
+        score_threshold: Optional[float] = None,
+        filters: Optional[str] = None
+    ) -> List[Tuple[Document, float]]:
+        """
+        Search by precomputed embedding vector directly,
+        avoiding re-embedding the query.
+        """
+        vector_query = VectorizedQuery(
+            vector=embedding,
+            k_nearest_neighbors=k,
+            fields="content_vector"
+        )
+        
+        results = self.client.search(
+            search_text="*",
+            vector_queries=[vector_query],
+            top=k,
+            filter=filters,
+            include_total_count=True
+        )
+        docs = []
+        for result in results:
+            score = result.get('@search.score', 0)
+            if score_threshold is not None and score < score_threshold:
+                continue
+            metadata = {
+                "category": result.get("category"),
+                "source_name": result.get("source_name"),
+                "source_path": result.get("source_path"),
+                "created_at": result.get("created_at"),
+                "title": result.get("title"),
+            }
+            doc = Document(page_content=result.get('content', ''), metadata=metadata)
+            docs.append((doc, score))
+        return docs
+
+class PrioritizedSearchManager:
+    _instances = {}
+
+    def __init__(self, index_name: str):
+        self.index_name = index_name
+        self.embeddings = AzureOpenAIEmbeddings(
+            deployment=settings.AZURE_OPENAI_EMBEDDING_DEPLOYMENT,
+            model=settings.AZURE_OPENAI_EMBEDDING_DEPLOYMENT,
+            azure_endpoint=settings.AZURE_OPENAI_ENDPOINT,
+            api_key=settings.AZURE_OPENAI_KEY,
+            openai_api_version=settings.AZURE_OPENAI_API_VERSION
+        )
+        self.search_endpoint = settings.AZURE_SEARCH_ENDPOINT
+        self.search_key = settings.AZURE_SEARCH_KEY
+
+    def get_vectorstore(self):
+        # Singleton cache to avoid re-instantiation and metadata calls
+        if self.index_name not in self._instances:
+            self._instances[self.index_name] = CachedAzureSearch(
+                azure_search_endpoint=self.search_endpoint,
+                azure_search_key=self.search_key,
+                index_name=self.index_name,
+                embedding_function=self.embeddings.embed_query,
+                vector_field_name="content_vector"
+            )
+        return self._instances[self.index_name]
+    
+class PrioritizedRetriever:
+    def __init__(
+        self,
+        provider_id: str,
+        provider_k: int,
+        global_k: int,
+        min_score: float,
+    ):
+        self.provider_k = provider_k
+        self.global_k = global_k
+        self.min_score = min_score
+
+        manager_global = PrioritizedSearchManager(settings.AZURE_GLOBAL_INDEX_NAME)
+        self.global_store = manager_global.get_vectorstore()
+
+        manager_provider = PrioritizedSearchManager(f"provider-index-{provider_id}")
+        self.provider_store = manager_provider.get_vectorstore()
+
+    def get_relevant_documents(
+        self,
+        query: str,
+        provider_filter: Optional[str] = None,
+        global_filter: Optional[str] = None
+    ) -> List[Document]:
+        try:
+            # Embed once
+            query_embedding = self.provider_store.embedding_function(query)
+
+            # Use similarity_search_by_vector to avoid re-embedding
+            provider_docs = self._search_from_store(
+                self.provider_store, query_embedding, self.provider_k, provider_filter
+            )
+            global_docs = self._search_from_store(
+                self.global_store, query_embedding, self.global_k, global_filter
+            )
+
+            combined = provider_docs + global_docs
+            logging.info(f"Retrieved {len(provider_docs)} provider docs and {len(global_docs)} global docs")
+            
+            # Print metadata of all retrieved documents
+            # for i, doc in enumerate(combined, 1):
+            #     print(f"[Doc {i}]")
+            #     print("Metadata:", doc.metadata)
+            
+            return combined[:self.provider_k + self.global_k]
+
+        except Exception as e:
+            logging.warning(f"RAG search failed: {e}")
+            return []
+
+    def _search_from_store(
+        self,
+        store,
+        embedding: List[float],
+        k: int,
+        filters: Optional[str] = None
+    ) -> List[Document]:
+        try:
+            scored_docs = store.similarity_search_by_vector(
+                embedding=embedding,
+                k=k * 4,
+                score_threshold=self.min_score,
+                filters=filters
+            )
+            return [doc for doc, _ in scored_docs][:k]
+        except Exception as e:
+            logging.warning(f"Search error in store with filter {filters}: {e}")
+            return []
+        
+    def format_context_with_sources(self, docs: List[Document]) -> str:
+        """Format context with clear source attribution using real file names"""
+        if not docs:
+            return "No relevant documents found in knowledge bases."
+        
+        context_parts = []
+        context_parts.append("=== FROM KNOWLEDGE SOURCES ===")
+        
+        for i, doc in enumerate(docs, 1):
+            source_name = doc.metadata.get("source_name", f"document_{i}")
+            # print(f"\nSource {i} - {source_name}:\n{doc.page_content}\n")
+            context_parts.append(f"\nSource {i} - {source_name}:\n{doc.page_content}\n")
+
+        return "\n".join(context_parts)
