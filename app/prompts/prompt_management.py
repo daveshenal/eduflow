@@ -114,7 +114,7 @@ async def get_db_connection():
         password=DATABASE_CONFIG["password"],
         db=DATABASE_CONFIG["db"],
         autocommit=True,
-        ssl=ssl_context
+        # ssl=ssl_context
     )
     try:
         yield conn
@@ -293,6 +293,7 @@ class AsyncPromptManager:
                 f"DELETE FROM {self.table_name} WHERE name = %s AND version = %s",
                 (name, version)
             )
+            print(f"Deletet: {name}, {version}")
             return cursor.rowcount > 0
 
     async def get_all_active_prompts(self, db_conn) -> List[PromptResponse]:
