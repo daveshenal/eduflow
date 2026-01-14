@@ -1,6 +1,6 @@
-# AZURE AI RAG System
+# EduFlow RAG System
 
-**AI-powered retrieval and generation for micro-education in healthcare compliance**
+**AI-powered retrieval and generation for micro-education**
 
 ## Key Components
 1. **Data Pipeline**
