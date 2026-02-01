@@ -35,7 +35,7 @@ class ProviderIndex:
         
         self.search_index_client = get_search_index_client()
         self.search_indexer_client = get_search_indexer_client()
-        self.index = f"provider-index-{provider_id}"
+        self.index = f"index-{provider_id}"
         self.azure_oai_endpoint = settings.AZURE_OPENAI_ENDPOINT
         self.azure_oai_key = settings.AZURE_OPENAI_KEY
         self.emb_deployment_name = settings.AZURE_OPENAI_EMBEDDING_DEPLOYMENT
