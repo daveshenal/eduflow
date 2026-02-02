@@ -22,11 +22,23 @@ async def generate_chat_stream(payload: dict, claude_client):
                 global_k=5,
                 min_score=settings.MIN_SCORE,
             )
-
+            
+            # Build dynamic global filter from branchState and certificationList (comma-separated)
+            global_filter = retriever.build_global_filter(
+                branch_state=payload.get('branchState'),
+                certifications=payload.get('certificationList'),
+            )
+            
+            # print("=================== Filters ===================\n")
+            # print(payload.get('branchState'))
+            # print(payload.get('accreditations'))
+            # print(global_filter)
+            # print("===============================================")
+            
             docs = retriever.get_relevant_documents(
                 query=message,
                 provider_filter=None,
-                global_filter=None
+                global_filter=global_filter
             )
 
             context = retriever.format_context_with_sources(docs)

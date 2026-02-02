@@ -6,7 +6,6 @@ import asyncio
 
 from app.adapters.claude_service import get_claude_client
 from app.core.scope_val_service import scope_validation
-
 from tests.scope_val_service.user_inputs import valid_home_health_examples, invalid_examples, edge_case_examples
 
 claude_client = get_claude_client()

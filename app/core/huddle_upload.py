@@ -2,9 +2,10 @@ import json
 from pathlib import Path
 import logging
 import mimetypes
-import tempfile
+import io
 
 from app.adapters.azure_blob import get_hop_saves_container_client
+from azure.storage.blob import ContentSettings
 
 
 def _iter_local_files(directory: Path):
@@ -19,11 +20,10 @@ def upload_huddle_artifacts(
     pdfs_dir: Path,
     audio_dir: Path,
     voicescripts_dir: Path,
-    huddle_plan: dict = None
 ) -> dict:
     """
     Upload generated huddle artifacts to Azure Blob Storage in the structure:
-      provider-{provider_id}/huddle-seq-{role}-{discipline}-{datetime}/{pdf|audio_mp3|voicescripts|huddle_plan}/<files>
+      provider-{provider_id}/{job_id}/{pdf|audio_mp3|voicescripts}/<files>
 
     Returns a dict with blob paths uploaded per category.
     """
@@ -39,7 +39,6 @@ def upload_huddle_artifacts(
         content_settings = None
         mime, _ = mimetypes.guess_type(local_path.name)
         try:
-            from azure.storage.blob import ContentSettings
             if mime:
                 content_settings = ContentSettings(content_type=mime)
         except Exception:
@@ -55,24 +54,6 @@ def upload_huddle_artifacts(
         return blob_path
 
     try:
-        # Upload huddle plan if provided
-        if huddle_plan:
-            try:
-                # Create a temporary file for the huddle plan
-                with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False, encoding='utf-8') as temp_file:
-                    json.dump(huddle_plan, temp_file, indent=2, ensure_ascii=False)
-                    temp_file_path = Path(temp_file.name)
-                
-                # Upload the huddle plan to blob storage
-                blob_path = _upload_file(temp_file_path, f"{base_prefix}/huddle_plan")
-                logging.info(f"Uploaded huddle plan to: {blob_path}")
-                
-                # Clean up temporary file
-                temp_file_path.unlink()
-            except Exception as plan_upload_error:
-                logging.warning(f"Failed to upload huddle plan: {plan_upload_error}")
-                # Continue with other uploads even if plan upload fails
-
         for file_path in _iter_local_files(pdfs_dir):
             blob_path = _upload_file(file_path, f"{base_prefix}/pdf")
             uploads["pdf"].append(blob_path)
@@ -95,40 +76,58 @@ def upload_huddle_artifacts(
     except Exception as e:
         logging.error(f"Failed to upload huddle artifacts: {e}")
         raise
-
-
-if __name__ == "__main__":
-    import json
-    import sys
     
-    # Define inputs here directly
-    provider_id = "595959"
-    job_id = "job-12345"
-    pdfs_dir = Path("temp/huddles/pdfs")
-    audio_dir = Path("temp/huddles/audio_mp3s")
-    voicescripts_dir = Path("temp/huddles/voicescripts")
+    
+def upload_huddle_logs(
+    job_id:str,
+    provider_id: str,
+    params: dict,
+    huddle_plan: dict,
+    response: dict,
+    usage: dict
+) -> dict:
+    """
+    Upload logs for generated huddle artifacts to Azure Blob Storage in the structure:
+      provider-{provider_id}/{job_id}/logs/<files>
+    """
 
-    # Validate directories
-    for label, path in [
-        ("pdfs-dir", pdfs_dir),
-        ("audio-dir", audio_dir),
-        ("voicescripts-dir", voicescripts_dir),
-    ]:
-        if not path.exists() or not path.is_dir():
-            print(f"Error: {label} '{path}' does not exist or is not a directory.")
-            sys.exit(2)
+    base_prefix = f"provider-{provider_id}/{job_id}/logs"
 
-    # Call upload function
-    try:
-        result = upload_huddle_artifacts(
-            job_id=job_id,
-            provider_id=provider_id,
-            pdfs_dir=pdfs_dir,
-            audio_dir=audio_dir,
-            voicescripts_dir=voicescripts_dir,
-            huddle_plan={"test": "plan", "huddles": []}
+    container_client = get_hop_saves_container_client()
+
+    def _upload_json(data: dict, blob_name: str, prefix: str):
+        """Upload a JSON dict directly to blob storage without saving locally."""
+
+        blob_path = f"{prefix}/{blob_name}"
+        json_bytes = json.dumps(data, indent=2, ensure_ascii=False).encode("utf-8")
+
+        container_client.upload_blob(
+            name=blob_path,
+            data=io.BytesIO(json_bytes),
+            overwrite=True,
+            content_settings=ContentSettings(content_type="application/json"),
         )
-        print(json.dumps(result, indent=2))
-    except Exception as e:
-        logging.error(f"Upload failed: {e}")
-        sys.exit(1)
+        return blob_path
+
+    try:
+        blob_path = _upload_json(huddle_plan, "huddle_plan.json", f"{base_prefix}")
+        logging.info(f"Uploaded huddle plan to: {blob_path}")
+        
+        blob_path = _upload_json(params, "input_params.json", f"{base_prefix}")
+        logging.info(f"Uploaded input params to: {blob_path}")
+        
+        blob_path = _upload_json(response, "response.json", f"{base_prefix}")
+        logging.info(f"Uploaded response to: {blob_path}")
+        
+        blob_path = _upload_json(usage, "usage.json", f"{base_prefix}")
+        logging.info(f"Uploaded usage to: {blob_path}")
+        
+        logging.info(
+            "Uploaded huddle logs to container '%s' with base prefix '%s'",
+            container_client.container_name,
+            base_prefix,
+        )
+
+    except Exception as plan_upload_error:
+        logging.warning(f"Failed to upload huddle plan: {plan_upload_error}")
+        raise

@@ -3,7 +3,7 @@ Script for Scope validation
 """
 
 from config.settings import settings
-from app.prompts.scope_prompt import system_prompt
+from app.prompts.prompt_management import get_db_connection, get_manager
 
 
 # Domain validation function
@@ -22,10 +22,15 @@ async def scope_validation(payload: dict, claude_client):
             {"role": "user", "content": f"USER INPUTS (Home Health Only):\n{message}"}
         ]
         
+        async with get_db_connection() as db_conn:
+            prompt_manager = get_manager("use_case_prompts")
+            obj = await prompt_manager.get_active_prompt("scope_validation", db_conn)
+            scope_prompt = obj.prompt
+        
         # Send the request to Claude
         response = await claude_client.messages.create(
-            model=settings.CLAUDE_MODEL_CHATBOT,
-            system=system_prompt,
+            model=settings.CLAUDE_MODEL_HUDDLE,
+            system=scope_prompt,
             messages=user_messages,
             max_tokens=512,
             temperature=0.1

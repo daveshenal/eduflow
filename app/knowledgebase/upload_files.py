@@ -5,6 +5,7 @@ from io import BytesIO
 import logging
 from dataclasses import dataclass
 from enum import Enum
+import PyPDF2
 
 # LangChain imports
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -96,7 +97,6 @@ class DocumentProcessor:
     def _load_pdf_from_bytes(self, data: bytes, filename: str) -> List[Document]:
         """Load PDF from bytes"""
         try:
-            import PyPDF2
             pdf_file = BytesIO(data)
             pdf_reader = PyPDF2.PdfReader(pdf_file)
             
@@ -116,8 +116,9 @@ class DocumentProcessor:
             
             return documents
         except Exception as e:
-            logger.error(f"Error extracting PDF text: {e}")
-            return []
+            error_msg = f"Error extracting PDF text from {filename}: {str(e)}"
+            logger.error(error_msg)
+            raise Exception(error_msg)
     
     def _load_docx_from_bytes(self, data: bytes, filename: str) -> List[Document]:
         """Load DOCX from bytes"""
@@ -139,9 +140,14 @@ class DocumentProcessor:
                     "file_type": FileType.DOCX.value,
                 }
             )]
+        except ImportError as e:
+            error_msg = f"Missing required dependency for DOCX processing: {str(e)}. Please install python-docx: pip install python-docx"
+            logger.error(error_msg)
+            raise Exception(error_msg)
         except Exception as e:
-            logger.error(f"Error extracting DOCX text: {e}")
-            return []
+            error_msg = f"Error extracting DOCX text from {filename}: {str(e)}"
+            logger.error(error_msg)
+            raise Exception(error_msg)
     
     def _load_txt_from_bytes(self, data: bytes, filename: str) -> List[Document]:
         """Load text from bytes"""

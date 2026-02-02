@@ -3,12 +3,9 @@ from pydantic import BaseModel, Field
 from typing import Optional, List
 from datetime import datetime
 import uuid
-import ssl
-from contextlib import asynccontextmanager
 import aiomysql
 from enum import Enum
-
-from config.settings import settings
+from app.adapters.azure_sql import get_db_connection
 
 
 class MainPromptNames(Enum):
@@ -23,6 +20,7 @@ class UseCasePromptNames(Enum):
     HUDDLE_PLANNER = "huddle_planner"
     HUDDLE_GENERATOR = "huddle_generator"
     VOICESCRIPT = "voice_script"
+    SCOPE_VALIDATION = "scope_validation"
 
 
 class RolePromptNames(Enum):
@@ -92,34 +90,6 @@ class PromptResponse(BaseModel):
 class ActivatePromptRequest(BaseModel):
     name: str
     version: str
-
-
-# Database configuration
-DATABASE_CONFIG = {
-    "host": settings.MYSQL_HOST,
-    "port": settings.MYSQL_PORT,
-    "user": settings.MYSQL_USER,
-    "password": settings.MYSQL_PASSWORD,
-    "db": settings.MYSQL_DB
-}
-
-ssl_context = ssl.create_default_context(cafile="certs/DigiCertGlobalRootCA.crt.pem")
-
-@asynccontextmanager
-async def get_db_connection():
-    conn = await aiomysql.connect(
-        host=DATABASE_CONFIG["host"],
-        port=DATABASE_CONFIG["port"],
-        user=DATABASE_CONFIG["user"],
-        password=DATABASE_CONFIG["password"],
-        db=DATABASE_CONFIG["db"],
-        autocommit=True,
-        # ssl=ssl_context
-    )
-    try:
-        yield conn
-    finally:
-        conn.close()
 
 
 class AsyncPromptManager:

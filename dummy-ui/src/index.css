@@ -968,7 +968,6 @@ body::before {
 }
 
 .chat-messages p {
-  margin-bottom: 18px;
   color: #374151;
   text-align: justify;
 }

@@ -3,13 +3,17 @@ __pycache__
 
 # For better security and scalability, use a Azure Key Vault
 .env
-
-# Simple Backend (For UI Test)
-app/test_main.py
+.env.prd
+.env.qa
 
 # Temporary files
 temp
 
+# Prompt DB Dump
+db_backups
 
-app/retrivers/main_retriever_cl.py
-env.text
+# certs
+certs/DigiCertGlobalRootCA.crt.pem
+
+# test user backend
+huddles-job

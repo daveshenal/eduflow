@@ -26,6 +26,8 @@ from azure.search.documents.indexes.models import (
     SearchIndexerIndexProjectionSelector
 )
 
+from azure.storage.blob import BlobServiceClient
+from azure.core.exceptions import ResourceExistsError
 from app.adapters.azure_search import get_search_index_client, get_search_indexer_client
 from config.settings import settings
 import time
@@ -35,7 +37,8 @@ class ProviderIndex:
         
         self.search_index_client = get_search_index_client()
         self.search_indexer_client = get_search_indexer_client()
-        self.index = f"index-{provider_id}"
+        self.blob_service_client = BlobServiceClient.from_connection_string(settings.AZURE_STORAGE_CONNECTION_STRING)
+        self.index = f"provider-index-{provider_id}"
         self.azure_oai_endpoint = settings.AZURE_OPENAI_ENDPOINT
         self.azure_oai_key = settings.AZURE_OPENAI_KEY
         self.emb_deployment_name = settings.AZURE_OPENAI_EMBEDDING_DEPLOYMENT
@@ -45,6 +48,25 @@ class ProviderIndex:
         self.chunk_size = settings.MAX_CHUNK_SIZE     
         self.chunk_overlap = settings.CHUNK_OVERLAP     
         self.emb_dimentions = settings.EMBEDDING_DIMENSIONS
+        
+    def create_blob_container(self):
+        """Create Azure Blob Storage container if it doesn't exist"""
+        
+        try:
+            container_client = self.blob_service_client.create_container(
+                name=self.blob_container_name,
+                public_access=None  # Private container
+            )
+            print(f"Container '{self.blob_container_name}' created successfully")
+            return container_client
+            
+        except ResourceExistsError:
+            print(f"Container '{self.blob_container_name}' already exists")
+            return self.blob_service_client.get_container_client(self.blob_container_name)
+            
+        except Exception as e:
+            print(f"Error creating container '{self.blob_container_name}': {e}")
+            raise
 
     def create_search_index(self):
         """Create Azure AI Search index with vector search capabilities and vectorizer"""
@@ -360,20 +382,24 @@ class ProviderIndex:
         
         print("Setting up complete indexing pipeline...")
         
+        # Create the blob container first
+        print("1. Creating blob container...")
+        self.create_blob_container()
+        
         # Create the search index
-        print("1. Creating search index...")
+        print("2. Creating search index...")
         self.create_search_index()
         
         # Create blob data source
-        print("2. Creating blob data source...")
+        print("3. Creating blob data source...")
         self.create_blob_data_source()
         
         # Create skillset
-        print("3. Creating skillset...")
+        print("4. Creating skillset...")
         self.create_skillset()
         
-        # Create indexer
-        print("4. Creating indexer...")
-        self.create_indexer()
+        # # Create indexer
+        # print("5. Creating indexer...")
+        # self.create_indexer()
         
         print("Indexing pipeline setup complete!")

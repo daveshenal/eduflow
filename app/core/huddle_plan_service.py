@@ -9,7 +9,7 @@ def get_word_targets(duration: int) -> tuple[int, int]:
     """Get min/max word counts based on duration."""
     duration_to_words = {
         5: (550, 600),
-        10: (1100, 1250),
+        10: (1200, 1300),
     }
 
     if duration not in duration_to_words:
@@ -107,15 +107,24 @@ async def generate_plan(claude_client, system_prompt: str, user_prompt: str) -> 
     
     # Parse JSON if possible, else return raw text
     try:
-        return json.loads(full_text)
+        plan_result = json.loads(full_text)
     except Exception:
         # Try extracting JSON substring
         start = full_text.find("{")
         end = full_text.rfind("}")
         if start != -1 and end != -1 and end > start:
             try:
-                return json.loads(full_text[start:end+1])
+                plan_result = json.loads(full_text[start:end+1])
             except Exception:
-                return {"raw": full_text}
+                plan_result = {"raw": full_text}
         else:
-            return {"raw": full_text}
+            plan_result = {"raw": full_text}
+    
+    # Return both plan result and token usage
+    return {
+        "plan": plan_result,
+        "tokens": {
+            "input": response.usage.input_tokens,
+            "output": response.usage.output_tokens
+        }
+    }

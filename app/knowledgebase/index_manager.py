@@ -4,10 +4,6 @@ from app.knowledgebase.provider_index import ProviderIndex
 
 app = FastAPI()
 
-@app.get("/")
-def read_root():
-    return {"message": "Indexing API is running."}
-
 @app.post("/run-provider-indexing/{provider_id}")
 def run_provider_indexing(provider_id: str):
     try:

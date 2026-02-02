@@ -8,6 +8,7 @@ import httpx
 
 from config.settings import settings
 from app.retrievers.index_data_retriver import PrioritizedRetriever
+from app.retrievers.a3_retriver import retrieve_action_plan
 from app.core.huddle_upload import upload_huddle_artifacts, upload_huddle_logs
 from app.core.huddle_plan_service import get_word_targets, fetch_plan_prompts, format_plan_prompt, generate_plan
 from app.core.huddle_content_service import fetch_huddle_prompts, process_single_huddle
