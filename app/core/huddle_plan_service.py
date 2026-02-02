@@ -2,7 +2,6 @@ import json
 import logging
 
 from config.settings import settings
-from app.prompts.prompt_management import get_manager, get_db_connection
 
 
 def get_word_targets(duration: int) -> tuple[int, int]:
@@ -50,7 +49,7 @@ async def fetch_plan_prompts(role_value: str, discipline_value: str) -> dict:
     return prompt_vars
 
 
-def format_plan_prompt(prompts: dict, params: dict, action_plan: str, min_words: int, max_words: int) -> str:
+def format_plan_prompt(prompts: dict, params: dict, min_words: int, max_words: int) -> str:
     """Format the user prompt template with actual values."""
     duration_display = f"{params['duration']} minutes"
     total_duration = f"{params['num_huddles'] * int(params['duration'])} minutes"
@@ -63,7 +62,6 @@ def format_plan_prompt(prompts: dict, params: dict, action_plan: str, min_words:
             topic=params['topic'],
             expected_outcomes="Not Provided",
             clinical_context=params['clinical_context'],
-            action_plan=action_plan,
             num_huddles=params['num_huddles'],
             min_words=min_words,
             max_words=max_words,

@@ -1,4 +1,3 @@
-from app.prompts.prompt_management import get_db_connection, get_manager
 from app.retrievers.index_data_retriver import PrioritizedRetriever
 from config.settings import settings
 
@@ -18,27 +17,16 @@ async def generate_chat_stream(payload: dict, claude_client):
         if user_type != "developer":
             retriever = PrioritizedRetriever(
                 provider_id=provider_id,
-                provider_k=5,
-                global_k=5,
+                k=settings.INDEX_TOP_K,
                 min_score=settings.MIN_SCORE,
             )
-            
-            # Build dynamic global filter from branchState and certificationList (comma-separated)
-            global_filter = retriever.build_global_filter(
+            ai_filter = retriever.build_ai_filter(
                 branch_state=payload.get('branchState'),
                 certifications=payload.get('certificationList'),
             )
-            
-            # print("=================== Filters ===================\n")
-            # print(payload.get('branchState'))
-            # print(payload.get('accreditations'))
-            # print(global_filter)
-            # print("===============================================")
-            
             docs = retriever.get_relevant_documents(
                 query=message,
-                provider_filter=None,
-                global_filter=global_filter
+                filter_expr=ai_filter,
             )
 
             context = retriever.format_context_with_sources(docs)

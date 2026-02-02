@@ -13,12 +13,8 @@ export interface ChatMessage {
 }
 
 export interface DocumentUploadConfig {
-  indexType: 'global' | 'provider';
-  globalCategory?: 'accreditations' | 'federal' | 'state';
-  globalAccreditation?: 'tjc' | 'achc' | 'chap';
-  globalFederal?: 'cms' | 'regulations';
-  globalState?: string;
-  providerCategory?: 'accreditations' | 'clinical' | 'hr';
+  providerId: string;
+  providerCategory: string;
 }
 
 export interface PromptTemplate {
@@ -59,6 +55,4 @@ export interface FileInfo {
 
 export type UserType = 'developer' | 'educator' | 'regular';
 export type ApplicationMode = 'chatbot' | 'quiz' | 'huddle' | 'voice';
-export type IndexType = 'global' | 'provider';
-export type GlobalCategory = 'accreditations' | 'federal' | 'state';
-export type ProviderCategory = 'accreditations' | 'clinical' | 'hr'; 
+export type ProviderCategory = 'accreditations' | 'clinical-protocols' | 'hr-policies'; 

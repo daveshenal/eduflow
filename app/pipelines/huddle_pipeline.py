@@ -8,13 +8,10 @@ import httpx
 
 from config.settings import settings
 from app.retrievers.index_data_retriver import PrioritizedRetriever
-from app.retrievers.a3_retriver import retrieve_action_plan
 from app.core.huddle_upload import upload_huddle_artifacts, upload_huddle_logs
 from app.core.huddle_plan_service import get_word_targets, fetch_plan_prompts, format_plan_prompt, generate_plan
 from app.core.huddle_content_service import fetch_huddle_prompts, process_single_huddle
 from app.core.pdf_generator import create_huddle_pdf
-from app.core.voicescript_service import generate_voiceover_script
-from app.core.audio_generator import generate_mp3_from_file
 
 
 class HuddleJob:
@@ -202,12 +199,11 @@ async def generate_huddles(params: dict, claude_client):
     
     try: 
         min_words, max_words = get_word_targets(params['duration'])
-        action_plan = retrieve_action_plan(params['ccn'])
 
         # === HUDDLE PLAN GENERATION ===
         
         prompts = await fetch_plan_prompts(params['role_value'], params['discipline_value'])
-        user_prompt = format_plan_prompt(prompts, params, action_plan, min_words, max_words)
+        user_prompt = format_plan_prompt(prompts, params, min_words, max_words)
         plan_response = await generate_plan(claude_client, prompts['system_prompt'], user_prompt)
         
         # Extract plan result and accumulate tokens
@@ -223,18 +219,17 @@ async def generate_huddles(params: dict, claude_client):
         
         dirs = setup_output_directories(params['job_id'])
 
-        # Prepare retriever
+        # Prepare retriever (single AI index)
         retriever = PrioritizedRetriever(
             provider_id=params['provider_id'],
-            provider_k=settings.PROVIDER_INDEX_TOP_K,
-            global_k=settings.GLOBAL_INDEX_TOP_K,
+            k=settings.INDEX_TOP_K,
             min_score=settings.MIN_SCORE,
         )
 
         huddle_prompts = await fetch_huddle_prompts()
 
-        # Build dynamic global filter from branchState and certificationList (comma-separated)
-        global_filter = retriever.build_global_filter(
+        # Build dynamic filter from branchState and certificationList (comma-separated)
+        ai_filter = retriever.build_ai_filter(
             branch_state=params['branch_state'],
             certifications=params['certifications'],
         )
@@ -246,7 +241,7 @@ async def generate_huddles(params: dict, claude_client):
             # Generate huddle content
             result = await process_single_huddle(
                 claude_client, huddle, huddle_id, plan_result, huddles, retriever,
-                huddle_prompts, min_words, max_words, params['duration'], global_filter,
+                huddle_prompts, min_words, max_words, params['duration'], ai_filter,
                 params['agency_name'], params['branch_name']
             )
 

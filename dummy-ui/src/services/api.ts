@@ -177,13 +177,8 @@ class APIService {
   async uploadDocuments(
     files: File[],
     config: {
-      indexType: string;
-      globalCategory?: string;
-      globalAccreditation?: string;
-      globalFederal?: string;
-      globalState?: string;
-      providerCategory?: string;
-      providerId?: string;
+      providerId: string;
+      providerCategory: string;
     },
     onProgress?: (progress: { loaded: number; total: number; percentage: number }) => void
   ): Promise<APIResponse> {
@@ -193,13 +188,8 @@ class APIService {
       formData.append('files', file);
     });
 
-    formData.append('index_type', config.indexType);
-    if (config.globalCategory) formData.append('global_category', config.globalCategory);
-    if (config.globalAccreditation) formData.append('global_accreditation', config.globalAccreditation);
-    if (config.globalFederal) formData.append('global_federal', config.globalFederal);
-    if (config.globalState) formData.append('global_state', config.globalState);
-    if (config.providerCategory) formData.append('provider_category', config.providerCategory);
-    if (config.providerId) formData.append('provider_id', config.providerId);
+    formData.append('provider_id', config.providerId);
+    formData.append('provider_category', config.providerCategory);
 
     try {
       const xhr = new XMLHttpRequest();

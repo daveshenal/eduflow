@@ -2,7 +2,6 @@ import logging
 import json
 
 from config.settings import settings
-from app.prompts.prompt_management import get_manager, get_db_connection
 
 
 async def fetch_huddle_prompts() -> dict:
@@ -117,7 +116,7 @@ async def generate_single_huddle(claude_client, system_prompt: str, user_message
 
 async def process_single_huddle(claude_client, huddle: dict, huddle_id: int, plan_result: dict, 
                                huddles: list, retriever, prompts: dict, min_words: int, max_words: int,
-                               duration: int, global_filter: str = None, agency_name: str = None, branch_name: str = None):
+                               duration: int, ai_filter: str = None, agency_name: str = None, branch_name: str = None):
     """
     Generate and return the HTML content for a single huddle.
     """
@@ -125,11 +124,10 @@ async def process_single_huddle(claude_client, huddle: dict, huddle_id: int, pla
     main_focus = huddle.get("main_focus")
     retrieval_query = huddle.get("retrieval_query") + " " + " ".join([p for p in [title, main_focus] if p])
     
-    # Fetch context for this huddle
+    # Fetch context for this huddle (single AI index)
     docs = retriever.get_relevant_documents(
         query=retrieval_query,
-        provider_filter=None,
-        global_filter=global_filter,
+        filter_expr=ai_filter,
     )
     context = retriever.format_context_with_sources(docs)
     

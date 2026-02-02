@@ -26,28 +26,53 @@ from azure.search.documents.indexes.models import (
     SearchIndexerIndexProjectionSelector
 )
 
+from azure.storage.blob import BlobServiceClient
+from azure.core.exceptions import ResourceExistsError, ResourceNotFoundError
 from app.adapters.azure_search import get_search_index_client, get_search_indexer_client
 from config.settings import settings
 import time
 
-class GlobalIndex:
-    def __init__(self):
-        
+class AIIndex:
+    """Single AI index"""
+
+    def __init__(self, index_id: str):
         self.search_index_client = get_search_index_client()
         self.search_indexer_client = get_search_indexer_client()
-        self.index = settings.AZURE_GLOBAL_INDEX_NAME
+        self.blob_service_client = BlobServiceClient.from_connection_string(settings.AZURE_STORAGE_CONNECTION_STRING)
+        self.index = f"ai-index-{index_id}"
         self.azure_oai_endpoint = settings.AZURE_OPENAI_ENDPOINT
         self.azure_oai_key = settings.AZURE_OPENAI_KEY
         self.emb_deployment_name = settings.AZURE_OPENAI_EMBEDDING_DEPLOYMENT
         self.emb_model_name = settings.AZURE_OPENAI_EMBEDDING_DEPLOYMENT
         self.storage_connection_string = settings.AZURE_STORAGE_CONNECTION_STRING
-        self.blob_container_name = settings.AZURE_GLOBAL_CONTAINER_NAME     
+        self.blob_container_name = f"ai-{index_id}"
         self.chunk_size = settings.MAX_CHUNK_SIZE     
         self.chunk_overlap = settings.CHUNK_OVERLAP     
-        self.emb_dimentions = settings.EMBEDDING_DIMENSIONS     
+        self.emb_dimentions = settings.EMBEDDING_DIMENSIONS
+        
+    def create_blob_container(self):
+        """Create Azure Blob Storage container if it doesn't exist"""
+        
+        try:
+            container_client = self.blob_service_client.create_container(
+                name=self.blob_container_name,
+                public_access=None  # Private container
+            )
+            print(f"Container '{self.blob_container_name}' created successfully")
+            return container_client
+            
+        except ResourceExistsError:
+            print(f"Container '{self.blob_container_name}' already exists")
+            return self.blob_service_client.get_container_client(self.blob_container_name)
+            
+        except Exception as e:
+            print(f"Error creating container '{self.blob_container_name}': {e}")
+            raise
 
     def create_search_index(self):
         """Create Azure AI Search index with vector search capabilities and vectorizer"""
+        
+        print(f"Creating or updating index: {self.index}")
         
         # Define the search fields
         fields = [
@@ -59,8 +84,6 @@ class GlobalIndex:
                 analyzer_name="keyword"
             ),
             SimpleField(name="parent_id", type=SearchFieldDataType.String, filterable=True),  # Required for indexProjections
-            SimpleField(name="level", type=SearchFieldDataType.String, filterable=True),
-            SimpleField(name="state", type=SearchFieldDataType.String, filterable=True),
             SimpleField(name="category", type=SearchFieldDataType.String, filterable=True),
             SimpleField(name="source_name", type=SearchFieldDataType.String, filterable=True),
             SimpleField(name="source_path", type=SearchFieldDataType.String, filterable=True),
@@ -188,8 +211,6 @@ class GlobalIndex:
                     parent_key_field_name="parent_id",
                     source_context="/document/pages/*",
                     mappings=[
-                        InputFieldMappingEntry(name="level", source="/document/level"),
-                        InputFieldMappingEntry(name="state", source="/document/state"),
                         InputFieldMappingEntry(name="category", source="/document/category"),
                         InputFieldMappingEntry(name="source_name", source="/document/metadata_storage_name"),
                         InputFieldMappingEntry(name="source_path", source="/document/metadata_storage_path"),
@@ -233,7 +254,7 @@ class GlobalIndex:
                 "dataToExtract": "contentAndMetadata",
                 "imageAction": "none",
                 "failOnUnsupportedContentType": False,
-                "failOnUnprocessableDocument": False
+                "failOnUnprocessableDocument": False,
             }
         )
         
@@ -242,14 +263,6 @@ class GlobalIndex:
             FieldMapping(
                 source_field_name="id",
                 target_field_name="parent_id"
-            ),
-            FieldMapping(
-                source_field_name="level",
-                target_field_name="level"
-            ),
-            FieldMapping(
-                source_field_name="state",
-                target_field_name="state"
             ),
             FieldMapping(
                 source_field_name="category",
@@ -370,20 +383,92 @@ class GlobalIndex:
         
         print("Setting up complete indexing pipeline...")
         
+        # Create the blob container first
+        print("1. Creating blob container...")
+        self.create_blob_container()
+        
         # Create the search index
-        print("1. Creating search index...")
+        print("2. Creating search index...")
         self.create_search_index()
         
         # Create blob data source
-        print("2. Creating blob data source...")
+        print("3. Creating blob data source...")
         self.create_blob_data_source()
         
         # Create skillset
-        print("3. Creating skillset...")
+        print("4. Creating skillset...")
         self.create_skillset()
         
         # # Create indexer
-        # print("4. Creating indexer...")
+        # print("5. Creating indexer...")
         # self.create_indexer()
         
         print("Indexing pipeline setup complete!")
+
+    def delete_index_and_container(self):
+        """
+        Delete the Azure AI Search index, indexer, skillset, data source,
+        and the associated blob container for this index_id.
+        Order: indexer -> skillset -> data source -> index -> blob container.
+        """
+        deleted = {"indexer": False, "skillset": False, "data_source": False, "index": False, "container": False}
+        errors = []
+
+        # Delete indexer (must be first - it references index, skillset, data source)
+        indexer_name = f"{self.index}-indexer"
+        try:
+            self.search_indexer_client.delete_indexer(indexer_name)
+            deleted["indexer"] = True
+            print(f"Deleted indexer: {indexer_name}")
+        except ResourceNotFoundError:
+            print(f"Indexer {indexer_name} not found, skipping")
+        except Exception as e:
+            errors.append(f"indexer: {e}")
+
+        # Delete skillset
+        skillset_name = f"{self.index}-skillset"
+        try:
+            self.search_indexer_client.delete_skillset(skillset_name)
+            deleted["skillset"] = True
+            print(f"Deleted skillset: {skillset_name}")
+        except ResourceNotFoundError:
+            print(f"Skillset {skillset_name} not found, skipping")
+        except Exception as e:
+            errors.append(f"skillset: {e}")
+
+        # Delete data source
+        data_source_name = f"{self.index}-blob-datasource"
+        try:
+            self.search_indexer_client.delete_data_source_connection(data_source_name)
+            deleted["data_source"] = True
+            print(f"Deleted data source: {data_source_name}")
+        except ResourceNotFoundError:
+            print(f"Data source {data_source_name} not found, skipping")
+        except Exception as e:
+            errors.append(f"data_source: {e}")
+
+        # Delete search index
+        try:
+            self.search_index_client.delete_index(self.index)
+            deleted["index"] = True
+            print(f"Deleted search index: {self.index}")
+        except ResourceNotFoundError:
+            print(f"Search index {self.index} not found, skipping")
+        except Exception as e:
+            errors.append(f"index: {e}")
+
+        # Delete blob container
+        try:
+            container_client = self.blob_service_client.get_container_client(self.blob_container_name)
+            container_client.delete_container()
+            deleted["container"] = True
+            print(f"Deleted blob container: {self.blob_container_name}")
+        except ResourceNotFoundError:
+            print(f"Blob container {self.blob_container_name} not found, skipping")
+        except Exception as e:
+            errors.append(f"container: {e}")
+
+        if errors:
+            raise RuntimeError("; ".join(errors))
+
+        return deleted
