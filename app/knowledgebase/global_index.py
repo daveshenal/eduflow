@@ -382,8 +382,8 @@ class GlobalIndex:
         print("3. Creating skillset...")
         self.create_skillset()
         
-        # Create indexer
-        print("4. Creating indexer...")
-        self.create_indexer()
+        # # Create indexer
+        # print("4. Creating indexer...")
+        # self.create_indexer()
         
         print("Indexing pipeline setup complete!")

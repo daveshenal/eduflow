@@ -13,7 +13,7 @@ async def fetch_voicescript_prompts() -> dict:
         
         return {"voice_script_prompt": obj.prompt}
 
-async def generate_voiceover_script(payload: dict, claude_client) -> str:
+async def generate_voiceover_script(payload: dict, claude_client) -> dict:
     """Convert a generated Huddle (HTML) into a narration-ready voiceover script.
 
     Expected payload keys:
@@ -76,7 +76,15 @@ async def generate_voiceover_script(payload: dict, claude_client) -> str:
             else:
                 parts.append(getattr(block, "text", ""))
         script = "".join(parts).strip()
-        return script
+        
+        # Return both script and token usage
+        return {
+            "script": script,
+            "tokens": {
+                "input": response.usage.input_tokens,
+                "output": response.usage.output_tokens
+            }
+        }
     except Exception as e:
         # Re-raise for the API layer to return as HTTP error
         raise e

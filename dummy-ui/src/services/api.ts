@@ -53,6 +53,8 @@ class APIService {
         message: config.message,
         userType: config.userType,
         providerId: config.providerId,
+        branchState: 'Virginia',
+        certificationList: "CHAP,TJC"
       };
 
       const response = await fetch(`${this.baseUrl}/chat/stream`, {
@@ -122,34 +124,28 @@ class APIService {
         learningLevel: config.learningLevel,
         numHuddles: config.numHuddles,
       };
-
-      const response = await fetch(`${this.baseUrl}/huddles/stream`, {
+  
+      const response = await fetch(`${this.baseUrl}/huddles/start`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestBody),
       });
-
+  
       if (!response.ok) {
         const errorText = await response.text();
         throw new Error(`HTTP ${response.status}: ${response.statusText} - ${errorText}`);
       }
-
-      if (!response.body) throw new Error('No response body');
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let fullContent = '';
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const chunk = decoder.decode(value, { stream: true });
-        fullContent += chunk;
-        onChunk(fullContent, chunk);
-      }
-
-      return fullContent;
+  
+      // Parse JSON response instead of streaming
+      const result = await response.json();
+      
+      // Convert to string if needed, or handle as JSON object
+      const content = typeof result === 'string' ? result : JSON.stringify(result);
+      
+      // Call onChunk with the complete content (simulate streaming)
+      onChunk(content, content);
+  
+      return content;
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : String(error);
       onError(errMsg);

@@ -168,3 +168,32 @@ class PrioritizedRetriever:
             context_parts.append(f"\nSource {i} - {source_name}:\n{doc.page_content}\n")
 
         return "\n".join(context_parts)
+    
+    @staticmethod
+    def build_global_filter(branch_state: str = "", certifications: str = None) -> str:
+        """Construct Azure Search filter from branchState and certification list.
+
+        - State: allow null/empty and the provided branch_state (lowercased) if present
+        - Certifications: exclude categories not present in provided certs among {tjc, chap, achc}
+        """
+        # Parse certifications (comma-separated string). Empty or None means none.
+        provided_raw = []
+        if certifications is not None:
+            parts = [p.strip().strip('"\'') for p in certifications.split(',')] if certifications.strip() else []
+            provided_raw = [p for p in parts if p]
+
+        branch_state = (branch_state or "").strip().lower()
+
+        known_accreditations = {"tjc", "chap", "achc"}
+        provided = {str(a).lower() for a in provided_raw if str(a).lower() in known_accreditations}
+        categories_to_exclude = sorted(list(known_accreditations - provided))
+
+        state_clauses = ["state eq null", "state eq ''", "state eq 'null'"]
+        if branch_state:
+            state_clauses.append(f"state eq '{branch_state}'")
+        state_filter = f"({ ' or '.join(state_clauses) })"
+
+        if categories_to_exclude:
+            category_filter = " and ".join([f"category ne '{c}'" for c in categories_to_exclude])
+            return f"{state_filter} and {category_filter}"
+        return state_filter

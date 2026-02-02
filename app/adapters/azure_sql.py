@@ -1,4 +1,5 @@
 import aiomysql
+import ssl
 from contextlib import asynccontextmanager
 from config.settings import settings
 
@@ -46,7 +47,7 @@ async def create_tables():
         "discipline_prompts"
     ]
 
-    async with get_async_db_connection() as conn:
+    async with get_db_connection() as conn:
         async with conn.cursor() as cursor:
             for table in prompt_tables:
                 await cursor.execute(prompt_table_schema.format(table_name=table))
@@ -55,9 +56,10 @@ async def create_tables():
             print("Created or verified table: huddle_jobs")
 
 
-# Async MySQL connection (aiomysql) for huddle_jobs operations
+# Async MySQL connection
 @asynccontextmanager
-async def get_async_db_connection():
+async def get_db_connection():
+    ssl_context = ssl.create_default_context()
     conn = await aiomysql.connect(
         host=settings.MYSQL_HOST,
         port=settings.MYSQL_PORT,
@@ -65,6 +67,7 @@ async def get_async_db_connection():
         password=settings.MYSQL_PASSWORD,
         db=settings.MYSQL_DB,
         autocommit=True,
+        # ssl=ssl_context,
     )
     try:
         yield conn
@@ -88,7 +91,7 @@ async def create_huddle_job(
         "INSERT INTO huddle_jobs (job_id, sequence_id, provider_id, ccn, branch_id, user_id, callback_url, status, message) "
         "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)"
     )
-    async with get_async_db_connection() as conn:
+    async with get_db_connection() as conn:
         async with conn.cursor() as cursor:
             await cursor.execute(
                 query,
@@ -125,14 +128,14 @@ async def update_huddle_job(
     values.append(job_id)
 
     query = f"UPDATE huddle_jobs SET {', '.join(fields)} WHERE job_id = %s"
-    async with get_async_db_connection() as conn:
+    async with get_db_connection() as conn:
         async with conn.cursor() as cursor:
             await cursor.execute(query, values)
 
 
 async def get_huddle_job(job_id: str):
     query = "SELECT job_id, sequence_id, provider_id, ccn, branch_id, user_id, callback_url, status, message, result, error, created_at, updated_at FROM huddle_jobs WHERE job_id = %s"
-    async with get_async_db_connection() as conn:
+    async with get_db_connection() as conn:
         async with conn.cursor(aiomysql.DictCursor) as cursor:
             await cursor.execute(query, (job_id,))
             row = await cursor.fetchone()

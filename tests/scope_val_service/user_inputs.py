@@ -1,6 +1,6 @@
 valid_home_health_examples = [
     {
-        "name": "Basic Home Health Health",
+        "name": "Basic Home Health",
         "payload": {
             "clinicalContext": "Post-hospitalization patients - Patients recently discharged from hospital\nHigh-risk for readmission - Patients with multiple risk factors\nComplex chronic conditions - Multiple comorbidities and ongoing management",
             "discipline": "RN - Registered Nurse",

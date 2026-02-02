@@ -21,6 +21,7 @@ const allowedNameOptionsByTable: Record<string, DropdownOption[]> = {
     { value: 'huddle_planner', label: 'Huddle Planner' },
     { value: 'huddle_generator', label: 'Huddle Generator' },
     { value: 'voice_script', label: 'Voice Script' },
+    { value: 'scope_validation', label: 'Scope Validation' },
   ],
   role_prompts: [
     { value: 'frontline_staff', label: 'Frontline Staff', active: true },

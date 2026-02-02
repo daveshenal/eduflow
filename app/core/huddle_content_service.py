@@ -1,4 +1,5 @@
 import logging
+import json
 
 from config.settings import settings
 from app.prompts.prompt_management import get_manager, get_db_connection
@@ -39,9 +40,19 @@ def get_previous_huddle_info(huddles: list, huddle_id: int) -> dict:
 
 
 def format_huddle_prompt(template: str, plan_result: dict, huddle: dict, 
-                        prev_huddle: dict, min_words: int, max_words: int, duration: int) -> str:
+                        prev_huddle: dict, min_words: int, max_words: int, duration: int,
+                        huddle_id: int, total_huddles: int, agency_name: str = None, branch_name: str = None) -> str:
     """Format huddle generation prompt."""
     try:
+        # Determine if this is first or last huddle
+        is_first_or_last = huddle_id == 1 or huddle_id == total_huddles
+        
+        # Convert dict to JSON string for template formatting
+        if is_first_or_last:
+            complete_curriculum = json.dumps(plan_result, indent=2)
+        else:
+            complete_curriculum = "N/A"
+        
         return template.format(
             curriculum_title=plan_result["curriculum_metadata"]["title"],
             target_role=plan_result["curriculum_metadata"]["target_role"],
@@ -59,7 +70,10 @@ def format_huddle_prompt(template: str, plan_result: dict, huddle: dict,
             duration=f"{duration} minutes",
             previous_huddle_title=prev_huddle['title'],
             previous_main_focus=prev_huddle['main_focus'],
-            previous_key_concepts=prev_huddle['key_concepts']
+            previous_key_concepts=prev_huddle['key_concepts'],
+            complete_curriculum=complete_curriculum,
+            agency_name=agency_name or "N/A",
+            branch_name=branch_name or "N/A"
         )
     except KeyError as ke:
         error_msg = f"Template formatting error - missing placeholder in huddle prompt: {ke}"
@@ -67,7 +81,7 @@ def format_huddle_prompt(template: str, plan_result: dict, huddle: dict,
         raise ValueError(error_msg)
 
 
-async def generate_single_huddle(claude_client, system_prompt: str, user_messages: list) -> str:
+async def generate_single_huddle(claude_client, system_prompt: str, user_messages: list) -> dict:
     """Generate content for a single huddle."""
     huddle_response = await claude_client.messages.create(
         model=settings.CLAUDE_MODEL_HUDDLE,
@@ -89,13 +103,23 @@ async def generate_single_huddle(claude_client, system_prompt: str, user_message
         else:
             huddle_parts.append(getattr(block, "text", ""))
     
-    return "".join(huddle_parts).strip()
+    content = "".join(huddle_parts).strip()
+    
+    # Return both content and token usage
+    return {
+        "content": content,
+        "tokens": {
+            "input": usage.input_tokens,
+            "output": usage.output_tokens
+        }
+    }
 
 
 async def process_single_huddle(claude_client, huddle: dict, huddle_id: int, plan_result: dict, 
                                huddles: list, retriever, prompts: dict, min_words: int, max_words: int,
-                               duration: int):
-    """Generate and return the HTML content for a single huddle.
+                               duration: int, global_filter: str = None, agency_name: str = None, branch_name: str = None):
+    """
+    Generate and return the HTML content for a single huddle.
     """
     title = huddle.get("title")
     main_focus = huddle.get("main_focus")
@@ -105,7 +129,7 @@ async def process_single_huddle(claude_client, huddle: dict, huddle_id: int, pla
     docs = retriever.get_relevant_documents(
         query=retrieval_query,
         provider_filter=None,
-        global_filter=None,
+        global_filter=global_filter,
     )
     context = retriever.format_context_with_sources(docs)
     
@@ -115,7 +139,8 @@ async def process_single_huddle(claude_client, huddle: dict, huddle_id: int, pla
     # Format huddle prompt
     huddle_details = format_huddle_prompt(
         prompts['huddle_prompt'], plan_result, huddle, prev_huddle,
-        min_words, max_words, duration
+        min_words, max_words, duration, huddle_id, len(huddles),
+        agency_name, branch_name
     )
     
     user_messages = [
@@ -125,10 +150,11 @@ async def process_single_huddle(claude_client, huddle: dict, huddle_id: int, pla
     ]
     
     # Generate and return huddle content
-    huddle_content = await generate_single_huddle(claude_client, prompts['system_prompt'], user_messages)
+    huddle_result = await generate_single_huddle(claude_client, prompts['system_prompt'], user_messages)
     
     return {
         "huddle_id": huddle_id,
         "title": title,
-        "content_html": huddle_content,
+        "content_html": huddle_result["content"],
+        "tokens": huddle_result["tokens"]
     }
