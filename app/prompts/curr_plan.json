@@ -1,7 +1,0 @@
-{
-  "planner_prompt": [
-    "Create a brief curriculum plan for {target_audiance} on the topic of {topic}, with a learning focus on {learning_focus}.",
-    "The plan should contain {num_huddles} short huddles, each lasting about {duration_display}, for a total of {total_duration}.",
-    "Aim for {min_words} to {max_words} words overall and return the result as structured JSON with a curriculum_metadata section and a huddles array."
-  ]
-}

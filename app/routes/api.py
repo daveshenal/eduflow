@@ -2,19 +2,45 @@ import asyncio
 import logging
 from typing import List, Optional
 from fastapi import APIRouter, HTTPException, Request, Query, UploadFile, File
-from fastapi.responses import JSONResponse
+from fastapi.responses import StreamingResponse, JSONResponse
 
-from app.adapters.azure_blob import get_blob_service_client
+from app.adapters.azure_blob import get_blob_service_client, test_blob_connection
+from app.adapters.claude_service import get_claude_client
+from app.adapters.azure_sql import get_db_connection, create_tables
 from app.knowledgebase.get_blobs import get_blobs
 from app.knowledgebase.ai_index import AIIndex
 from app.knowledgebase.upload_files import DocumentManager
 from app.pipelines.gen_pipeline import validate_payload
+from app.pipelines.chat_pipeline import generate_chat_stream
 from app.pipelines.test_gen_pipeline import generate_huddles_background_task_test
+
+# Prompt management imports
+from app.prompts.prompt_management import (
+    PromptNames,
+)
 
 router = APIRouter()
 
 # Blob and Search helpers
 blob_service_client = get_blob_service_client()
+claude_client = get_claude_client()
+
+@router.post("/chat/stream")
+async def stream_endpoint(request: Request):
+    """Stream Chatbot Outputs. Uses a single index; pass index_id in the body. Backward compatible with indexId."""
+    payload = await request.json()
+    index_id = payload.get("index_id")
+    if not index_id:
+        raise HTTPException(status_code=400, detail="index_id is required")
+
+    return StreamingResponse(
+        generate_chat_stream(payload, claude_client),
+        media_type="text/plain",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+        },
+    )
 
 
 # Endpoint to test background job
@@ -66,7 +92,7 @@ def run_ai_indexing(index_id: str):
 async def upload_documents_to_knowledgebase(
     index_id: str,
     files: List[UploadFile] = File(..., description="Document(s) to upload (PDF, DOCX, TXT)"),
-):
+    ):
     """
     Upload documents to the knowledgebase for a given index_id.
     - Injects chunked content with embeddings into the search index (ai-index-{index_id})
@@ -98,7 +124,7 @@ async def upload_documents_to_knowledgebase(
 async def delete_documents_by_filename(
     index_id: str,
     filename: str = Query(..., description="Exact file name to delete (matches source_name in index)"),
-):
+    ):
     """
     Delete all indexed chunks and the blob for a given filename in the knowledgebase.
     Requires the index and container to exist (ai-index-{index_id}, ai-{index_id}).
@@ -144,18 +170,53 @@ async def list_blobs(
 
 
 @router.get("/test-blob-connection")
-async def test_blob_connection(
+async def blob_connection(
     container: str = Query(..., description="Azure Blob container name to test"),
     ):
-    from azure.core.exceptions import ResourceNotFoundError
     try:
-        container_client = blob_service_client.get_container_client(container)
-        blobs = list(container_client.list_blobs())
-        if not blobs:
-            raise HTTPException(status_code=404, detail="No blobs found in the container.")
-        blob_names = [blob.name for blob in blobs]
-        return {"status": "success", "blobs": blob_names}
-    except ResourceNotFoundError:
-        raise HTTPException(status_code=404, detail="Container not found.")
+        return test_blob_connection(container)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error connecting to Blob Storage: {str(e)}")
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Error connecting to Blob Storage: {str(e)}"
+        )
+
+
+ 
+############################################
+# ----------- Prompts Manager ------------ #
+############################################
+
+
+@router.get("/prompts")
+async def prompts_root():
+    return {
+        "message": "Prompt Management API v1.0",
+        "prompt_types": [name.value for name in PromptNames],
+    }
+
+@router.get("/prompts/health")
+async def prompts_health_check():
+    """Check API + MySQL connectivity"""
+    try:
+        async with get_db_connection() as conn:
+            async with conn.cursor() as cur:
+                await cur.execute("SELECT 1")
+                result = await cur.fetchone()
+                if result and result[0] == 1:
+                    return {"status": "failed", "message": "API and DB connectivity are OK"}
+                else:
+                    return {"status": "successful", "message": "DB did not return expected result"}
+    except Exception as e:
+        return {"status": "failed", "message": f"DB connection failed: {str(e)}"}
+
+@router.post("/init-tables")
+async def init_tables():
+    """
+    Initialize the prompt tables in the database.
+    """
+    try:
+        await create_tables()
+        return {"status": "success", "message": "Tables created or verified."}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}

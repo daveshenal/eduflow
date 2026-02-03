@@ -145,7 +145,8 @@ class PrioritizedRetriever:
         for i, doc in enumerate(docs, 1):
             source_name = doc.metadata.get("source_name", f"document_{i}")
             # print(f"\nSource {i} - {source_name}:\n{doc.page_content}\n")
-            context_parts.append(f"\nSource {i} - {source_name}:\n{doc.page_content}\n")
+            # context_parts.append(f"\nSource {i} - {source_name}:\n{doc.page_content}\n")
+            context_parts.append(f"\nSource - {source_name}:\n{doc.page_content}\n")
 
         return "\n".join(context_parts)
     

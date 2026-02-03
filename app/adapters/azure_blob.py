@@ -1,10 +1,11 @@
 from azure.storage.blob import BlobServiceClient, generate_blob_sas, BlobSasPermissions
+from azure.core.exceptions import ResourceNotFoundError
 from config.settings import settings
 
 # Initialize the BlobServiceClient
 blob_service_client = BlobServiceClient.from_connection_string(settings.AZURE_STORAGE_CONNECTION_STRING)
 
-hop_saves_container_client = blob_service_client.get_container_client("hop-ai-saves")
+hop_saves_container_client = blob_service_client.get_container_client("ai-saves")
 
 def get_blob_service_client():
     return blob_service_client
@@ -23,3 +24,17 @@ def generate_sas_token(container_name, blob_name, expiry_time):
         expiry=expiry_time
     )
     return sas_token
+
+def test_blob_connection(container):
+    container_client = blob_service_client.get_container_client(container)
+    
+    if not container_client.exists():
+        return {
+            "status": "failed", 
+            "message": f"Container '{container}' not found."
+        }
+        
+    return {
+        "status": "success", 
+        "message": f"Successfully verified connection to container: {container}"
+    }

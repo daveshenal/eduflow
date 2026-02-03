@@ -1,6 +1,0 @@
-{
-  "voicescript_prompt": [
-    "Given a finalized huddle script, rewrite it as a natural, conversational voiceover script that can be read aloud.",
-    "Keep the tone friendly and professional, and match the original intent without adding new clinical guidance."
-  ]
-}
