@@ -92,6 +92,26 @@ async def upload_documents_to_knowledgebase(
     except Exception as e:
         logging.exception("Failed to upload documents")
         raise HTTPException(status_code=500, detail=str(e))
+   
+
+@router.delete("/knowledgebase/{index_id}/documents")
+async def delete_documents_by_filename(
+    index_id: str,
+    filename: str = Query(..., description="Exact file name to delete (matches source_name in index)"),
+):
+    """
+    Delete all indexed chunks and the blob for a given filename in the knowledgebase.
+    Requires the index and container to exist (ai-index-{index_id}, ai-{index_id}).
+    """
+    try:
+        manager = DocumentManager(index_id=index_id)
+        result = manager.delete_by_filename(filename)
+        return JSONResponse(content=result)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logging.exception("Delete by filename failed")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.delete("/index/{index_id}")

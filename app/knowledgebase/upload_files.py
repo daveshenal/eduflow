@@ -413,3 +413,63 @@ class DocumentManager:
         except Exception as e:
             logger.error(f"Error deleting index documents: {e}")
             return {"error": str(e), "success": False}
+
+    def delete_by_filename(self, filename: str) -> Dict[str, Any]:
+        """
+        Delete all indexed chunks and the blob for a given filename.
+        Removes from both the search index (chunks with source_name=filename) and blob storage.
+        """
+        self._validate_index_and_container_exist()
+
+        # OData filter: escape single quotes in filename by doubling them
+        escaped = filename.replace("'", "''")
+        filter_expr = f"source_name eq '{escaped}'"
+
+        results = list(
+            self.processor.search_client.search(
+                search_text="*",
+                filter=filter_expr,
+                select=["chunk_id", "source_path", "source_name"],
+            )
+        )
+
+        if not results:
+            return {
+                "success": True,
+                "message": "No documents found for filename",
+                "filename": filename,
+                "deleted_chunks": 0,
+                "deleted_blobs": 0,
+            }
+
+        chunk_ids = [r["chunk_id"] for r in results if r.get("chunk_id")]
+
+        # Collect blob paths: prefer source_path, fallback to source_name/filename
+        blob_paths = set()
+        for r in results:
+            path = r.get("source_path") or r.get("source_name") or filename
+            blob_paths.add(path)
+
+        container_client = self.blob_service_client.get_container_client(
+            self.container_name
+        )
+        deleted_blobs = 0
+        for blob_path in blob_paths:
+            try:
+                container_client.delete_blob(blob_path)
+                deleted_blobs += 1
+            except Exception as e:
+                logger.warning(f"Failed to delete blob {blob_path}: {e}")
+
+        if chunk_ids:
+            to_delete = [{"chunk_id": cid} for cid in chunk_ids]
+            self.processor.search_client.delete_documents(to_delete)
+            logger.info(f"Deleted {len(chunk_ids)} chunks for filename {filename}")
+
+        return {
+            "success": True,
+            "message": "Deletion completed",
+            "filename": filename,
+            "deleted_chunks": len(chunk_ids),
+            "deleted_blobs": deleted_blobs,
+        }
