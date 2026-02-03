@@ -1,7 +1,50 @@
 import json
 import logging
+from pathlib import Path
 
 from config.settings import settings
+
+
+BASE_DIR = Path(__file__).resolve().parents[2]
+PROMPTS_DIR = BASE_DIR / "app" / "prompts"
+
+
+def _load_json(path: Path) -> dict:
+    """Load a JSON file and return its contents as a dict."""
+    with path.open("r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def fetch_plan_prompts() -> dict:
+    """
+    Load planning-related prompts from JSON files under app/prompts.
+
+    - system_main.json: contains the shared system prompt as an array of strings
+    - curr_plan.json: contains the planner prompt template (array or string)
+    """
+    system_data = _load_json(PROMPTS_DIR / "system_main.json")
+    plan_data = _load_json(PROMPTS_DIR / "curr_plan.json")
+
+    # system_main.json stores system_prompt as an array of strings for readability
+    system_raw = system_data.get("system_prompt", [])
+    if isinstance(system_raw, list):
+        system_prompt = "\n".join(system_raw)
+    else:
+        system_prompt = str(system_raw) or "You are an assistant that designs simple educational huddle plans."
+
+    planner_raw = plan_data.get(
+        "planner_prompt",
+        "Create a short curriculum plan for {target_audiance} about {topic}.",
+    )
+    if isinstance(planner_raw, list):
+        planner_prompt = "\n".join(planner_raw)
+    else:
+        planner_prompt = str(planner_raw)
+
+    return {
+        "system_prompt": system_prompt,
+        "planner_prompt": planner_prompt,
+    }
 
 
 def get_word_targets(duration: int) -> tuple[int, int]:
@@ -19,36 +62,6 @@ def get_word_targets(duration: int) -> tuple[int, int]:
     return duration_to_words[duration]
 
 
-async def fetch_plan_prompts(role_value: str, discipline_value: str) -> dict:
-    """Fetch all prompts needed for plan generation."""
-    async with get_db_connection() as db_conn:
-        prompts_to_fetch = [
-            ("main_prompts", "main_prompt", "system_prompt"),
-            ("use_case_prompts", "huddle_planner", "planner_prompt"),
-            ("role_prompts", role_value, "role_prompt"),
-            ("discipline_prompts", discipline_value, "discipline_prompt")
-        ]
-        
-        prompt_vars = {}
-        for manager_name, key, var_name in prompts_to_fetch:
-            manager = get_manager(manager_name)
-            obj = await manager.get_active_prompt(key, db_conn)
-            prompt_vars[var_name] = obj.prompt if obj else ""
-    
-    # Validate all required prompts are present
-    missing_prompts = []
-    for key, value in prompt_vars.items():
-        if not value or not value.strip():
-            missing_prompts.append(key)
-    
-    if missing_prompts:
-        error_msg = f"Required prompts not found in database: {', '.join(missing_prompts)}"
-        logging.error(error_msg)
-        raise ValueError(error_msg)
-    
-    return prompt_vars
-
-
 def format_plan_prompt(prompts: dict, params: dict, min_words: int, max_words: int) -> str:
     """Format the user prompt template with actual values."""
     duration_display = f"{params['duration']} minutes"
@@ -56,22 +69,15 @@ def format_plan_prompt(prompts: dict, params: dict, min_words: int, max_words: i
     
     try:
         return prompts['planner_prompt'].format(
-            role_prompt=prompts['role_prompt'],
-            discipline_prompt=prompts['discipline_prompt'],
+            target_audiance=params['target_audiance'],
             learning_focus=params['learning_focus'],
             topic=params['topic'],
-            expected_outcomes="Not Provided",
             clinical_context=params['clinical_context'],
             num_huddles=params['num_huddles'],
             min_words=min_words,
             max_words=max_words,
             duration_display=duration_display,
-            role_label=params['role_label'],
-            discipline_label=params['discipline_label'],
             total_duration=total_duration,
-            role_value=params['role_value'],
-            discipline_value=params['discipline_value'],
-            provider_id=params['provider_id']
         )
     except KeyError as ke:
         error_msg = f"Template formatting error - missing placeholder in planner_prompt: {ke}"

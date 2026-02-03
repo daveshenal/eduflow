@@ -86,7 +86,7 @@ class PrioritizedSearchManager:
         return self._instances[self.index_name]
     
 class PrioritizedRetriever:
-    """Retriever over the single AI index (ai-index-{provider_id}). No global index hierarchy."""
+    """Retriever over the single AI index"""
 
     def __init__(
         self,

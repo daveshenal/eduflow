@@ -1,25 +1,26 @@
 import asyncio
 import logging
-from typing import Optional
-from fastapi import APIRouter, HTTPException, Request, Query
+from typing import List, Optional
+from fastapi import APIRouter, HTTPException, Request, Query, UploadFile, File
 from fastapi.responses import JSONResponse
 
 from app.adapters.azure_blob import get_blob_service_client
 from app.knowledgebase.get_blobs import get_blobs
 from app.knowledgebase.ai_index import AIIndex
-from app.pipelines.huddle_pipeline import validate_payload
-from app.pipelines.test_huddle_pipeline import generate_huddles_background_task_test
+from app.knowledgebase.upload_files import DocumentManager
+from app.pipelines.gen_pipeline import validate_payload
+from app.pipelines.test_gen_pipeline import generate_huddles_background_task_test
 
 router = APIRouter()
 
 # Blob and Search helpers
 blob_service_client = get_blob_service_client()
 
-    
+
 # Endpoint to test background job
-@router.post("/huddles/start-test")
-async def start_huddle_generation(request: Request):
-    """Start Huddle PDF generation as background job."""
+@router.post("/gen/start-test")
+async def start_doc_generation(request: Request):
+    """Start document generation as background job."""
     payload = await request.json()
     
     try:
@@ -58,6 +59,38 @@ def run_ai_indexing(index_id: str):
         ai_index.setup_complete_indexing_pipeline()
         return {"status": "success", "message": f"AI index setup completed for index_id={index_id}."}
     except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/knowledgebase/{index_id}/upload")
+async def upload_documents_to_knowledgebase(
+    index_id: str,
+    files: List[UploadFile] = File(..., description="Document(s) to upload (PDF, DOCX, TXT)"),
+):
+    """
+    Upload documents to the knowledgebase for a given index_id.
+    - Injects chunked content with embeddings into the search index (ai-index-{index_id})
+    - Saves original documents to blob storage container (ai-{index_id})
+    - Index and container must already exist (via POST /run-ai-indexing/{index_id}). Upload fails if they do not.
+    """
+    try:
+        manager = DocumentManager(index_id=index_id)
+        file_tuples = []
+        for f in files:
+            data = await f.read()
+            file_tuples.append((f.filename or "document", data))
+
+        if len(file_tuples) == 1:
+            filename, data = file_tuples[0]
+            result = manager.upload_and_process(filename, data)
+            return JSONResponse(content=result)
+        else:
+            result = manager.batch_process(file_tuples)
+            return JSONResponse(content=result)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logging.exception("Failed to upload documents")
         raise HTTPException(status_code=500, detail=str(e))
 
 

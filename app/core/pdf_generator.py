@@ -207,7 +207,7 @@ async def create_huddle_pdf(huddle_id: int, huddle_content: str, output_dir: Pat
         </html>
         """
         
-                # Create font configuration
+        # Create font configuration
         font_config = FontConfiguration()
         
         # Prepare CSS styles

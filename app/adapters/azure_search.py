@@ -4,14 +4,14 @@ from azure.search.documents.indexes import SearchIndexClient, SearchIndexerClien
 from config.settings import settings
 
 
-def get_global_search_client():
-    main_search_client = SearchClient(
+def get_search_client(index_name: str) -> SearchClient:
+    """Get SearchClient for a specific index (e.g. ai-index-{index_id})."""
+    return SearchClient(
         endpoint=settings.AZURE_SEARCH_ENDPOINT,
-        index_name=settings.AZURE_AI_INDEX_NAME,
+        index_name=index_name,
         credential=AzureKeyCredential(settings.AZURE_SEARCH_KEY)
     )
-    
-    return main_search_client
+
 
 def get_search_index_client():
     search_index_client = SearchIndexClient(

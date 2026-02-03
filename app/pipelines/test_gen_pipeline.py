@@ -1,4 +1,4 @@
-from app.pipelines.huddle_pipeline import send_job_completion_notification
+from app.pipelines.gen_pipeline import send_job_completion_notification
 
 
 async def generate_huddles_test(params: dict):

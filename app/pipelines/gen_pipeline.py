@@ -8,9 +8,9 @@ import httpx
 
 from config.settings import settings
 from app.retrievers.index_data_retriver import PrioritizedRetriever
-from app.core.huddle_upload import upload_huddle_artifacts, upload_huddle_logs
-from app.core.huddle_plan_service import get_word_targets, fetch_plan_prompts, format_plan_prompt, generate_plan
-from app.core.huddle_content_service import fetch_huddle_prompts, process_single_huddle
+from app.core.content_upload import upload_huddle_artifacts, upload_huddle_logs
+from app.core.curriculem_plan_service import get_word_targets, fetch_plan_prompts, format_plan_prompt, generate_plan
+from app.core.content_service import fetch_huddle_prompts, process_single_huddle
 from app.core.pdf_generator import create_huddle_pdf
 
 
@@ -43,11 +43,8 @@ def validate_payload(payload: dict) -> dict:
     
     # Required fields
     required_fields = [
-        "providerId", "jobId", "callbackUrl", "ccn", "branchId", "userId", 
-        "sequenceId", "learningFocus", "topic", "clinicalContext", "role", 
-        "roleValue", "discipline", "disciplineValue", "learningLevel",
-        "duration", "numHuddles", "voice", "branchState", "certificationList",
-        "agencyName", "branchName"
+        "indexId", "jobId", "callbackUrl", "learningFocus", "topic", 
+        "targetAudiance", "duration", "numHuddles", "voice"
     ]
     
     # List to store missing fields
@@ -67,25 +64,12 @@ def validate_payload(payload: dict) -> dict:
         "job_id": payload.get("jobId"),
         "callback_url": payload.get("callbackUrl"),
         "provider_id": payload.get("providerId"),
-        "ccn": payload.get("ccn"),
-        "branch_id": payload.get("branchId"),
-        "user_id": payload.get("userId"),
-        "sequence_id": payload.get("sequenceId"),
         "learning_focus": payload.get("learningFocus"),
         "topic": payload.get("topic"),
-        "clinical_context": payload.get("clinicalContext"),
-        "role_label": payload.get("role"),
-        "role_value": payload.get("roleValue"),
-        "discipline_label": payload.get("discipline"),
-        "discipline_value": payload.get("disciplineValue"),
-        "learning_level": payload.get("learningLevel"),
+        "target_audiance": payload.get("targetAudiance"),
         "duration": int(payload.get("duration")),
         "num_huddles": int(payload.get("numHuddles")),
         "voice": payload.get("voice"),
-        "branch_state": payload.get("branchState"),
-        "certifications": payload.get("certificationList"),
-        "agency_name": payload.get("agencyName"),
-        "branch_name": payload.get("branchName"),  
     }
 
 
@@ -120,44 +104,16 @@ async def generate_huddles_background_task(params: dict, claude_client):
     """Background task to generate huddles."""
     try:
         job_id = params.get("job_id")
-        # Persist initial job row and mark processing
-        from app.adapters.azure_sql import create_huddle_job, update_huddle_job
-        await create_huddle_job(
-            job_id=job_id,
-            sequence_id=params.get("sequence_id"),
-            provider_id=params.get("provider_id"),
-            ccn=params.get("ccn"),
-            branch_id=params.get("branch_id"),
-            user_id=params.get("user_id"),
-            callback_url=params.get("callback_url"),
-            status="queued",
-            message="Job queued for processing",
-        )
-        await update_huddle_job(job_id=job_id, status="processing", message="Generating Huddles...")
         
         # Call the huddle generation function
         huddle_outputs = await generate_huddles(params, claude_client)
         
         if huddle_outputs.get("success") is False:
-            # Update job to completed state
-            await update_huddle_job(
-                job_id=job_id,
-                status="Failed",
-                message="Huddle generation failed",
-                result_text=json.dumps(huddle_outputs.get("error")) if huddle_outputs else None,
-            )
-            
             clean_local_directories(job_id)
             # Send notification with error
             notification_payload = await send_job_completion_notification(params, result=None, error=huddle_outputs.get("error"))
             logging.error(f"Sent job failed notification for job {job_id}")
         else:
-            await update_huddle_job(
-                job_id=job_id,
-                status="completed",
-                message="Huddle generation completed successfully",
-                result_text=json.dumps(huddle_outputs.get("returns")) if huddle_outputs else None,
-            )
             
             # Successful job
             results = huddle_outputs.get("returns")
@@ -175,17 +131,6 @@ async def generate_huddles_background_task(params: dict, claude_client):
             )
         
     except Exception as e:
-        # If the job fails, update the status to failed
-        from app.adapters.azure_sql import update_huddle_job
-        try:
-            await update_huddle_job(
-                job_id=params.get("job_id"),
-                status="failed",
-                message=f"Huddle generation failed: {str(e)}",
-                error_text=str(e),
-            )
-        except Exception:
-            pass
         print(f"Background job {params.get('job_id')} failed: {e}")
 
 
@@ -201,10 +146,9 @@ async def generate_huddles(params: dict, claude_client):
         min_words, max_words = get_word_targets(params['duration'])
 
         # === HUDDLE PLAN GENERATION ===
-        
-        prompts = await fetch_plan_prompts(params['role_value'], params['discipline_value'])
-        user_prompt = format_plan_prompt(prompts, params, min_words, max_words)
-        plan_response = await generate_plan(claude_client, prompts['system_prompt'], user_prompt)
+        plan_prompts = fetch_plan_prompts()
+        user_prompt = format_plan_prompt(plan_prompts, params, min_words, max_words)
+        plan_response = await generate_plan(claude_client, plan_prompts['system_prompt'], user_prompt)
         
         # Extract plan result and accumulate tokens
         plan_result = plan_response["plan"]
@@ -226,7 +170,8 @@ async def generate_huddles(params: dict, claude_client):
             min_score=settings.MIN_SCORE,
         )
 
-        huddle_prompts = await fetch_huddle_prompts()
+        # Load huddle/document generation prompts
+        huddle_prompts = fetch_huddle_prompts()
 
         # Build dynamic filter from branchState and certificationList (comma-separated)
         ai_filter = retriever.build_ai_filter(
@@ -257,49 +202,6 @@ async def generate_huddles(params: dict, claude_client):
             except Exception as pdf_error:
                 logging.error(f"Failed to create PDF for huddle {huddle_id}: {pdf_error}")
                 raise pdf_error
-
-            # Generate voiceover
-            try:
-                voiceover_payload = {
-                    "huddleHtml": content_html,
-                    "tone": "professional, warm, clear",
-                    "paceWpm": 140,
-                    "duration": params['duration']
-                }
-                voiceover_response = await generate_voiceover_script(payload=voiceover_payload, claude_client=claude_client)
-                
-                # Accumulate tokens from voiceover generation
-                total_input_tokens += voiceover_response["tokens"]["input"]
-                total_output_tokens += voiceover_response["tokens"]["output"]
-                
-                voiceover_script = voiceover_response["script"]
-                
-                # Count characters for Azure Speech
-                total_speech_characters += len(voiceover_script)
-                
-                voiceover_filename = f"huddle-{huddle_id}.txt"
-                voiceover_path = dirs['voiceovers'] / voiceover_filename
-                with open(voiceover_path, 'w', encoding='utf-8') as f:
-                    f.write(voiceover_script)
-
-                # Generate MP3
-                try:
-                    mp3_filename = f"huddle-{huddle_id}.mp3"
-                    mp3_path = dirs['audio'] / mp3_filename
-                    generate_mp3_from_file(
-                        text_file_path=str(voiceover_path),
-                        output_file_path=mp3_path,
-                        voice = params.get("voice"),
-                        speed="medium",
-                        pitch="medium"
-                    )
-
-                except Exception as mp3_error:
-                    logging.error(f"Failed to generate MP3 for huddle {huddle_id}: {mp3_error}")
-                    raise mp3_error
-            except Exception as voiceover_error:
-                logging.error(f"Failed to generate voiceover for huddle {huddle_id}: {voiceover_error}")
-                raise voiceover_error
         
         token_usage = {
             "total_input_tokens": total_input_tokens,
@@ -373,7 +275,8 @@ async def generate_huddles(params: dict, claude_client):
 
 
 async def send_job_completion_notification(params: dict, result: dict = None, error: str = None):
-    """Send job completion notification to the callback URL.
+    """
+    Send job completion notification to the callback URL.
     
     if completed: error = none
     if faild; result = none

@@ -1,24 +1,49 @@
 import logging
 import json
+from pathlib import Path
 
 from config.settings import settings
 
 
-async def fetch_huddle_prompts() -> dict:
-    """Fetch prompts needed for individual huddle generation."""
-    async with get_db_connection() as db_conn:
-        prompts_to_fetch = [
-            ("main_prompts", "main_prompt", "system_prompt"),
-            ("use_case_prompts", "huddle_generator", "huddle_prompt"),
-        ]
-        
-        prompt_vars = {}
-        for manager_name, key, var_name in prompts_to_fetch:
-            manager = get_manager(manager_name)
-            obj = await manager.get_active_prompt(key, db_conn)
-            prompt_vars[var_name] = obj.prompt
-    
-    return prompt_vars
+BASE_DIR = Path(__file__).resolve().parents[2]
+PROMPTS_DIR = BASE_DIR / "app" / "prompts"
+
+
+def _load_json(path: Path) -> dict:
+    """Load a JSON file and return its contents as a dict."""
+    with path.open("r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def fetch_huddle_prompts() -> dict:
+    """
+    Load huddle-generation prompts from JSON files under app/prompts.
+
+    - system_main.json: contains the shared system prompt as an array of strings
+    - doc_gen.json: contains the huddle/document generation template (array or string)
+    """
+    system_data = _load_json(PROMPTS_DIR / "system_main.json")
+    doc_data = _load_json(PROMPTS_DIR / "doc_gen.json")
+
+    system_raw = system_data.get("system_prompt", [])
+    if isinstance(system_raw, list):
+        system_prompt = "\n".join(system_raw)
+    else:
+        system_prompt = str(system_raw) or "You are an assistant that writes simple educational huddle content."
+
+    huddle_raw = doc_data.get(
+        "huddle_prompt",
+        "Create a single huddle titled {huddle_title} for {target_audiance}.",
+    )
+    if isinstance(huddle_raw, list):
+        huddle_prompt = "\n".join(huddle_raw)
+    else:
+        huddle_prompt = str(huddle_raw)
+
+    return {
+        "system_prompt": system_prompt,
+        "huddle_prompt": huddle_prompt,
+    }
 
 
 def get_previous_huddle_info(huddles: list, huddle_id: int) -> dict:
@@ -40,7 +65,7 @@ def get_previous_huddle_info(huddles: list, huddle_id: int) -> dict:
 
 def format_huddle_prompt(template: str, plan_result: dict, huddle: dict, 
                         prev_huddle: dict, min_words: int, max_words: int, duration: int,
-                        huddle_id: int, total_huddles: int, agency_name: str = None, branch_name: str = None) -> str:
+                        huddle_id: int, total_huddles: int) -> str:
     """Format huddle generation prompt."""
     try:
         # Determine if this is first or last huddle
@@ -54,13 +79,11 @@ def format_huddle_prompt(template: str, plan_result: dict, huddle: dict,
         
         return template.format(
             curriculum_title=plan_result["curriculum_metadata"]["title"],
-            target_role=plan_result["curriculum_metadata"]["target_role"],
-            discipline=plan_result["curriculum_metadata"]["discipline"],
+            target_audiance=plan_result["curriculum_metadata"]["target_audiance"],
             huddle_type=huddle.get("type"),
             huddle_title=huddle.get("title"),
             main_focus=huddle.get("main_focus"),
             key_concepts=huddle.get("key_concepts"),
-            clinical_scenario=huddle.get("clinical_scenario"),
             learning_outcome=huddle.get("learning_outcome"),
             builds_on=huddle.get("builds_on"),
             sets_up=huddle.get("sets_up"),
@@ -70,9 +93,7 @@ def format_huddle_prompt(template: str, plan_result: dict, huddle: dict,
             previous_huddle_title=prev_huddle['title'],
             previous_main_focus=prev_huddle['main_focus'],
             previous_key_concepts=prev_huddle['key_concepts'],
-            complete_curriculum=complete_curriculum,
-            agency_name=agency_name or "N/A",
-            branch_name=branch_name or "N/A"
+            complete_curriculum=complete_curriculum
         )
     except KeyError as ke:
         error_msg = f"Template formatting error - missing placeholder in huddle prompt: {ke}"
@@ -116,7 +137,7 @@ async def generate_single_huddle(claude_client, system_prompt: str, user_message
 
 async def process_single_huddle(claude_client, huddle: dict, huddle_id: int, plan_result: dict, 
                                huddles: list, retriever, prompts: dict, min_words: int, max_words: int,
-                               duration: int, ai_filter: str = None, agency_name: str = None, branch_name: str = None):
+                               duration: int, ai_filter: str = None):
     """
     Generate and return the HTML content for a single huddle.
     """
@@ -137,8 +158,7 @@ async def process_single_huddle(claude_client, huddle: dict, huddle_id: int, pla
     # Format huddle prompt
     huddle_details = format_huddle_prompt(
         prompts['huddle_prompt'], plan_result, huddle, prev_huddle,
-        min_words, max_words, duration, huddle_id, len(huddles),
-        agency_name, branch_name
+        min_words, max_words, duration, huddle_id, len(huddles)
     )
     
     user_messages = [
