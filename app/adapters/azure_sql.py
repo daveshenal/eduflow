@@ -1,6 +1,7 @@
 import aiomysql
-import ssl
+# import ssl
 from contextlib import asynccontextmanager
+
 from config.settings import settings
 
 async def create_tables():
@@ -71,18 +72,14 @@ async def get_db_connection():
 async def create_bg_job(
     *,
     job_id: str,
-    sequence_id: int,
-    provider_id: str,
-    ccn: str,
-    branch_id: int,
-    user_id: int,
+    index_id: str,
     callback_url: str,
     status: str = "queued",
     message: str = "Job queued for processing",
 ):
     query = (
-        "INSERT INTO huddle_jobs (job_id, sequence_id, provider_id, ccn, branch_id, user_id, callback_url, status, message) "
-        "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)"
+        "INSERT INTO huddle_jobs (job_id, index_id, callback_url, status, message) "
+        "VALUES (%s, %s, %s, %s, %s)"
     )
     async with get_db_connection() as conn:
         async with conn.cursor() as cursor:
@@ -90,11 +87,7 @@ async def create_bg_job(
                 query,
                 (
                     job_id,
-                    sequence_id,
-                    provider_id,
-                    ccn,
-                    branch_id,
-                    user_id,
+                    index_id,
                     callback_url,
                     status,
                     message,
@@ -127,9 +120,17 @@ async def update_huddle_job(
 
 
 async def get_huddle_job(job_id: str):
-    query = "SELECT job_id, sequence_id, provider_id, ccn, branch_id, user_id, callback_url, status, message, result, error, created_at, updated_at FROM huddle_jobs WHERE job_id = %s"
+    query = "SELECT job_id, index_id, callback_url, status, message, result, error, created_at, updated_at FROM huddle_jobs WHERE job_id = %s"
     async with get_db_connection() as conn:
         async with conn.cursor(aiomysql.DictCursor) as cursor:
             await cursor.execute(query, (job_id,))
             row = await cursor.fetchone()
             return row
+        
+async def clear_all_huddle_jobs():
+    query = "DELETE FROM huddle_jobs"
+    async with get_db_connection() as conn:
+        async with conn.cursor() as cursor:
+            await cursor.execute(query)
+            rowcount = cursor.rowcount
+            return rowcount

@@ -8,21 +8,16 @@ import httpx
 
 from config.settings import settings
 from app.retrievers.index_data_retriver import PrioritizedRetriever
-from app.core.content_upload import upload_huddle_artifacts, upload_huddle_logs
+from app.adapters.azure_sql import get_db_connection
+from app.core.content_upload import upload_artifacts, upload_generation_logs
 from app.core.curriculem_plan_service import get_word_targets, fetch_plan_prompts, format_plan_prompt, generate_plan
-from app.core.content_service import fetch_huddle_prompts, process_single_huddle
-from app.core.pdf_generator import create_huddle_pdf
+from app.core.content_service import fetch_pdf_prompts, process_single_doc
+from app.core.pdf_generator import create_pdf
 
-
-class HuddleJob:
-    def __init__(self, job_id: str, sequence_id: int, provider_id: str, ccn: str,
-                 branch_id: int, user_id: int, callback_url: str):
+class BackgroundJob:
+    def __init__(self, job_id: str, index_id: str, callback_url: str):
         self.job_id = job_id
-        self.sequence_id = sequence_id
-        self.provider_id = provider_id
-        self.ccn = ccn
-        self.branch_id = branch_id
-        self.user_id = user_id
+        self.index_id = index_id
         self.callback_url = callback_url
         self.status = "queued"
         self.message = "Job queued for processing"
@@ -43,8 +38,8 @@ def validate_payload(payload: dict) -> dict:
     
     # Required fields
     required_fields = [
-        "indexId", "jobId", "callbackUrl", "learningFocus", "topic", 
-        "targetAudiance", "duration", "numHuddles", "voice"
+        "job_id", "callback_url", "index_id", "learning_focus", "topic", 
+        "target_audience", "duration", "num_docs", "voice"
     ]
     
     # List to store missing fields
@@ -61,24 +56,25 @@ def validate_payload(payload: dict) -> dict:
     
     # Extract and return fields from payload
     return {
-        "job_id": payload.get("jobId"),
-        "callback_url": payload.get("callbackUrl"),
-        "provider_id": payload.get("providerId"),
-        "learning_focus": payload.get("learningFocus"),
+        "job_id": payload.get("job_id"),
+        "callback_url": payload.get("callback_url"),
+        "index_id": payload.get("index_id"),
+        "learning_focus": payload.get("learning_focus"),
         "topic": payload.get("topic"),
-        "target_audiance": payload.get("targetAudiance"),
+        "target_audience": payload.get("target_audience"),
         "duration": int(payload.get("duration")),
-        "num_huddles": int(payload.get("numHuddles")),
+        "num_docs": int(payload.get("num_docs")),
         "voice": payload.get("voice"),
     }
 
 
 def setup_output_directories(job_id: str) -> dict:
     """Create and return output directory paths for a specific job."""
-    base_dir = Path("temp/huddles") / job_id
+    base_dir = Path("temp/generated_content") / job_id
     base_dir.mkdir(parents=True, exist_ok=True)
     
     dirs = {
+        'plan': base_dir / "plan",
         'pdfs': base_dir / "pdfs",
         'voiceovers': base_dir / "voicescripts",
         'audio': base_dir / "audio_mp3s"
@@ -100,183 +96,205 @@ def clean_local_directories(job_id: str):
         logging.warning(f"Failed to clean up job directory {job_id}: {cleanup_error}")
 
 
-async def generate_huddles_background_task(params: dict, claude_client):
+async def generate_content_background_task(params: dict, claude_client):
     """Background task to generate huddles."""
     try:
         job_id = params.get("job_id")
         
+        from app.adapters.azure_sql import create_bg_job, update_huddle_job
+        await create_bg_job(
+            job_id=job_id,
+            index_id=params.get("index_id"),
+            callback_url=params.get("callback_url"),
+            status="queued",
+            message="Generating Huddles...",
+        )
         # Call the huddle generation function
-        huddle_outputs = await generate_huddles(params, claude_client)
+        huddle_outputs = await generate_content(params, claude_client)
         
         if huddle_outputs.get("success") is False:
-            clean_local_directories(job_id)
+            print(huddle_outputs.get("error"))
+            await update_huddle_job(
+                job_id=job_id,
+                status="Failed",
+                message="Huddle generation failed",
+                result_text=json.dumps(huddle_outputs.get("error")) if huddle_outputs else None,
+            )
+            
+            # clean_local_directories(job_id)
             # Send notification with error
             notification_payload = await send_job_completion_notification(params, result=None, error=huddle_outputs.get("error"))
-            logging.error(f"Sent job failed notification for job {job_id}")
         else:
+            await update_huddle_job(
+                job_id=job_id,
+                status="completed",
+                message="Huddle generation completed successfully",
+                result_text=json.dumps(huddle_outputs.get("returns")) if huddle_outputs else None,
+            )
             
-            # Successful job
             results = huddle_outputs.get("returns")
             logs = huddle_outputs.get("logs")
             
             notification_payload = await send_job_completion_notification(params, result=results, error=None)
             logging.info(f"Sent job completed notification for job {job_id}")
-            upload_huddle_logs(
+            upload_generation_logs(
                 job_id=job_id,
-                provider_id=params.get("provider_id"),
+                index_id=params.get("index_id"),
                 params=params,
-                huddle_plan=logs.get("huddle_plan"),
+                plan=logs.get("plan"),
                 response=notification_payload,
                 usage=logs.get("token_usage")
             )
         
     except Exception as e:
-        print(f"Background job {params.get('job_id')} failed: {e}")
+        await send_job_completion_notification(params, result=None, error=str(e))
+        logging.error(f"Background job {params.get('job_id')} failed: {e}")
 
 
-async def generate_huddles(params: dict, claude_client):
-    """Generate huddle plan and create PDF files for each huddle."""
+async def generate_content(params: dict, claude_client):
+    """Generate a curriculum plan and create PDF files."""
     
-    # Initialize tracking variables
     total_input_tokens = 0
     total_output_tokens = 0
-    total_speech_characters = 0
-    
-    try: 
+    try:
+        dirs = setup_output_directories(params["job_id"])
+        
         min_words, max_words = get_word_targets(params['duration'])
 
-        # === HUDDLE PLAN GENERATION ===
-        plan_prompts = fetch_plan_prompts()
+        # === PLAN GENERATION (prompts from prompt manager) ===
+        async with get_db_connection() as db_conn:
+            plan_prompts = await fetch_plan_prompts(db_conn)
         user_prompt = format_plan_prompt(plan_prompts, params, min_words, max_words)
         plan_response = await generate_plan(claude_client, plan_prompts['system_prompt'], user_prompt)
-        
+
         # Extract plan result and accumulate tokens
         plan_result = plan_response["plan"]
         total_input_tokens += plan_response["tokens"]["input"]
         total_output_tokens += plan_response["tokens"]["output"]
 
-        # === HUDDLE GENERATION ===
+        # # Save plan locally
+        # plan_file_path = dirs["plan"] / "plan.json"
+        # plan_file_path.write_text(json.dumps(plan_result, indent=2, default=str), encoding="utf-8")
+        # logging.info("Saved plan to %s", plan_file_path.resolve())
         
-        huddles = (plan_result or {}).get("huddles") or []
-        if not huddles:
-            raise ValueError("Huddle plan contains no huddles to generate")
         
-        dirs = setup_output_directories(params['job_id'])
+        # plan_file_path = dirs["plan"] / "plan.json"
+        # if plan_file_path.exists():
+        #     # Load existing plan
+        #     plan_result = json.loads(plan_file_path.read_text(encoding="utf-8"))
+        #     logging.info("Loaded existing plan from %s", plan_file_path.resolve())
+        # else:
+        #     raise FileNotFoundError(f"Plan file not found: {plan_file_path}")
 
-        # Prepare retriever (single AI index)
+        # === CONTENT + PDF GENERATION (save docs locally) ===
+        docs = (plan_result or {}).get("docs") or []
+        if not docs:
+            raise ValueError("Plan contains no docs to generate")
+
         retriever = PrioritizedRetriever(
-            provider_id=params['provider_id'],
+            index_id=params["index_id"],
             k=settings.INDEX_TOP_K,
             min_score=settings.MIN_SCORE,
         )
 
-        # Load huddle/document generation prompts
-        huddle_prompts = fetch_huddle_prompts()
+        async with get_db_connection() as db_conn:
+            pdf_prompts = await fetch_pdf_prompts(db_conn)
 
-        # Build dynamic filter from branchState and certificationList (comma-separated)
-        ai_filter = retriever.build_ai_filter(
-            branch_state=params['branch_state'],
-            certifications=params['certifications'],
-        )
+        for doc in docs:
+            doc_id = doc.get("id")
 
-        # Generate each huddle and create artifacts
-        for huddle in huddles:
-            huddle_id = huddle.get("id")
-            
-            # Generate huddle content
-            result = await process_single_huddle(
-                claude_client, huddle, huddle_id, plan_result, huddles, retriever,
-                huddle_prompts, min_words, max_words, params['duration'], ai_filter,
-                params['agency_name'], params['branch_name']
+            # Generate pdf content
+            result = await process_single_doc(
+                claude_client, doc, doc_id, plan_result, docs, retriever,
+                pdf_prompts, min_words, max_words, params["duration"],
             )
-
-            # Accumulate tokens from huddle generation
+            
+            # # Accumulate tokens from pdf generation
             total_input_tokens += result["tokens"]["input"]
             total_output_tokens += result["tokens"]["output"]
-
             content_html = result.get("content_html")
 
-            # Create PDF
             try:
-                pdf_path = await create_huddle_pdf(huddle_id, content_html, dirs['pdfs'])
+                pdf_path = await create_pdf(doc_id, content_html, dirs["pdfs"])
             except Exception as pdf_error:
-                logging.error(f"Failed to create PDF for huddle {huddle_id}: {pdf_error}")
-                raise pdf_error
-        
+                logging.error("Failed to create PDF for doc %s: %s", doc_id, pdf_error)
+                raise
+
         token_usage = {
             "total_input_tokens": total_input_tokens,
             "total_output_tokens": total_output_tokens,
-            "total_speech_characters": total_speech_characters
         }
-
+        
         #=== UPLOAD ALL ARTIFACTS TO AZURE BLOB ===
         try:
-            upload_result = upload_huddle_artifacts(
+            upload_result = upload_artifacts(
                 job_id=params["job_id"],
-                provider_id=params['provider_id'],
+                index_id=params['index_id'],
                 pdfs_dir=dirs['pdfs'],
                 audio_dir=dirs['audio'],
                 voicescripts_dir=dirs['voiceovers'],
             )
         except Exception as upload_error:
-            logging.error(f"Failed to upload huddle artifacts to Azure Blob: {upload_error}")
+            logging.error(f"Failed to upload doc artifacts to Azure Blob: {upload_error}")
             raise upload_error
-
-        clean_local_directories(params["job_id"])
         
-        # Initialize an empty list for the generated huddles
-        generated_huddles = []
-        for i, huddle in enumerate(huddles):
-            huddle_id = huddle.get("id")
+        # clean_local_directories(params["job_id"])
+        
+        # Initialize an empty list for the generated documents
+        generated_docs = []
+        for i, doc in enumerate(docs):
+            doc_id = doc.get("id")
             
             # Find the corresponding uploaded file paths by matching filenames
-            pdf_filename = f"huddle-{huddle_id}.pdf"
-            mp3_filename = f"huddle-{huddle_id}.mp3"
-            txt_filename = f"huddle-{huddle_id}.txt"
+            pdf_filename = f"doc-{doc_id}.pdf"
+            mp3_filename = f"voiceover-{doc_id}.mp3"
+            txt_filename = f"voicescript-{doc_id}.txt"
+            
+            print(upload_result)
             
             # Find the uploaded paths that match this huddle's files
             pdf_path = next((path for path in upload_result["pdf"] if pdf_filename in path), None)
-            audio_path = next((path for path in upload_result["audio_mp3"] if mp3_filename in path), None)
-            voicescript_path = next((path for path in upload_result["voicescripts"] if txt_filename in path), None)
+            # audio_path = next((path for path in upload_result["audio_mp3"] if mp3_filename in path), None)
+            # voicescript_path = next((path for path in upload_result["voicescripts"] if txt_filename in path), None)
             
-            if not pdf_path or not audio_path or not voicescript_path:
-                logging.error(f"Missing uploaded artifact for huddle {huddle_id}")
-                raise ValueError(f"Uploaded artifacts missing for huddle {huddle_id}")
+            print(f'pdf_path:{pdf_path}')
             
-            huddle_data = {
-                "huddle_index": i + 1,
-                "title": huddle.get("title"),
+            # if not pdf_path or not audio_path or not voicescript_path:
+            if not pdf_path:
+                logging.error(f"Missing uploaded artifact for doc {doc_id}")
+                raise ValueError(f"Uploaded artifacts missing for doc {doc_id}")
+            
+            doc_data = {
+                "doc_index": i + 1,
+                "title": doc.get("title"),
                 "pdf_path": pdf_path,
-                "audio_path": audio_path,
-                "voicescript_path": voicescript_path
+                "audio_path": mp3_filename,
+                "voicescript_path": txt_filename
             }
             
-            generated_huddles.append(huddle_data)
+            generated_docs.append(doc_data)
 
         return {
             "success": True,
             "returns": {
                 "title": plan_result.get("curriculum_metadata").get("title"),
-                "huddle_duration": params['duration'],
-                "huddles": generated_huddles,
+                "doc_duration": params['duration'],
+                "docs": generated_docs,
             },
             "logs": {
                 "token_usage": token_usage,
-                "huddle_plan": plan_result
+                "plan": plan_result
             }
         }
         
     except Exception as e:
-        logging.error(f"Error in generate_huddle_pdfs: {e}")
         return {
             "success": False,
             "error": str(e)
         }
-
-
+        
 async def send_job_completion_notification(params: dict, result: dict = None, error: str = None):
-    """
-    Send job completion notification to the callback URL.
+    """Send job completion notification to the callback URL.
     
     if completed: error = none
     if faild; result = none
@@ -287,15 +305,11 @@ async def send_job_completion_notification(params: dict, result: dict = None, er
     
     # Prepare the notification payload with dummy data for now
     notification_payload = {
-        "jobId": job_id,
+        "job_id": job_id,
         "status": "completed" if error is None else "failed",
         "error": error,
-        "providerId": str(params.get("provider_id")),
-        "ccn": str(params.get("ccn")),
-        "branchId": int(params.get("branch_id")),
-        "userId": int(params.get("user_id")),
-        "sequenceId": int(params.get("sequence_id")),
-        "generated_sequence": result     
+        "index_id": str(params.get("index_id")),
+        "generated_sequence": result   
     }
     
     try:
@@ -314,7 +328,7 @@ async def send_job_completion_notification(params: dict, result: dict = None, er
                     f"Failed to send notification for job {job_id}. Status: {response.status_code}"
                 )
                 return {
-                    "jobId": job_id,
+                    "job_id": job_id,
                     "status": "notification_failed",
                     "error": f"HTTP {response.status_code}",
                 }
@@ -324,14 +338,14 @@ async def send_job_completion_notification(params: dict, result: dict = None, er
     except httpx.RequestError as e:
         logging.error(f"Request error while sending notification for job {job_id}: {e}")
         return {
-            "jobId": job_id,
+            "job_id": job_id,
             "status": "notification_failed",
             "error": str(e),
         }
     except Exception as e:
         logging.error(f"Unexpected error while sending notification for job {job_id}: {e}")
         return {
-            "jobId": job_id,
+            "job_id": job_id,
             "status": "notification_failed",
             "error": str(e),
         }

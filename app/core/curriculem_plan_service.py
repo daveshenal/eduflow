@@ -3,47 +3,25 @@ import logging
 from pathlib import Path
 
 from config.settings import settings
+from app.prompts.prompt_management import get_prompt_manager, PromptNames
 
 
-BASE_DIR = Path(__file__).resolve().parents[2]
-PROMPTS_DIR = BASE_DIR / "app" / "prompts"
-
-
-def _load_json(path: Path) -> dict:
-    """Load a JSON file and return its contents as a dict."""
-    with path.open("r", encoding="utf-8") as f:
-        return json.load(f)
-
-
-def fetch_plan_prompts() -> dict:
+async def fetch_plan_prompts(db_conn) -> dict:
     """
-    Load planning-related prompts from JSON files under app/prompts.
-
-    - system_main.json: contains the shared system prompt as an array of strings
-    - curr_plan.json: contains the planner prompt template (array or string)
+    Load planning prompts from the prompt manager (DB).
+    Uses active prompts: main_prompt (system), curr_planner (planner).
+    Returns same shape as fetch_plan_prompts(): system_prompt, planner_prompt.
     """
-    system_data = _load_json(PROMPTS_DIR / "system_main.json")
-    plan_data = _load_json(PROMPTS_DIR / "curr_plan.json")
-
-    # system_main.json stores system_prompt as an array of strings for readability
-    system_raw = system_data.get("system_prompt", [])
-    if isinstance(system_raw, list):
-        system_prompt = "\n".join(system_raw)
-    else:
-        system_prompt = str(system_raw) or "You are an assistant that designs simple educational huddle plans."
-
-    planner_raw = plan_data.get(
-        "planner_prompt",
-        "Create a short curriculum plan for {target_audiance} about {topic}.",
-    )
-    if isinstance(planner_raw, list):
-        planner_prompt = "\n".join(planner_raw)
-    else:
-        planner_prompt = str(planner_raw)
-
+    manager = get_prompt_manager()
+    system_prompt_resp = await manager.get_active_prompt(PromptNames.MAIN_PROMPT.value, db_conn)
+    planner_prompt_resp = await manager.get_active_prompt(PromptNames.CURR_PLANNER.value, db_conn)
+    if not system_prompt_resp:
+        raise ValueError("No active prompt found for 'main_prompt'. Activate a version via /prompts/activate.")
+    if not planner_prompt_resp:
+        raise ValueError("No active prompt found for 'curr_planner'. Activate a version via /prompts/activate.")
     return {
-        "system_prompt": system_prompt,
-        "planner_prompt": planner_prompt,
+        "system_prompt": system_prompt_resp.prompt,
+        "planner_prompt": planner_prompt_resp.prompt,
     }
 
 
@@ -65,15 +43,14 @@ def get_word_targets(duration: int) -> tuple[int, int]:
 def format_plan_prompt(prompts: dict, params: dict, min_words: int, max_words: int) -> str:
     """Format the user prompt template with actual values."""
     duration_display = f"{params['duration']} minutes"
-    total_duration = f"{params['num_huddles'] * int(params['duration'])} minutes"
+    total_duration = f"{params['num_docs'] * int(params['duration'])} minutes"
     
     try:
         return prompts['planner_prompt'].format(
-            target_audiance=params['target_audiance'],
+            target_audience=params['target_audience'],
             learning_focus=params['learning_focus'],
             topic=params['topic'],
-            clinical_context=params['clinical_context'],
-            num_huddles=params['num_huddles'],
+            num_docs=params['num_docs'],
             min_words=min_words,
             max_words=max_words,
             duration_display=duration_display,

@@ -1,52 +1,30 @@
 import logging
 import json
-from pathlib import Path
 
 from config.settings import settings
+from app.prompts.prompt_management import get_prompt_manager, PromptNames
 
 
-BASE_DIR = Path(__file__).resolve().parents[2]
-PROMPTS_DIR = BASE_DIR / "app" / "prompts"
-
-
-def _load_json(path: Path) -> dict:
-    """Load a JSON file and return its contents as a dict."""
-    with path.open("r", encoding="utf-8") as f:
-        return json.load(f)
-
-
-def fetch_huddle_prompts() -> dict:
+async def fetch_pdf_prompts(db_conn) -> dict:
     """
-    Load huddle-generation prompts from JSON files under app/prompts.
-
-    - system_main.json: contains the shared system prompt as an array of strings
-    - doc_gen.json: contains the huddle/document generation template (array or string)
+    Load PDF/document-generation prompts from the prompt manager (DB).
+    Uses active prompts: main_prompt (system), pdf_generator (huddle_prompt).
+    Returns dict with system_prompt and huddle_prompt.
     """
-    system_data = _load_json(PROMPTS_DIR / "system_main.json")
-    doc_data = _load_json(PROMPTS_DIR / "doc_gen.json")
-
-    system_raw = system_data.get("system_prompt", [])
-    if isinstance(system_raw, list):
-        system_prompt = "\n".join(system_raw)
-    else:
-        system_prompt = str(system_raw) or "You are an assistant that writes simple educational huddle content."
-
-    huddle_raw = doc_data.get(
-        "huddle_prompt",
-        "Create a single huddle titled {huddle_title} for {target_audiance}.",
-    )
-    if isinstance(huddle_raw, list):
-        huddle_prompt = "\n".join(huddle_raw)
-    else:
-        huddle_prompt = str(huddle_raw)
-
+    manager = get_prompt_manager()
+    system_prompt_resp = await manager.get_active_prompt(PromptNames.MAIN_PROMPT.value, db_conn)
+    pdf_prompt_resp = await manager.get_active_prompt(PromptNames.PDF_GENERATOR.value, db_conn)
+    if not system_prompt_resp:
+        raise ValueError("No active prompt found for 'main_prompt'. Activate a version via /prompts/activate.")
+    if not pdf_prompt_resp:
+        raise ValueError("No active prompt found for 'pdf_generator'. Activate a version via /prompts/activate.")
     return {
-        "system_prompt": system_prompt,
-        "huddle_prompt": huddle_prompt,
+        "system_prompt": system_prompt_resp.prompt,
+        "huddle_prompt": pdf_prompt_resp.prompt,
     }
 
 
-def get_previous_huddle_info(huddles: list, huddle_id: int) -> dict:
+def get_previous_doc_info(huddles: list, huddle_id: int) -> dict:
     """Get previous huddle information for context."""
     if huddle_id > 1:
         prev_huddle = huddles[huddle_id - 2]
@@ -63,13 +41,13 @@ def get_previous_huddle_info(huddles: list, huddle_id: int) -> dict:
         }
 
 
-def format_huddle_prompt(template: str, plan_result: dict, huddle: dict, 
-                        prev_huddle: dict, min_words: int, max_words: int, duration: int,
-                        huddle_id: int, total_huddles: int) -> str:
-    """Format huddle generation prompt."""
+def format_pdf_prompt(template: str, plan_result: dict, doc: dict, 
+                        prev_doc: dict, min_words: int, max_words: int, duration: int,
+                        doc_id: int, total_huddles: int) -> str:
+    """Format pdf generation prompt."""
     try:
         # Determine if this is first or last huddle
-        is_first_or_last = huddle_id == 1 or huddle_id == total_huddles
+        is_first_or_last = doc_id == 1 or doc_id == total_huddles
         
         # Convert dict to JSON string for template formatting
         if is_first_or_last:
@@ -77,22 +55,24 @@ def format_huddle_prompt(template: str, plan_result: dict, huddle: dict,
         else:
             complete_curriculum = "N/A"
         
+        meta = plan_result.get("curriculum_metadata")
+        target_audience = meta.get("target_audience")
         return template.format(
-            curriculum_title=plan_result["curriculum_metadata"]["title"],
-            target_audiance=plan_result["curriculum_metadata"]["target_audiance"],
-            huddle_type=huddle.get("type"),
-            huddle_title=huddle.get("title"),
-            main_focus=huddle.get("main_focus"),
-            key_concepts=huddle.get("key_concepts"),
-            learning_outcome=huddle.get("learning_outcome"),
-            builds_on=huddle.get("builds_on"),
-            sets_up=huddle.get("sets_up"),
+            curriculum_title=meta.get("title", ""),
+            target_audience=target_audience,
+            doc_type=doc.get("type"),
+            title=doc.get("title"),
+            main_focus=doc.get("main_focus"),
+            key_concepts=doc.get("key_concepts"),
+            learning_outcome=doc.get("learning_outcome"),
+            builds_on=doc.get("builds_on"),
+            sets_up=doc.get("sets_up"),
             min_words=min_words,
             max_words=max_words,
             duration=f"{duration} minutes",
-            previous_huddle_title=prev_huddle['title'],
-            previous_main_focus=prev_huddle['main_focus'],
-            previous_key_concepts=prev_huddle['key_concepts'],
+            previous_doc_title=prev_doc['title'],
+            previous_main_focus=prev_doc['main_focus'],
+            previous_key_concepts=prev_doc['key_concepts'],
             complete_curriculum=complete_curriculum
         )
     except KeyError as ke:
@@ -101,7 +81,7 @@ def format_huddle_prompt(template: str, plan_result: dict, huddle: dict,
         raise ValueError(error_msg)
 
 
-async def generate_single_huddle(claude_client, system_prompt: str, user_messages: list) -> dict:
+async def generate_single_doc(claude_client, system_prompt: str, user_messages: list) -> dict:
     """Generate content for a single huddle."""
     huddle_response = await claude_client.messages.create(
         model=settings.CLAUDE_MODEL_HUDDLE,
@@ -135,30 +115,27 @@ async def generate_single_huddle(claude_client, system_prompt: str, user_message
     }
 
 
-async def process_single_huddle(claude_client, huddle: dict, huddle_id: int, plan_result: dict, 
-                               huddles: list, retriever, prompts: dict, min_words: int, max_words: int,
-                               duration: int, ai_filter: str = None):
+async def process_single_doc(claude_client, doc: dict, doc_id: int, plan_result: dict,
+                             docs: list, retriever, prompts: dict, min_words: int, max_words: int,
+                             duration: int):
     """
-    Generate and return the HTML content for a single huddle.
+    Generate and return the HTML content for a single doc/huddle.
     """
-    title = huddle.get("title")
-    main_focus = huddle.get("main_focus")
-    retrieval_query = huddle.get("retrieval_query") + " " + " ".join([p for p in [title, main_focus] if p])
-    
-    # Fetch context for this huddle (single AI index)
-    docs = retriever.get_relevant_documents(
-        query=retrieval_query,
-        filter_expr=ai_filter,
-    )
-    context = retriever.format_context_with_sources(docs)
+    title = doc.get("title")
+    main_focus = doc.get("main_focus")
+    retrieval_query = (doc.get("retrieval_query") or "") + " " + " ".join([p for p in [title, main_focus] if p])
+
+    # Fetch context from knowledge base (single AI index)
+    retrieved_docs = retriever.get_relevant_documents(query=retrieval_query.strip())
+    context = retriever.format_context_with_sources(retrieved_docs)
     
     # Get previous huddle info
-    prev_huddle = get_previous_huddle_info(huddles, huddle_id)
+    prev_huddle = get_previous_doc_info(docs, doc_id)
     
     # Format huddle prompt
-    huddle_details = format_huddle_prompt(
-        prompts['huddle_prompt'], plan_result, huddle, prev_huddle,
-        min_words, max_words, duration, huddle_id, len(huddles)
+    huddle_details = format_pdf_prompt(
+        prompts['huddle_prompt'], plan_result, doc, prev_huddle,
+        min_words, max_words, duration, doc_id, len(docs)
     )
     
     user_messages = [
@@ -168,10 +145,10 @@ async def process_single_huddle(claude_client, huddle: dict, huddle_id: int, pla
     ]
     
     # Generate and return huddle content
-    huddle_result = await generate_single_huddle(claude_client, prompts['system_prompt'], user_messages)
+    huddle_result = await generate_single_doc(claude_client, prompts['system_prompt'], user_messages)
     
     return {
-        "huddle_id": huddle_id,
+        "huddle_id": doc_id,
         "title": title,
         "content_html": huddle_result["content"],
         "tokens": huddle_result["tokens"]

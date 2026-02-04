@@ -14,21 +14,20 @@ def _iter_local_files(directory: Path):
     return [p for p in directory.iterdir() if p.is_file()]
 
 
-def upload_huddle_artifacts(
-    job_id:str,
-    provider_id: str,
+def upload_artifacts(
+    job_id: str,
+    index_id: str,
     pdfs_dir: Path,
     audio_dir: Path,
     voicescripts_dir: Path,
 ) -> dict:
     """
     Upload generated huddle artifacts to Azure Blob Storage in the structure:
-      provider-{provider_id}/{job_id}/{pdf|audio_mp3|voicescripts}/<files>
+      index-{index_id}/{job_id}/{pdf|audio_mp3|voicescripts}/<files>
 
     Returns a dict with blob paths uploaded per category.
     """
-
-    base_prefix = f"provider-{provider_id}/{job_id}"
+    base_prefix = f"index-{index_id}/{job_id}"
 
     container_client = get_hop_saves_container_client()
 
@@ -78,20 +77,20 @@ def upload_huddle_artifacts(
         raise
     
     
-def upload_huddle_logs(
+def upload_generation_logs(
     job_id:str,
-    provider_id: str,
+    index_id: str,
     params: dict,
-    huddle_plan: dict,
+    plan: dict,
     response: dict,
     usage: dict
 ) -> dict:
     """
-    Upload logs for generated huddle artifacts to Azure Blob Storage in the structure:
-      provider-{provider_id}/{job_id}/logs/<files>
+    Upload logs for generated artifacts to Azure Blob Storage in the structure:
+      index-{index_id}/{job_id}/logs/<files>
     """
 
-    base_prefix = f"provider-{provider_id}/{job_id}/logs"
+    base_prefix = f"index-{index_id}/{job_id}/logs"
 
     container_client = get_hop_saves_container_client()
 
@@ -110,8 +109,8 @@ def upload_huddle_logs(
         return blob_path
 
     try:
-        blob_path = _upload_json(huddle_plan, "huddle_plan.json", f"{base_prefix}")
-        logging.info(f"Uploaded huddle plan to: {blob_path}")
+        blob_path = _upload_json(plan, "plan.json", f"{base_prefix}")
+        logging.info(f"Uploaded plan to: {blob_path}")
         
         blob_path = _upload_json(params, "input_params.json", f"{base_prefix}")
         logging.info(f"Uploaded input params to: {blob_path}")
@@ -129,5 +128,5 @@ def upload_huddle_logs(
         )
 
     except Exception as plan_upload_error:
-        logging.warning(f"Failed to upload huddle plan: {plan_upload_error}")
+        logging.warning(f"Failed to upload plan: {plan_upload_error}")
         raise

@@ -90,13 +90,13 @@ class PrioritizedRetriever:
 
     def __init__(
         self,
-        provider_id: str,
+        index_id: str,
         k: int,
         min_score: float,
     ):
         self.k = k
         self.min_score = min_score
-        manager = PrioritizedSearchManager(f"ai-index-{provider_id}")
+        manager = PrioritizedSearchManager(f"ai-index-{index_id}")
         self.store = manager.get_vectorstore()
 
     def get_relevant_documents(

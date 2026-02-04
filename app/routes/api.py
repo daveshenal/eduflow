@@ -6,13 +6,13 @@ from fastapi.responses import StreamingResponse, JSONResponse
 
 from app.adapters.azure_blob import get_blob_service_client, test_blob_connection
 from app.adapters.claude_service import get_claude_client
-from app.adapters.azure_sql import get_db_connection, create_tables
+from app.adapters.azure_sql import get_db_connection, create_tables, clear_all_huddle_jobs
 from app.knowledgebase.get_blobs import get_blobs
 from app.knowledgebase.ai_index import AIIndex
 from app.knowledgebase.upload_files import DocumentManager
-from app.pipelines.gen_pipeline import validate_payload
+from app.pipelines.gen_pipeline import validate_payload, generate_content_background_task
+from app.pipelines.test_gen_pipeline import generate_content_background_task_test
 from app.pipelines.chat_pipeline import generate_chat_stream
-from app.pipelines.test_gen_pipeline import generate_huddles_background_task_test
 
 # Prompt management imports
 from app.prompts.prompt_management import (
@@ -46,12 +46,11 @@ async def stream_endpoint(request: Request):
             "Connection": "keep-alive",
         },
     )
-
-
+    
 # Endpoint to test background job
 @router.post("/gen/start-test")
-async def start_doc_generation(request: Request):
-    """Start document generation as background job."""
+async def start_huddle_generation(request: Request):
+    """Start Doc generation as background job."""
     payload = await request.json()
     
     try:
@@ -64,7 +63,7 @@ async def start_doc_generation(request: Request):
         )
 
     # Start background task
-    asyncio.create_task(generate_huddles_background_task_test(params))
+    asyncio.create_task(generate_content_background_task_test(params))
     
     # Return job ID immediately
     return JSONResponse(
@@ -76,6 +75,45 @@ async def start_doc_generation(request: Request):
             "Cache-Control": "no-cache",
         },
     )
+    
+# Endpoint to start background job
+@router.post("/gen/start")
+async def start_content_generation(request: Request):
+    """Start content generation as background job."""
+    payload = await request.json()
+    
+    try:
+        # Validate the payload
+        params = validate_payload(payload)
+    except ValueError as e:
+        return JSONResponse(
+            status_code=400,
+            content={"error": str(e)}
+        )
+
+    # Start background task
+    # asyncio.create_task(generate_content_background_task(params, claude_client))
+    await generate_content_background_task(params, claude_client)
+    
+    # Return job ID immediately
+    return JSONResponse(
+        content={
+            "status": "started",
+            "message": "Huddle generation started successfully",
+        },
+        headers={
+            "Cache-Control": "no-cache",
+        },
+    )
+    
+@router.delete("/huddle_jobs/clear", summary="Clear all huddle jobs")
+async def api_clear_all_huddle_jobs():
+    try:
+        deleted_count = await clear_all_huddle_jobs()
+        return {"success": True, "deleted_jobs": deleted_count}
+    except Exception as e:
+        # Optional: log the error here
+        raise HTTPException(status_code=500, detail=f"Failed to clear jobs: {str(e)}")
 
 
 ############################################

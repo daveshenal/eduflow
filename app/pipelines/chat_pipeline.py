@@ -1,18 +1,7 @@
-import json
-from pathlib import Path
-
+from app.adapters.azure_sql import get_db_connection
+from app.prompts.prompt_management import get_prompt_manager
 from app.retrievers.index_data_retriver import PrioritizedRetriever
 from config.settings import settings
-
-_PROMPTS_DIR = Path(__file__).resolve().parent.parent / "prompts"
-
-
-def _load_chatbot_prompt() -> str:
-    path = _PROMPTS_DIR / "chatbot.json"
-    with open(path, "r", encoding="utf-8") as f:
-        data = json.load(f)
-    lines = data.get("chatbot_prompt", [])
-    return "\n".join(lines) if isinstance(lines, list) else str(lines)
 
 
 async def generate_chat_stream(payload: dict, claude_client):
@@ -29,7 +18,7 @@ async def generate_chat_stream(payload: dict, claude_client):
             raise ValueError("message is required")
 
         retriever = PrioritizedRetriever(
-            provider_id=index_id,
+            index_id=index_id,
             k=settings.INDEX_TOP_K,
             min_score=settings.MIN_SCORE,
         )
@@ -41,7 +30,12 @@ async def generate_chat_stream(payload: dict, claude_client):
             {"role": "user", "content": f"USER QUESTION:\n{message}"},
         ]
 
-        chatbot_prompt = _load_chatbot_prompt()
+        async with get_db_connection() as db_conn:
+            prompt_manager = get_prompt_manager()
+            obj = await prompt_manager.get_active_prompt("developer_chatbot", db_conn)
+            if obj is None:
+                raise ValueError("No active prompt found for 'developer_chatbot'")
+            chatbot_prompt = obj.prompt
 
         async with claude_client.messages.stream(
             model=settings.CLAUDE_MODEL_CHATBOT,
