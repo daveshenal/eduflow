@@ -1,63 +1,27 @@
-from fastapi import HTTPException
 from pydantic import BaseModel, Field
 from typing import Optional, List
 from datetime import datetime
 import uuid
 import aiomysql
 from enum import Enum
-from app.adapters.azure_sql import get_db_connection
 
 
-class MainPromptNames(Enum):
-    """Predefined names for base prompts"""
+VALID_PROMPT_NAMES = frozenset({
+    "main_prompt",
+    "developer_chatbot",
+    "curr_planner",
+    "pdf_generator",
+    "voice_script",
+})
+
+
+class PromptNames(Enum):
+    """Valid prompt names (5 allowed)."""
     MAIN_PROMPT = "main_prompt"
-
-
-class UseCasePromptNames(Enum):
-    """Predefined names for use case prompts"""
     DEVELOPER_CHATBOT = "developer_chatbot"
-    EDUCATOR_CHATBOT = "educator_chatbot"
-    HUDDLE_PLANNER = "huddle_planner"
-    HUDDLE_GENERATOR = "huddle_generator"
+    CURR_PLANNER = "curr_planner"
+    PDF_GENERATOR = "pdf_generator"
     VOICESCRIPT = "voice_script"
-    SCOPE_VALIDATION = "scope_validation"
-
-
-class RolePromptNames(Enum):
-    """Predefined names for role prompts"""
-    FRONTLINE_STAFF = "frontline_staff"
-    CLINICAL_MANAGER = "clinical_manager"
-    EDUCATOR = "educator"
-    DIRECTOR = "director"
-
-
-class DisciplinePromptNames(Enum):
-    """Predefined names for discipline prompts"""
-    REGISTERED_NURSE = "registered_nurse"
-    LICENSED_PRACTICAL_NURSE = "licensed_practical_nurse"
-    PHYSICAL_THERAPIST = "physical_therapist"
-    PHYSICAL_THERAPIST_ASSISTANT = "physical_therapist_assistant"
-    OCCUPATIONAL_THERAPIST = "occupational_therapist"
-    OCCUPATIONAL_THERAPIST_ASSISTANT = "occupational_therapist_assistant"
-    SPEECH_LANGUAGE_PATHOLOGIST = "speech_language_pathologist"
-    MEDICAL_SOCIAL_WORKER = "medical_social_worker"
-    HOME_HEALTH_AIDE = "home_health_aide"
-
-
-# Database schema (for reference)
-TABLE_SCHEMA = """
-CREATE TABLE IF NOT EXISTS {table_name} (
-    id CHAR(36) PRIMARY KEY DEFAULT (UUID()),
-    name VARCHAR(100) NOT NULL,
-    version VARCHAR(20) NOT NULL,
-    prompt TEXT NOT NULL,
-    description VARCHAR(255),
-    status VARCHAR(50) DEFAULT 'inactive',
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    UNIQUE KEY unique_name_version (name, version)
-);
-"""
 
 
 # Pydantic models for request/response
@@ -93,48 +57,37 @@ class ActivatePromptRequest(BaseModel):
 
 
 class AsyncPromptManager:
-    """Async version of the prompt manager for API use"""
-    
-    def __init__(self, table_name: str, allowed_names: Enum):
-        self.table_name = table_name
-        self.allowed_names = allowed_names
-        
+    """Single-table prompt manager. Prompts are differentiated by name (5 valid names)."""
+
+    TABLE_NAME = "use_case_prompts"
+
     def _validate_name(self, name: str) -> bool:
-        """Validate if the name is in allowed names"""
-        allowed_values = [item.value for item in self.allowed_names]
-        return name in allowed_values
-    
+        return name in VALID_PROMPT_NAMES
+
     async def create_prompt(self, prompt_data: PromptCreate, db_conn) -> PromptResponse:
-        """Create a new prompt"""
-        if not self._validate_name(prompt_data.name):
-            allowed_names = [item.value for item in self.allowed_names]
-            raise ValueError(f"Invalid name '{prompt_data.name}'. Allowed names: {allowed_names}")
-        
-        # Check if prompt with same name and version already exists
-        async with db_conn.cursor() as cursor:
-            await cursor.execute(
-                f"SELECT COUNT(*) FROM {self.table_name} WHERE name = %s AND version = %s",
+        if prompt_data.name not in VALID_PROMPT_NAMES:
+            raise ValueError(f"Invalid name '{prompt_data.name}'. Allowed: {sorted(VALID_PROMPT_NAMES)}")
+
+        async with db_conn.cursor() as cur:
+            await cur.execute(
+                f"SELECT COUNT(*) FROM {self.TABLE_NAME} WHERE name=%s AND version=%s",
                 (prompt_data.name, prompt_data.version)
             )
-            result = await cursor.fetchone()
-            if result[0] > 0:
-                raise ValueError(f"Prompt '{prompt_data.name}' with version '{prompt_data.version}' already exists")
-        
-        # Insert new prompt (inactive by default)
+            if (await cur.fetchone())[0] > 0:
+                raise ValueError(f"Prompt '{prompt_data.name}' version '{prompt_data.version}' already exists")
+
         prompt_id = str(uuid.uuid4())
         now = datetime.utcnow()
-        
-        query = f"""
-        INSERT INTO {self.table_name} (id, name, version, prompt, description, status, created_at, updated_at)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-        """
-        
-        async with db_conn.cursor() as cursor:
-            await cursor.execute(query, (
-                prompt_id, prompt_data.name, prompt_data.version, prompt_data.prompt, 
-                prompt_data.description, 'inactive', now, now
-            ))
-        
+
+        async with db_conn.cursor() as cur:
+            await cur.execute(
+                f"INSERT INTO {self.TABLE_NAME} "
+                "(id, name, version, prompt, description, status, created_at, updated_at) "
+                "VALUES (%s,%s,%s,%s,%s,%s,%s,%s)",
+                (prompt_id, prompt_data.name, prompt_data.version, prompt_data.prompt,
+                 prompt_data.description, 'inactive', now, now)
+            )
+
         return PromptResponse(
             id=prompt_id,
             name=prompt_data.name,
@@ -154,13 +107,13 @@ class AsyncPromptManager:
         async with db_conn.cursor() as cursor:
             # First, deactivate all versions of this prompt name
             await cursor.execute(
-                f"UPDATE {self.table_name} SET status = 'inactive' WHERE name = %s",
+                f"UPDATE {self.TABLE_NAME} SET status = 'inactive' WHERE name = %s",
                 (name,)
             )
             
             # Then activate the specific version
             await cursor.execute(
-                f"UPDATE {self.table_name} SET status = 'active' WHERE name = %s AND version = %s",
+                f"UPDATE {self.TABLE_NAME} SET status = 'active' WHERE name = %s AND version = %s",
                 (name, version)
             )
             
@@ -176,7 +129,7 @@ class AsyncPromptManager:
         
         async with db_conn.cursor(aiomysql.DictCursor) as cursor:
             await cursor.execute(
-                f"SELECT * FROM {self.table_name} WHERE name = %s AND status = 'active'",
+                f"SELECT * FROM {self.TABLE_NAME} WHERE name = %s AND status = 'active'",
                 (name,)
             )
             row = await cursor.fetchone()
@@ -191,7 +144,7 @@ class AsyncPromptManager:
         
         async with db_conn.cursor(aiomysql.DictCursor) as cursor:
             await cursor.execute(
-                f"SELECT * FROM {self.table_name} WHERE name = %s ORDER BY created_at DESC",
+                f"SELECT * FROM {self.TABLE_NAME} WHERE name = %s ORDER BY created_at DESC",
                 (name,)
             )
             rows = await cursor.fetchall()
@@ -201,7 +154,7 @@ class AsyncPromptManager:
         """Get all prompts in the table"""
         async with db_conn.cursor(aiomysql.DictCursor) as cursor:
             await cursor.execute(
-                f"SELECT * FROM {self.table_name} ORDER BY name, version LIMIT %s OFFSET %s",
+                f"SELECT * FROM {self.TABLE_NAME} ORDER BY name, version LIMIT %s OFFSET %s",
                 (limit, skip)
             )
             rows = await cursor.fetchall()
@@ -214,7 +167,7 @@ class AsyncPromptManager:
         
         async with db_conn.cursor(aiomysql.DictCursor) as cursor:
             await cursor.execute(
-                f"SELECT * FROM {self.table_name} WHERE name = %s AND version = %s",
+                f"SELECT * FROM {self.TABLE_NAME} WHERE name = %s AND version = %s",
                 (name, version)
             )
             row = await cursor.fetchone()
@@ -244,7 +197,7 @@ class AsyncPromptManager:
         update_fields.append("updated_at = CURRENT_TIMESTAMP")
         values.extend([name, version])
         
-        query = f"UPDATE {self.table_name} SET {', '.join(update_fields)} WHERE name = %s AND version = %s"
+        query = f"UPDATE {self.TABLE_NAME} SET {', '.join(update_fields)} WHERE name = %s AND version = %s"
         
         async with db_conn.cursor() as cursor:
             await cursor.execute(query, values)
@@ -260,34 +213,20 @@ class AsyncPromptManager:
         
         async with db_conn.cursor() as cursor:
             await cursor.execute(
-                f"DELETE FROM {self.table_name} WHERE name = %s AND version = %s",
+                f"DELETE FROM {self.TABLE_NAME} WHERE name = %s AND version = %s",
                 (name, version)
             )
-            print(f"Deletet: {name}, {version}")
             return cursor.rowcount > 0
 
     async def get_all_active_prompts(self, db_conn) -> List[PromptResponse]:
         """Return all active prompts in this table."""
         async with db_conn.cursor(aiomysql.DictCursor) as cursor:
             await cursor.execute(
-                f"SELECT * FROM {self.table_name} WHERE status = 'active' ORDER BY name"
+                f"SELECT * FROM {self.TABLE_NAME} WHERE status = 'active' ORDER BY name"
             )
             rows = await cursor.fetchall()
             return [PromptResponse(**row) for row in rows]
 
 
-
-# Initialize managers for each table
-managers = {
-    "main_prompts": AsyncPromptManager("main_prompts", MainPromptNames),
-    "use_case_prompts": AsyncPromptManager("use_case_prompts", UseCasePromptNames),
-    "role_prompts": AsyncPromptManager("role_prompts", RolePromptNames),
-    "discipline_prompts": AsyncPromptManager("discipline_prompts", DisciplinePromptNames)
-}
-
-
-def get_manager(table_name: str) -> AsyncPromptManager:
-    """Get the appropriate manager for the table"""
-    if table_name not in managers:
-        raise HTTPException(status_code=404, detail=f"Table {table_name} not found")
-    return managers[table_name]
+def get_prompt_manager() -> AsyncPromptManager:
+    return AsyncPromptManager()

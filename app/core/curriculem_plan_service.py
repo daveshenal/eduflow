@@ -1,8 +1,28 @@
 import json
 import logging
+from pathlib import Path
 
 from config.settings import settings
-from app.prompts.prompt_management import get_manager, get_db_connection
+from app.prompts.prompt_management import get_prompt_manager, PromptNames
+
+
+async def fetch_plan_prompts(db_conn) -> dict:
+    """
+    Load planning prompts from the prompt manager (DB).
+    Uses active prompts: main_prompt (system), curr_planner (planner).
+    Returns same shape as fetch_plan_prompts(): system_prompt, planner_prompt.
+    """
+    manager = get_prompt_manager()
+    system_prompt_resp = await manager.get_active_prompt(PromptNames.MAIN_PROMPT.value, db_conn)
+    planner_prompt_resp = await manager.get_active_prompt(PromptNames.CURR_PLANNER.value, db_conn)
+    if not system_prompt_resp:
+        raise ValueError("No active prompt found for 'main_prompt'. Activate a version via /prompts/activate.")
+    if not planner_prompt_resp:
+        raise ValueError("No active prompt found for 'curr_planner'. Activate a version via /prompts/activate.")
+    return {
+        "system_prompt": system_prompt_resp.prompt,
+        "planner_prompt": planner_prompt_resp.prompt,
+    }
 
 
 def get_word_targets(duration: int) -> tuple[int, int]:
@@ -20,60 +40,21 @@ def get_word_targets(duration: int) -> tuple[int, int]:
     return duration_to_words[duration]
 
 
-async def fetch_plan_prompts(role_value: str, discipline_value: str) -> dict:
-    """Fetch all prompts needed for plan generation."""
-    async with get_db_connection() as db_conn:
-        prompts_to_fetch = [
-            ("main_prompts", "main_prompt", "system_prompt"),
-            ("use_case_prompts", "huddle_planner", "planner_prompt"),
-            ("role_prompts", role_value, "role_prompt"),
-            ("discipline_prompts", discipline_value, "discipline_prompt")
-        ]
-        
-        prompt_vars = {}
-        for manager_name, key, var_name in prompts_to_fetch:
-            manager = get_manager(manager_name)
-            obj = await manager.get_active_prompt(key, db_conn)
-            prompt_vars[var_name] = obj.prompt if obj else ""
-    
-    # Validate all required prompts are present
-    missing_prompts = []
-    for key, value in prompt_vars.items():
-        if not value or not value.strip():
-            missing_prompts.append(key)
-    
-    if missing_prompts:
-        error_msg = f"Required prompts not found in database: {', '.join(missing_prompts)}"
-        logging.error(error_msg)
-        raise ValueError(error_msg)
-    
-    return prompt_vars
-
-
-def format_plan_prompt(prompts: dict, params: dict, action_plan: str, min_words: int, max_words: int) -> str:
+def format_plan_prompt(prompts: dict, params: dict, min_words: int, max_words: int) -> str:
     """Format the user prompt template with actual values."""
     duration_display = f"{params['duration']} minutes"
-    total_duration = f"{params['num_huddles'] * int(params['duration'])} minutes"
+    total_duration = f"{params['num_docs'] * int(params['duration'])} minutes"
     
     try:
         return prompts['planner_prompt'].format(
-            role_prompt=prompts['role_prompt'],
-            discipline_prompt=prompts['discipline_prompt'],
+            target_audience=params['target_audience'],
             learning_focus=params['learning_focus'],
             topic=params['topic'],
-            expected_outcomes="Not Provided",
-            clinical_context=params['clinical_context'],
-            action_plan=action_plan,
-            num_huddles=params['num_huddles'],
+            num_docs=params['num_docs'],
             min_words=min_words,
             max_words=max_words,
             duration_display=duration_display,
-            role_label=params['role_label'],
-            discipline_label=params['discipline_label'],
             total_duration=total_duration,
-            role_value=params['role_value'],
-            discipline_value=params['discipline_value'],
-            provider_id=params['provider_id']
         )
     except KeyError as ke:
         error_msg = f"Template formatting error - missing placeholder in planner_prompt: {ke}"

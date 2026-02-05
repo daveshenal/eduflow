@@ -86,51 +86,31 @@ class PrioritizedSearchManager:
         return self._instances[self.index_name]
     
 class PrioritizedRetriever:
+    """Retriever over the single AI index"""
+
     def __init__(
         self,
-        provider_id: str,
-        provider_k: int,
-        global_k: int,
+        index_id: str,
+        k: int,
         min_score: float,
     ):
-        self.provider_k = provider_k
-        self.global_k = global_k
+        self.k = k
         self.min_score = min_score
-
-        manager_global = PrioritizedSearchManager(settings.AZURE_GLOBAL_INDEX_NAME)
-        self.global_store = manager_global.get_vectorstore()
-
-        manager_provider = PrioritizedSearchManager(f"provider-index-{provider_id}")
-        self.provider_store = manager_provider.get_vectorstore()
+        manager = PrioritizedSearchManager(f"ai-index-{index_id}")
+        self.store = manager.get_vectorstore()
 
     def get_relevant_documents(
         self,
         query: str,
-        provider_filter: Optional[str] = None,
-        global_filter: Optional[str] = None
+        filter_expr: Optional[str] = None,
     ) -> List[Document]:
         try:
-            # Embed once
-            query_embedding = self.provider_store.embedding_function(query)
-
-            # Use similarity_search_by_vector to avoid re-embedding
-            provider_docs = self._search_from_store(
-                self.provider_store, query_embedding, self.provider_k, provider_filter
+            query_embedding = self.store.embedding_function(query)
+            docs = self._search_from_store(
+                self.store, query_embedding, self.k, filter_expr
             )
-            global_docs = self._search_from_store(
-                self.global_store, query_embedding, self.global_k, global_filter
-            )
-
-            combined = provider_docs + global_docs
-            logging.info(f"Retrieved {len(provider_docs)} provider docs and {len(global_docs)} global docs")
-            
-            # Print metadata of all retrieved documents
-            # for i, doc in enumerate(combined, 1):
-            #     print(f"[Doc {i}]")
-            #     print("Metadata:", doc.metadata)
-            
-            return combined[:self.provider_k + self.global_k]
-
+            logging.info(f"Retrieved {len(docs)} docs from AI index")
+            return docs
         except Exception as e:
             logging.warning(f"RAG search failed: {e}")
             return []
@@ -165,12 +145,13 @@ class PrioritizedRetriever:
         for i, doc in enumerate(docs, 1):
             source_name = doc.metadata.get("source_name", f"document_{i}")
             # print(f"\nSource {i} - {source_name}:\n{doc.page_content}\n")
-            context_parts.append(f"\nSource {i} - {source_name}:\n{doc.page_content}\n")
+            # context_parts.append(f"\nSource {i} - {source_name}:\n{doc.page_content}\n")
+            context_parts.append(f"\nSource - {source_name}:\n{doc.page_content}\n")
 
         return "\n".join(context_parts)
     
     @staticmethod
-    def build_global_filter(branch_state: str = "", certifications: str = None) -> str:
+    def build_ai_filter(branch_state: str = "", certifications: str = None) -> str:
         """Construct Azure Search filter from branchState and certification list.
 
         - State: allow null/empty and the provided branch_state (lowercased) if present

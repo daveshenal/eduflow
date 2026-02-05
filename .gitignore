@@ -3,8 +3,6 @@ __pycache__
 
 # For better security and scalability, use a Azure Key Vault
 .env
-.env.prd
-.env.qa
 
 # Temporary files
 temp
@@ -14,6 +12,3 @@ db_backups
 
 # certs
 certs/DigiCertGlobalRootCA.crt.pem
-
-# test user backend
-huddles-job

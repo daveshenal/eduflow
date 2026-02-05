@@ -16,16 +16,16 @@ class Settings(BaseSettings):
     
     AZURE_STORAGE_CONNECTION_STRING: str
     
-    # CLAUDE_API_KEY: str
-    # CLAUDE_MODEL_HUDDLE: str
-    # CLAUDE_MODEL_CHATBOT: str
-    # MAX_TOKEN: int
+    CLAUDE_API_KEY: str
+    CLAUDE_MODEL_HUDDLE: str
+    CLAUDE_MODEL_CHATBOT: str
+    MAX_TOKEN: int
     
-    # MYSQL_HOST: str
-    # MYSQL_PORT: int
-    # MYSQL_USER: str
-    # MYSQL_PASSWORD: str
-    # MYSQL_DB: str
+    MYSQL_HOST: str
+    MYSQL_PORT: int
+    MYSQL_USER: str
+    MYSQL_PASSWORD: str
+    MYSQL_DB: str
     
     # AZURE_SPEECH_KEY: str
     # AZURE_SPEECH_REGION: str

@@ -1,56 +1,40 @@
-from app.prompts.prompt_management import get_db_connection, get_manager
+from app.adapters.azure_sql import get_db_connection
+from app.prompts.prompt_management import get_prompt_manager
 from app.retrievers.index_data_retriver import PrioritizedRetriever
 from config.settings import settings
 
+
 async def generate_chat_stream(payload: dict, claude_client):
-    """Async generator for streaming Chat responses"""
+    """Async generator for streaming Chat responses. Uses index_id for retrieval; no user types or AI filters."""
 
     try:
-        provider_id: str = payload.get("providerId")
-        if not provider_id:
-            raise ValueError("provider_id is required")
+        index_id: str = payload.get("index_id")
 
-        user_type: str = payload.get("userType")
+        if not index_id:
+            raise ValueError("index_id is required")
+
         message: str = payload.get("message")
+        if not message:
+            raise ValueError("message is required")
 
-        context = ""
-
-        if user_type != "developer":
-            retriever = PrioritizedRetriever(
-                provider_id=provider_id,
-                provider_k=5,
-                global_k=5,
-                min_score=settings.MIN_SCORE,
-            )
-            
-            # Build dynamic global filter from branchState and certificationList (comma-separated)
-            global_filter = retriever.build_global_filter(
-                branch_state=payload.get('branchState'),
-                certifications=payload.get('certificationList'),
-            )
-            
-            # print("=================== Filters ===================\n")
-            # print(payload.get('branchState'))
-            # print(payload.get('accreditations'))
-            # print(global_filter)
-            # print("===============================================")
-            
-            docs = retriever.get_relevant_documents(
-                query=message,
-                provider_filter=None,
-                global_filter=global_filter
-            )
-
-            context = retriever.format_context_with_sources(docs)
+        retriever = PrioritizedRetriever(
+            index_id=index_id,
+            k=settings.INDEX_TOP_K,
+            min_score=settings.MIN_SCORE,
+        )
+        docs = retriever.get_relevant_documents(query=message, filter_expr=None)
+        context = retriever.format_context_with_sources(docs)
 
         user_messages = [
             {"role": "user", "content": f"CONTEXT FROM KNOWLEDGEBASE:\n{context}"},
-            {"role": "user", "content": f"USER QUESTION:\n{message}"}
+            {"role": "user", "content": f"USER QUESTION:\n{message}"},
         ]
-        
+
         async with get_db_connection() as db_conn:
-            prompt_manager = get_manager("use_case_prompts")
+            prompt_manager = get_prompt_manager()
             obj = await prompt_manager.get_active_prompt("developer_chatbot", db_conn)
+            if obj is None:
+                raise ValueError("No active prompt found for 'developer_chatbot'")
             chatbot_prompt = obj.prompt
 
         async with claude_client.messages.stream(

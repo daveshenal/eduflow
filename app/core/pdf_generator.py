@@ -17,8 +17,8 @@ def create_default_styles():
     size: A4; 
     margin: 2cm 2cm 3cm 2cm;
     
-    @bottom-left { 
-        content: "© HOP AI | All Rights Reserved | Confidential";
+    @bottom-left {
+        content: "© EduFlow Research Project | Confidential";
         margin-top: 30pt;
         margin-bottom: 25pt;
         padding: 0;
@@ -175,7 +175,7 @@ def read_file(file_path):
         print(f"Error reading file {file_path}: {str(e)}")
         return None
 
-async def create_huddle_pdf(huddle_id: int, huddle_content: str, output_dir: Path) -> str:
+async def create_pdf(huddle_id: int, huddle_content: str, output_dir: Path) -> str:
     """Create a PDF file for a single huddle.
     
     Args:
@@ -190,7 +190,7 @@ async def create_huddle_pdf(huddle_id: int, huddle_content: str, output_dir: Pat
         Exception: If PDF creation fails
     """
     try:
-        pdf_filename = f"huddle-{huddle_id}.pdf"
+        pdf_filename = f"doc-{huddle_id}.pdf"
         pdf_path = output_dir / pdf_filename
         
         # HTML wrapper for the content
@@ -207,7 +207,7 @@ async def create_huddle_pdf(huddle_id: int, huddle_content: str, output_dir: Pat
         </html>
         """
         
-                # Create font configuration
+        # Create font configuration
         font_config = FontConfiguration()
         
         # Prepare CSS styles
