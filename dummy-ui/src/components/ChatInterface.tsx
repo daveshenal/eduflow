@@ -6,7 +6,6 @@ import ChatMessages from './ChatMessages';
 import ChatInput from './ChatInput';
 import DocumentUpload from './DocumentUpload';
 import PromptEditor from './PromptsEditor';
-import TrainingWizard from './HuddleInfo';
 import { DropdownOption, ChatMessage, UserType, ApplicationMode } from '../types';
 
 const userTypeOptions: DropdownOption[] = [
@@ -16,10 +15,8 @@ const userTypeOptions: DropdownOption[] = [
 ];
 
 const modeOptions: DropdownOption[] = [
-  { value: 'chatbot', label: 'Chatbot', active: true },
-  { value: 'huddle', label: 'Huddle Generator' },
-  { value: 'voice', label: 'Voice Script Generator' },
-  { value: 'quiz', label: 'Quiz Generator' },
+  { value: 'huddle', label: 'Huddle Generator', active: true },
+  { value: 'chatbot', label: 'Chatbot' },
 ];
 
 // Main Chat Interface Component
@@ -33,18 +30,13 @@ const ChatInterface: React.FC = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: '1',
-      content: `<strong>HOP AI</strong><br /> Hello! I'm ready to help you test your backend. 
+      content: `<strong>EduFlow</strong><br /> Hello! I'm ready to help you test your backend. 
       The interface is configured to connect to your streaming chat endpoint. Try sending me a message!`,
       isUser: false,
       timestamp: new Date(),
     },
   ]);
-  const [showHuddleWizard, setShowHuddleWizard] = useState(false);
-
-  useEffect(() => {
-    // Ensure wizard is closed when switching modes
-    setShowHuddleWizard(false);
-  }, [state.mode]);
+  // Only chatbot mode is currently supported by the backend
 
   useEffect(() => {
     apiService.setBaseUrl(state.backendUrl);
@@ -81,7 +73,7 @@ const ChatInterface: React.FC = () => {
         {
           message: message,
           userType: state.userType,
-          providerId: state.providerId,
+          indexId: state.providerId,
         },
         (fullContent) => {
           setMessages(prev => {
@@ -97,8 +89,8 @@ const ChatInterface: React.FC = () => {
           });
         },
         (err) => {
-          console.error('Huddle streaming error:', err);
-          setError('Huddle generation failed. Please try again.');
+          console.error('Streaming error:', err);
+          setError('Document generation failed. Please try again.');
           // Remove the empty assistant message on error
           setMessages(prev => {
             const lastMessage = prev[prev.length - 1];
@@ -107,7 +99,7 @@ const ChatInterface: React.FC = () => {
         }
       );
     } catch (e) {
-      console.error('Huddle generation error:', e);
+      console.error('Document generation error:', e);
     } finally {
       // Update response time metric regardless of success or error
       updateResponseTime(Date.now() - startTime);
@@ -128,7 +120,7 @@ const ChatInterface: React.FC = () => {
         setMessages([
           {
             id: '1',
-            content: `<strong>HOP AI</strong><br /> Hello! I'm ready to help you test your backend. 
+            content: `<strong>EduFlow</strong><br /> Hello! I'm ready to help you test your backend. 
             The interface is configured to connect to your streaming chat endpoint. Try sending me a message!`,
             isUser: false,
             timestamp: new Date(),
@@ -228,7 +220,7 @@ const ChatInterface: React.FC = () => {
 
             <div className="config-group">
               <label className="config-label" htmlFor="provId">
-                Provider ID
+                Index ID (backend index_id)
               </label>
               <input
                 type="text"
@@ -266,11 +258,7 @@ const ChatInterface: React.FC = () => {
       <div className="chat-container">
         <div className="chat-header">
           <div className="chat-title">
-            {state.mode === 'huddle'
-              ? 'Huddle Generator'
-              : state.mode === 'voice'
-                ? 'Voice Script Generator'
-                  : 'RAG System Testing Interface'}
+            EduFlow - System Testing Interface
           </div>
           <div className="metric">
             <span>⚡</span>
@@ -278,169 +266,14 @@ const ChatInterface: React.FC = () => {
           </div>
         </div>
 
-        {state.mode === 'huddle' ? (
-          <>
-            {showHuddleWizard ? (
-              <div className="huddle-pane">
-                <TrainingWizard
-                  onGenerateContent={async (cfg) => {
-                    const providerId = state.providerId || '595959';
-                    setIsLoading(true);
-                    setError('');
-                    const startTime = Date.now();
-                    setStreaming(true);
-                    setShowHuddleWizard(false);
-
-                    // Add user summary message then assistant placeholder for streaming
-                    const timestamp = new Date();
-                    const userSummary = `Generate a Huddle Sequence Plan with\n- Learning Focus: ${cfg.learningFocus}\n- Topic: ${cfg.topic}\n- Clinical Context: ${cfg.clinicalContext}\n- Expected Outcomes: ${cfg.expectedOutcomes}\n- Role: ${cfg.role} (${cfg.roleValue})\n- Discipline: ${cfg.discipline} (${cfg.disciplineValue})\n- Duration: ${cfg.duration}\n- Learning Level: ${cfg.learningLevel || 'N/A'}\n- Number of Huddles: ${cfg.numHuddles ?? ''}\n- Provider ID: ${providerId}`;
-                    const userMsg: ChatMessage = {
-                      id: `${Date.now()}`,
-                      content: userSummary,
-                      isUser: true,
-                      timestamp,
-                    };
-                    const assistantMsg: ChatMessage = {
-                      id: `${Date.now() + 1}`,
-                      content: '',
-                      isUser: false,
-                      timestamp,
-                    };
-                    setMessages(prev => [...prev, userMsg, assistantMsg]);
-
-                    try {
-                      await apiService.sendHuddleStream(
-                        {
-                          learningFocus: cfg.learningFocus,
-                          topic: cfg.topic,
-                          clinicalContext: cfg.clinicalContext,
-                          expectedOutcomes: cfg.expectedOutcomes,
-                          role: cfg.role,
-                          roleValue: cfg.roleValue,
-                          discipline: cfg.discipline,
-                          disciplineValue: cfg.disciplineValue,
-                          duration: cfg.duration,
-                          learningLevel: cfg.learningLevel || '',
-                          numHuddles: cfg.numHuddles ?? 1,
-                          providerId,
-                        },
-                        (fullContent) => {
-                          setMessages(prev => {
-                            const newMessages = [...prev];
-                            const lastIndex = newMessages.length - 1;
-                            if (lastIndex >= 0 && !newMessages[lastIndex].isUser) {
-                              newMessages[lastIndex] = {
-                                ...newMessages[lastIndex],
-                                content: fullContent,
-                              };
-                            }
-                            return newMessages;
-                          });
-                        },
-                        (err) => {
-                          console.error('Huddle streaming error:', err);
-                          setError('Huddle generation failed. Please try again.');
-                          // Remove the empty assistant message on error
-                          setMessages(prev => {
-                            const lastMessage = prev[prev.length - 1];
-                            return lastMessage && !lastMessage.isUser ? prev.slice(0, -1) : prev;
-                          });
-                        }
-                      );
-                    } catch (e) {
-                      console.error('Huddle generation error:', e);
-                    } finally {
-                      // Update response time metric regardless of success or error
-                      updateResponseTime(Date.now() - startTime);
-                      setStreaming(false);
-                      setIsLoading(false);
-                    }
-                  }}
-                />
-              </div>
-            ) : (
-              <ChatMessages messages={messages} error={error} isHuddlePlanMode />
-            )}
-
-            <button
-              className="fixed bottom-6 right-6 bg-red-400 hover:bg-red-500 text-white rounded-full shadow-lg px-5 py-3 font-semibold"
-              onClick={() => setShowHuddleWizard(prev => !prev)}
-              title={showHuddleWizard ? 'Back to Messages' : 'Open Huddle Planner'}
-            >
-              {showHuddleWizard ? 'Cancel' : '+ New Huddle'}
-            </button>
-          </>
-        ) : state.mode === 'voice' ? (
-          <>
-            <ChatMessages messages={messages} error={error} />
-            {/* No ChatInput in Voiceover mode */}
-            <button
-              className="fixed bottom-6 right-6 bg-red-400 hover:bg-red-500 text-white rounded-full shadow-lg px-5 py-3 font-semibold"
-              onClick={async () => {
-                if (state.isStreaming || isLoading) return;
-                setIsLoading(true);
-                setError('');
-                const timestamp = new Date();
-                try {
-                  // find last assistant message as Huddle HTML
-                  const lastAssistant = [...messages].reverse().find(m => !m.isUser && m.content?.trim());
-                  if (!lastAssistant) {
-                    setError('No assistant message found to convert. Generate a Huddle first.');
-                    return;
-                  }
-
-                  // insert placeholder message for voiceover result
-                  const voicePlaceholderId = `${Date.now()}`;
-                  setMessages(prev => ([...prev, {
-                    id: voicePlaceholderId,
-                    content: '',
-                    isUser: false,
-                    timestamp,
-                  }]));
-
-                  const res = await apiService.generateVoiceover({
-                    huddleHtml: lastAssistant.content,
-                  });
-                  if (!res.success) {
-                    setError(res.error || 'Voiceover generation failed');
-                    // remove placeholder
-                    setMessages(prev => prev.filter(m => m.id !== voicePlaceholderId));
-                    return;
-                  }
-                  const script: string = res.data?.script || '';
-                  setMessages(prev => prev.map(m => m.id === voicePlaceholderId ? { ...m, content: script } : m));
-                } catch (e) {
-                  console.error('Voiceover generation error', e);
-                  setError('Voiceover generation failed.');
-                } finally {
-                  setIsLoading(false);
-                }
-              }}
-              title={'+ Voiceover'}
-            >
-              + Voiceover
-            </button>
-          </>
-        ) :
-          state.mode === 'quiz' ? (
-            <>
-              <ChatMessages messages={messages} error={error} />
-              <div className="flex items-center justify-center h-1/2">
-                <div className="p-4 text-sm text-gray-600">
-                  Quiz Generator is selected. Awaiting configuration instructions.
-                </div>
-              </div>
-            </>
-          ) : (
-            <>
-              <ChatMessages messages={messages} error={error} />
-              <ChatInput
-                onSendMessage={handleSendMessage}
-                onClearChat={handleClearChat}
-                disabled={state.isStreaming || isLoading}
-              />
-            </>
-          )}
+        <>
+          <ChatMessages messages={messages} error={error} />
+          <ChatInput
+            onSendMessage={handleSendMessage}
+            onClearChat={handleClearChat}
+            disabled={state.isStreaming || isLoading}
+          />
+        </>
       </div>
     </div>
   );

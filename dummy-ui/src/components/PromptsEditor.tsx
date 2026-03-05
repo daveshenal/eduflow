@@ -4,43 +4,13 @@ import APIService from '../services/api';
 import Dropdown from './Dropdown';
 import { DropdownOption, PromptTemplate } from '../types';
 
-const promptTypeOptions: DropdownOption[] = [
-  { value: 'main_prompts', label: 'Main Prompts', active: true },
-  { value: 'use_case_prompts', label: 'Use Case Prompts' },
-  { value: 'role_prompts', label: 'Role Based Prompts' },
-  { value: 'discipline_prompts', label: 'Discipline Based Prompts' },
+const allowedNameOptions: DropdownOption[] = [
+  { value: 'main_prompt', label: 'Main Prompt', active: true },
+  { value: 'developer_chatbot', label: 'Developer Chatbot' },
+  { value: 'curr_planner', label: 'Curriculum Planner' },
+  { value: 'pdf_generator', label: 'PDF Generator' },
+  { value: 'voice_script', label: 'Voice Script' },
 ];
-
-const allowedNameOptionsByTable: Record<string, DropdownOption[]> = {
-  main_prompts: [
-    { value: 'main_prompt', label: 'Main Prompt', active: true },
-  ],
-  use_case_prompts: [
-    { value: 'developer_chatbot', label: 'Developer Chatbot', active: true },
-    { value: 'educator_chatbot', label: 'Educator Chatbot' },
-    { value: 'huddle_planner', label: 'Huddle Planner' },
-    { value: 'huddle_generator', label: 'Huddle Generator' },
-    { value: 'voice_script', label: 'Voice Script' },
-    { value: 'scope_validation', label: 'Scope Validation' },
-  ],
-  role_prompts: [
-    { value: 'frontline_staff', label: 'Frontline Staff', active: true },
-    { value: 'clinical_manager', label: 'Clinical Manager' },
-    { value: 'educator', label: 'Educator' },
-    { value: 'director', label: 'Director' },
-  ],
-  discipline_prompts: [
-    { value: 'registered_nurse', label: 'Registered Nurse', active: true },
-    { value: 'licensed_practical_nurse', label: 'Licensed Practical Nurse' },
-    { value: 'physical_therapist', label: 'Physical Therapist' },
-    { value: 'physical_therapist_assistant', label: 'Physical Therapist Assistant' },
-    { value: 'occupational_therapist', label: 'Occupational Therapist' },
-    { value: 'occupational_therapist_assistant', label: 'Occupational Therapist Assistant' },
-    { value: 'speech_language_pathologist', label: 'Speech Language Pathologist' },
-    { value: 'medical_social_worker', label: 'Medical Social Worker' },
-    { value: 'home_health_aide', label: 'Home Health Aide' },
-  ],
-};
 
 const statusOptions: DropdownOption[] = [
   { value: 'active', label: 'Active', active: true },
@@ -59,7 +29,6 @@ const displayPromptName = (name: string): string => {
 const PromptEditor: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const { state } = useConfig();
   const [apiService] = useState(() => new APIService(state.backendUrl));
-  const [selectedPromptType, setSelectedPromptType] = useState('main_prompts');
   const [prompts, setPrompts] = useState<PromptTemplate[]>([]);
   const [selectedPrompt, setSelectedPrompt] = useState<PromptTemplate | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -75,7 +44,6 @@ const PromptEditor: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     description: '',
     content: '',
   });
-  const allowedNameOptions = allowedNameOptionsByTable[selectedPromptType] || [];
 
   // Edit form state
   const [editForm, setEditForm] = useState({
@@ -95,7 +63,7 @@ const PromptEditor: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     setLoading(true);
     setError('');
     try {
-      const res = await apiService.getPrompts(selectedPromptType);
+      const res = await apiService.getPrompts();
       if (!res.success) throw new Error(res.error || 'Failed to load prompts');
       const data = Array.isArray(res.data) ? res.data : [];
       // Map backend PromptResponse (uses 'prompt') to UI PromptTemplate (uses 'content')
@@ -115,7 +83,7 @@ const PromptEditor: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     } finally {
       setLoading(false);
     }
-  }, [selectedPromptType, apiService]);
+  }, [apiService]);
 
   useEffect(() => {
     apiService.setBaseUrl(state.backendUrl);
@@ -125,15 +93,6 @@ const PromptEditor: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     loadPrompts();
     setSelectedPrompt(null);
   }, [loadPrompts]);
-
-  const handlePromptTypeChange = (newType: string) => {
-    setSelectedPromptType(newType);
-    setSelectedPrompt(null);
-    if (showCreateForm) {
-      const first = (allowedNameOptionsByTable[newType] || [])[0]?.value || '';
-      setCreateForm((prev) => ({ ...prev, name: first }));
-    }
-  };
 
   const handlePromptSelect = (prompt: PromptTemplate) => {
     setSelectedPrompt(prompt);
@@ -159,13 +118,13 @@ const PromptEditor: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         description: createForm.description || '',
         prompt: createForm.content,
       };
-      const res = await apiService.createPrompt(selectedPromptType, payload);
+      const res = await apiService.createPrompt(payload);
       if (!res.success) throw new Error(res.error || 'Failed to create prompt');
 
       const created = res.data;
       // Activate if requested
       if (createForm.status === 'active') {
-        await apiService.activatePrompt(selectedPromptType, created.name, created.version);
+        await apiService.activatePrompt(created.name, created.version);
         created.status = 'active';
       }
 
@@ -204,7 +163,6 @@ const PromptEditor: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         description: editForm.description,
       };
       const res = await apiService.updatePrompt(
-        selectedPromptType,
         selectedPrompt.name,
         selectedPrompt.version,
         updatePayload
@@ -213,7 +171,7 @@ const PromptEditor: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
       let updated = res.data;
       if (editForm.status === 'active') {
-        await apiService.activatePrompt(selectedPromptType, updated.name, updated.version);
+        await apiService.activatePrompt(updated.name, updated.version);
         updated.status = 'active';
       }
 
@@ -244,7 +202,6 @@ const PromptEditor: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
     try {
       const res = await apiService.deletePrompt(
-        selectedPromptType,
         selectedPrompt.name,
         selectedPrompt.version
       );
@@ -301,33 +258,10 @@ const PromptEditor: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         </div>
 
         <div className="sidebar-content">
-          {!showCreateForm && (
-            <div className="config-section">
-              <div className="config-section-title">Prompt Type</div>
-              <div className="config-group">
-                <p className="config-label">Select Prompt Type</p>
-                <Dropdown
-                  options={promptTypeOptions}
-                  value={selectedPromptType}
-                  onChange={handlePromptTypeChange}
-                />
-              </div>
-            </div>
-          )}
-
           {/* Create New Prompt Form */}
           {showCreateForm && (
             <div className="config-section">
               <div className="config-section-title">Prompt Details</div>
-
-              <div className="config-group">
-                <p className="config-label">Select Prompt Type</p>
-                <Dropdown
-                  options={promptTypeOptions}
-                  value={selectedPromptType}
-                  onChange={setSelectedPromptType}
-                />
-              </div>
 
               <div className="config-group">
                 <p className="config-label">Prompt Name</p>
