@@ -90,16 +90,6 @@ class APIService {
     }
   }
 
-  async clearSession(providerId?: string): Promise<APIResponse> {
-    // Match the JS version's clear session endpoint with hardcoded fallback
-    const providerIdToUse = providerId;
-    const endpoint = `/clear-session/${providerIdToUse}`;
-
-    return this.makeRequest(endpoint, {
-      method: 'DELETE',
-    });
-  }
-
   async uploadDocuments(
     files: File[],
     indexId: string,

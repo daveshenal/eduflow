@@ -113,23 +113,17 @@ const ChatInterface: React.FC = () => {
     setError('');
 
     try {
-      const result = await apiService.clearSession();
-      if (result.success) {
-        console.log('Chat cleared successfully');
-        // Reset messages to initial state
-        setMessages([
-          {
-            id: '1',
-            content: `<strong>EduFlow</strong><br /> Hello! I'm ready to help you test your backend. 
-            The interface is configured to connect to your streaming chat endpoint. Try sending me a message!`,
-            isUser: false,
-            timestamp: new Date(),
-          },
-        ]);
-      } else {
-        console.error('Failed to clear chat:', result.error);
-        setError('Failed to clear chat. Please try again.');
-      }
+      console.log('Chat cleared successfully');
+      // Reset messages to initial state
+      setMessages([
+        {
+          id: '1',
+          content: `<strong>EduFlow</strong><br /> Hello! I'm ready to help you test your backend. 
+          The interface is configured to connect to your streaming chat endpoint. Try sending me a message!`,
+          isUser: false,
+          timestamp: new Date(),
+        },
+      ]);
     } catch (error) {
       console.error('Error clearing chat:', error);
       setError('Failed to clear chat. Please try again.');
