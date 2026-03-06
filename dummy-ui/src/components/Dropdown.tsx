@@ -60,7 +60,7 @@ const Dropdown = <T extends string>({
             }
             ${isOpen ? 'border-gray-400' : ''}
           `}
-          style={isOpen ? { borderColor: '#f96559' } : {}}
+          style={isOpen ? { borderColor: '#40798c' } : {}}
           onClick={handleToggle}
         >
           <span className="block truncate text-gray-900">
@@ -106,11 +106,11 @@ const Dropdown = <T extends string>({
                     minHeight: '40px', 
                     display: 'flex', 
                     alignItems: 'center',
-                    backgroundColor: option.value === value ? '#f96559' : undefined
+                    backgroundColor: option.value === value ? '#40798c' : undefined
                   }}
                   onMouseEnter={(e) => {
                     if (option.value !== value) {
-                      e.currentTarget.style.backgroundColor = 'rgba(249, 101, 89, 0.1)';
+                      e.currentTarget.style.backgroundColor = 'rgba(64, 121, 140, 0.1)';
                     }
                   }}
                   onMouseLeave={(e) => {

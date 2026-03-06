@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import APIService from '../services/api';
-import Dropdown from './Dropdown';
-import { DropdownOption, DocumentUploadConfig, UploadProgress } from '../types';
+import { UploadProgress } from '../types';
 import { useConfig } from '../contexts/ConfigContext';
 
 interface DocumentUploadProps {
@@ -9,57 +8,14 @@ interface DocumentUploadProps {
   apiService: APIService;
 }
 
-const indexTypeOptions: DropdownOption[] = [
-  { value: 'global', label: 'Global' },
-  { value: 'provider', label: 'Provider' },
-];
-
-const globalCategoryOptions: DropdownOption[] = [
-  { value: 'accreditations', label: 'Accreditations' },
-  { value: 'federal', label: 'Federal' },
-  { value: 'state', label: 'State' },
-];
-
-const globalAccreditationOptions: DropdownOption[] = [
-  { value: 'tjc', label: 'TJC' },
-  { value: 'achc', label: 'ACHC' },
-  { value: 'chap', label: 'CHAP' },
-];
-
-const globalFederalOptions: DropdownOption[] = [
-  { value: 'cms', label: 'CMS' },
-  { value: 'regulations', label: 'Regulations' },
-];
-
-const providerCategoryOptions: DropdownOption[] = [
-  { value: 'accreditations', label: 'Accreditations' },
-  { value: 'clinical-protocols', label: 'Clinical Protocols' },
-  { value: 'hr-policies', label: 'HR Policies' },
-];
-
 const DocumentUpload: React.FC<DocumentUploadProps> = ({ onBack, apiService }) => {
   const { state } = useConfig();
-  const [config, setConfig] = useState<DocumentUploadConfig>({
-    indexType: 'global',
-  });
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [uploadProgress, setUploadProgress] = useState<UploadProgress | null>(null);
   const [uploadStatus, setUploadStatus] = useState<string>('');
   const [isUploading, setIsUploading] = useState(false);
 
-  const isConfigReady = () => {
-    if (config.indexType === 'global') {
-      if (!config.globalCategory) return false;
-      if (config.globalCategory === 'accreditations') return !!config.globalAccreditation;
-      if (config.globalCategory === 'federal') return !!config.globalFederal;
-      if (config.globalCategory === 'state') return !!config.globalState;
-      return true;
-    }
-    // provider
-    return !!config.providerCategory;
-  };
-
-  const isUploadReady = () => isConfigReady() && selectedFiles.length > 0;
+  const isUploadReady = () => !!state.providerId && selectedFiles.length > 0;
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
@@ -75,15 +31,7 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({ onBack, apiService }) =
     try {
       const result = await apiService.uploadDocuments(
         selectedFiles,
-        {
-          indexType: config.indexType,
-          globalCategory: config.globalCategory,
-          globalAccreditation: config.globalAccreditation,
-          globalFederal: config.globalFederal,
-          globalState: config.globalState,
-          providerCategory: config.providerCategory,
-          providerId: state.providerId,
-        },
+        state.providerId,
         (progress) => {
           setUploadProgress(progress);
         }
@@ -115,106 +63,38 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({ onBack, apiService }) =
     <div className="sidebar">
       <div className="sidebar-header">
         <div className="sidebar-title">Document Upload</div>
-        <div className="sidebar-subtitle">Index & Document Management</div>
+        <div className="sidebar-subtitle">Upload files into knowledgebase index</div>
       </div>
 
       <div className="sidebar-content">
-        {/* Index Type Selection */}
         <div className="config-section">
           <div className="config-section-title">Index Configuration</div>
           <div className="config-group">
-            <p className="config-label">Select Index Type</p>
-            <Dropdown
-              options={indexTypeOptions}
-              value={config.indexType}
-              onChange={(value) => setConfig({ ...config, indexType: value as 'global' | 'provider' })}
+            <label className="config-label" htmlFor="indexIdInput">
+              Index ID (must match backend index_id)
+            </label>
+            <input
+              type="text"
+              className="config-input"
+              id="indexIdInput"
+              placeholder="Enter index_id (e.g. demo)"
+              value={state.providerId}
+              readOnly
             />
+            <p className="text-xs text-gray-500 mt-1">
+              Configure this value from the main sidebar under "Index ID".
+            </p>
           </div>
         </div>
-
-        {/* Global Category Selection */}
-        {config.indexType === 'global' && (
-          <div className="config-section">
-            <div className="config-group">
-              <p className="config-label">Select Global Category</p>
-              <Dropdown
-                options={globalCategoryOptions}
-                value={config.globalCategory || ''}
-                onChange={(value) => setConfig({ ...config, globalCategory: value as any })}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* Global Accreditations Selection */}
-        {config.indexType === 'global' && config.globalCategory === 'accreditations' && (
-          <div className="config-section">
-            <div className="config-group">
-              <p className="config-label">Select Accreditation</p>
-              <Dropdown
-                options={globalAccreditationOptions}
-                value={config.globalAccreditation || ''}
-                onChange={(value) => setConfig({ ...config, globalAccreditation: value as any })}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* Global Federal Selection */}
-        {config.indexType === 'global' && config.globalCategory === 'federal' && (
-          <div className="config-section">
-            <div className="config-group">
-              <p className="config-label">Select Federal Category</p>
-              <Dropdown
-                options={globalFederalOptions}
-                value={config.globalFederal || ''}
-                onChange={(value) => setConfig({ ...config, globalFederal: value as any })}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* Global State Input */}
-        {config.indexType === 'global' && config.globalCategory === 'state' && (
-          <div className="config-section">
-            <div className="config-group">
-              <label className="config-label" htmlFor="stateInput">
-                Enter State
-              </label>
-              <input
-                type="text"
-                className="config-input"
-                id="stateInput"
-                placeholder="Enter valid US state"
-                value={config.globalState || ''}
-                onChange={(e) => setConfig({ ...config, globalState: e.target.value })}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* Provider Category Selection */}
-        {config.indexType === 'provider' && (
-          <div className="config-section">
-            <div className="config-group">
-              <p className="config-label">Select Provider Category</p>
-              <Dropdown
-                options={providerCategoryOptions}
-                value={config.providerCategory || ''}
-                onChange={(value) => setConfig({ ...config, providerCategory: value as any })}
-              />
-            </div>
-          </div>
-        )}
 
         {/* File Upload Section */}
         <div className="config-section">
           <div className="config-section-title">Document Upload</div>
-          <div className={`file-upload-area ${!isConfigReady() ? 'disabled' : ''}`}>
+          <div className={`file-upload-area ${!state.providerId ? 'disabled' : ''}`}>
             <div className="file-upload-text">Select files to upload</div>
             <label
               htmlFor="fileInput"
-              className={`file-upload-button ${!isConfigReady() ? 'disabled' : ''}`}
+              className={`file-upload-button ${!state.providerId ? 'disabled' : ''}`}
             >
               Choose Files
             </label>
@@ -224,7 +104,7 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({ onBack, apiService }) =
               className="file-upload-input"
               multiple
               accept=".pdf,.doc,.docx,.txt"
-              disabled={!isConfigReady()}
+              disabled={!state.providerId}
               onChange={handleFileSelect}
             />
             <div className="selected-files">

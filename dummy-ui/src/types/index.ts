@@ -13,8 +13,9 @@ export interface ChatMessage {
 }
 
 export interface DocumentUploadConfig {
-  providerId: string;
-  providerCategory: string;
+  // legacy type no longer used – kept for compatibility
+  providerId?: string;
+  providerCategory?: string;
 }
 
 export interface PromptTemplate {
@@ -54,5 +55,5 @@ export interface FileInfo {
 }
 
 export type UserType = 'developer' | 'educator' | 'regular';
-export type ApplicationMode = 'chatbot' | 'quiz' | 'huddle' | 'voice';
+export type ApplicationMode = 'chatbot' | 'huddle';
 export type ProviderCategory = 'accreditations' | 'clinical-protocols' | 'hr-policies'; 

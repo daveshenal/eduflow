@@ -22,8 +22,8 @@ type ConfigAction =
 const initialState: ConfigState = {
   userType: 'developer',
   mode: 'chatbot',
-  backendUrl: 'https://hoprag-backend-prd.wonderfulflower-27535552.centralus.azurecontainerapps.io',
-  // backendUrl: 'http://localhost:8000',
+  // backendUrl: 'deployed backend URL',
+  backendUrl: 'http://localhost:8000',
   providerId: '595959',
   isStreaming: false,
   responseTime: 0,

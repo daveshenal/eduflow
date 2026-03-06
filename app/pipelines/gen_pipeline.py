@@ -88,7 +88,7 @@ def setup_output_directories(job_id: str) -> dict:
 
 def clean_local_directories(job_id: str):
     """Delete the entire job directory."""
-    job_dir = Path("temp/huddles") / job_id
+    job_dir = Path("temp/docs") / job_id
     try:
         if job_dir.exists() and job_dir.is_dir():
             shutil.rmtree(job_dir, ignore_errors=True)

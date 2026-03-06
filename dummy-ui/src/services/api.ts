@@ -42,19 +42,18 @@ class APIService {
   async sendChatMessage(
     config: {
       message: string;
+      // kept for compatibility, currently unused by backend
       userType: string;
-      providerId?: string;
+      // used as index_id for the RAG backend
+      indexId: string;
     },
     onChunk: (fullContent: string, newChunk: string) => void,
     onError: (error: string) => void
   ): Promise<string> {
     try {
       const requestBody = {
+        index_id: config.indexId,
         message: config.message,
-        userType: config.userType,
-        providerId: config.providerId,
-        branchState: 'Virginia',
-        certificationList: "CHAP,TJC"
       };
 
       const response = await fetch(`${this.baseUrl}/chat/stream`, {
@@ -91,95 +90,9 @@ class APIService {
     }
   }
 
-  async sendHuddleStream(
-    config: {
-      providerId?: string;
-      learningFocus: string;
-      topic: string;
-      clinicalContext: string;
-      expectedOutcomes: string;
-      role: string;
-      roleValue: string;
-      discipline: string;
-      disciplineValue: string;
-      duration: string;
-      learningLevel?: string;
-      numHuddles?: number;
-    },
-    onChunk: (fullContent: string, newChunk: string) => void,
-    onError: (error: string) => void
-  ): Promise<string> {
-    try {
-      const requestBody = {
-        providerId: config.providerId,
-        learningFocus: config.learningFocus,
-        topic: config.topic,
-        clinicalContext: config.clinicalContext,
-        expectedOutcomes: config.expectedOutcomes,
-        role: config.role,
-        roleValue: config.roleValue,
-        discipline: config.discipline,
-        disciplineValue: config.disciplineValue,
-        duration: config.duration,
-        learningLevel: config.learningLevel,
-        numHuddles: config.numHuddles,
-      };
-  
-      const response = await fetch(`${this.baseUrl}/huddles/start`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody),
-      });
-  
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`HTTP ${response.status}: ${response.statusText} - ${errorText}`);
-      }
-  
-      // Parse JSON response instead of streaming
-      const result = await response.json();
-      
-      // Convert to string if needed, or handle as JSON object
-      const content = typeof result === 'string' ? result : JSON.stringify(result);
-      
-      // Call onChunk with the complete content (simulate streaming)
-      onChunk(content, content);
-  
-      return content;
-    } catch (error) {
-      const errMsg = error instanceof Error ? error.message : String(error);
-      onError(errMsg);
-      throw error;
-    }
-  }
-
-  async clearSession(providerId?: string): Promise<APIResponse> {
-    // Match the JS version's clear session endpoint with hardcoded fallback
-    const providerIdToUse = providerId;
-    const endpoint = `/clear-session/${providerIdToUse}`;
-
-    return this.makeRequest(endpoint, {
-      method: 'DELETE',
-    });
-  }
-
-  async generateVoiceover(payload: {
-    huddleHtml: string;
-    tone?: string;
-    paceWpm?: number;
-  }): Promise<APIResponse> {
-    return this.makeRequest('/huddles/voiceover', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    });
-  }
-
   async uploadDocuments(
     files: File[],
-    config: {
-      providerId: string;
-      providerCategory: string;
-    },
+    indexId: string,
     onProgress?: (progress: { loaded: number; total: number; percentage: number }) => void
   ): Promise<APIResponse> {
     const formData = new FormData();
@@ -187,9 +100,6 @@ class APIService {
     files.forEach((file) => {
       formData.append('files', file);
     });
-
-    formData.append('provider_id', config.providerId);
-    formData.append('provider_category', config.providerCategory);
 
     try {
       const xhr = new XMLHttpRequest();
@@ -229,7 +139,7 @@ class APIService {
           });
         });
 
-        xhr.open('POST', `${this.baseUrl}/upload-documents`);
+        xhr.open('POST', `${this.baseUrl}/knowledgebase/${encodeURIComponent(indexId)}/upload`);
         xhr.send(formData);
       });
     } catch (error) {
@@ -240,16 +150,15 @@ class APIService {
     }
   }
 
-  async getPrompts(tableName: string, skip = 0, limit = 100): Promise<APIResponse> {
-    return this.makeRequest(`/prompts/${tableName}/?skip=${skip}&limit=${limit}`);
+  async getPrompts(skip = 0, limit = 100): Promise<APIResponse> {
+    return this.makeRequest(`/prompts/list?skip=${skip}&limit=${limit}`);
   }
 
-  async getActivePrompt(tableName: string, name: string): Promise<APIResponse> {
-    return this.makeRequest(`/prompts/${tableName}/active/${encodeURIComponent(name)}`);
+  async getActivePrompt(name: string): Promise<APIResponse> {
+    return this.makeRequest(`/prompts/active/${encodeURIComponent(name)}`);
   }
 
   async createPrompt(
-    tableName: string,
     prompt: {
       name: string;
       version: string;
@@ -257,35 +166,38 @@ class APIService {
       prompt: string;
     }
   ): Promise<APIResponse> {
-    return this.makeRequest(`/prompts/${tableName}/`, {
+    return this.makeRequest(`/prompts/new`, {
       method: 'POST',
       body: JSON.stringify(prompt),
     });
   }
 
   async updatePrompt(
-    tableName: string,
     name: string,
     version: string,
     promptUpdate: { prompt?: string; description?: string }
   ): Promise<APIResponse> {
-    return this.makeRequest(`/prompts/${tableName}/${encodeURIComponent(name)}/${encodeURIComponent(version)}`, {
+    return this.makeRequest(`/prompts/${encodeURIComponent(name)}/${encodeURIComponent(version)}`, {
       method: 'PUT',
       body: JSON.stringify(promptUpdate),
     });
   }
 
-  async deletePrompt(tableName: string, name: string, version: string): Promise<APIResponse> {
-    return this.makeRequest(`/prompts/${tableName}/${encodeURIComponent(name)}/${encodeURIComponent(version)}`, {
+  async deletePrompt(name: string, version: string): Promise<APIResponse> {
+    return this.makeRequest(`/prompts/${encodeURIComponent(name)}/${encodeURIComponent(version)}`, {
       method: 'DELETE',
     });
   }
 
-  async activatePrompt(tableName: string, name: string, version: string): Promise<APIResponse> {
-    return this.makeRequest(`/prompts/${tableName}/activate`, {
+  async activatePrompt(name: string, version: string): Promise<APIResponse> {
+    return this.makeRequest(`/prompts/activate`, {
       method: 'POST',
       body: JSON.stringify({ name, version }),
     });
+  }
+
+  async getAllowedPromptNames(): Promise<APIResponse> {
+    return this.makeRequest('/prompts/allowed-names');
   }
 }
 
