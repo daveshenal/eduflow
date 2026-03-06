@@ -3,6 +3,7 @@
 **AI-powered retrieval and generation for micro-education**
 
 ## Key Components
+
 1. **Data Pipeline**
 2. **Retrieval System**
 3. **Generation System**
@@ -11,6 +12,7 @@
    - Supports multiple output formats (PDF+voice, assessments)
 
 ## Project Structure
+
 ```text
 hop-phoenix-ml/
 ├── app/                  # FastAPI application core
@@ -25,6 +27,7 @@ hop-phoenix-ml/
 ├── config/               # Configuration files
 ├── docs/                 # Architecture diagrams and documentation
 ├── dummy-ui/             # User Interface
+├── evaluator-service/    # Independent evaluation microservice
 ├── tests/                # Test cases
 ├── .gitignore
 └── README.md
