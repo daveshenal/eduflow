@@ -18,6 +18,7 @@ hop-phoenix-ml/
 ├── app/                  # FastAPI application core
 │   ├── adapters          # External services
 │   ├── core/             # Application wide core logic
+│   ├── evaluator/        # Evaluator service
 │   ├── knowledgebase/    # Index management scripts
 │   ├── pipeline/         # Main workflow pipelines
 │   ├── prompts/          # Prompts management scripts
@@ -27,7 +28,6 @@ hop-phoenix-ml/
 ├── config/               # Configuration files
 ├── docs/                 # Architecture diagrams and documentation
 ├── dummy-ui/             # User Interface
-├── evaluator-service/    # Independent evaluation microservice
 ├── tests/                # Test cases
 ├── .gitignore
 └── README.md
