@@ -15,6 +15,7 @@ from app.pipelines.gen_baseline_pipeline import (
     validate_baseline_payload,
     generate_content_baseline_background_task,
 )
+from app.pipelines.gen_memory_pipeline import generate_content_memory_background_task
 from app.pipelines.test_gen_pipeline import generate_content_background_task_test
 from app.pipelines.chat_pipeline import generate_chat_stream
 
@@ -130,6 +131,30 @@ async def start_baseline_generation(request: Request):
         content={
             "status": "started",
             "message": "Baseline generation started successfully",
+        },
+        headers={"Cache-Control": "no-cache"},
+    )
+
+
+@router.post("/gen/start-memory")
+async def start_memory_generation(request: Request):
+    """
+    Memory-based generation workflow.
+    Body: job_id, callback_url, index_id, prompts (list of strings), duration, voice.
+    Each prompt is used as the retrieval query for that doc; a running summary of previous
+    docs is added as memory when generating each subsequent doc.
+    """
+    payload = await request.json()
+    try:
+        params = validate_baseline_payload(payload)
+    except ValueError as e:
+        return JSONResponse(status_code=400, content={"error": str(e)})
+
+    await generate_content_memory_background_task(params, claude_client)
+    return JSONResponse(
+        content={
+            "status": "started",
+            "message": "Memory-based generation started successfully",
         },
         headers={"Cache-Control": "no-cache"},
     )

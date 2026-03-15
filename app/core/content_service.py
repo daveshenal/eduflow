@@ -192,3 +192,119 @@ async def process_single_doc_baseline(
         "content_html": huddle_result["content"],
         "tokens": huddle_result["tokens"],
     }
+
+
+async def process_single_doc_memory(
+    claude_client,
+    user_prompt: str,
+    doc_id: int,
+    retriever,
+    prompts: dict,
+    min_words: int,
+    max_words: int,
+    duration: int,
+    memory_summary: str,
+) -> dict:
+    """
+    Memory workflow: generate one doc from user prompt + retrieval using that same prompt as query,
+    plus a running summary of all previous docs.
+    """
+    retrieved_docs = retriever.get_relevant_documents(query=user_prompt.strip())
+    context = retriever.format_context_with_sources(retrieved_docs)
+
+    constraints = (
+        f"Target length: {min_words}–{max_words} words. Duration: {duration} minutes. "
+        "Output well-structured HTML (e.g. headings, paragraphs, lists) suitable for a PDF."
+    )
+
+    messages = []
+    if memory_summary:
+        messages.append(
+            {
+                "role": "user",
+                "content": f"MEMORY (summary of previous docs):\n{memory_summary}",
+            }
+        )
+
+    messages.extend(
+        [
+            {
+                "role": "user",
+                "content": f"REQUEST:\n{user_prompt}\n\nCONSTRAINTS:\n{constraints}",
+            },
+            {
+                "role": "user",
+                "content": f"CONTEXT FROM KNOWLEDGEBASE:\n{context}",
+            },
+            {
+                "role": "user",
+                "content": "Generate the full document content now (HTML).",
+            },
+        ]
+    )
+
+    huddle_result = await generate_single_doc(
+        claude_client, prompts["system_prompt"], messages
+    )
+    return {
+        "huddle_id": doc_id,
+        "title": f"Document {doc_id}",
+        "content_html": huddle_result["content"],
+        "tokens": huddle_result["tokens"],
+    }
+
+
+async def update_memory_summary(
+    claude_client,
+    previous_summary: str,
+    new_doc_html: str,
+    max_words: int = 400,
+) -> dict:
+    """
+    Update the running memory summary with the latest doc.
+    Returns dict with `summary` and `tokens`.
+    """
+    base_system_prompt = (
+        "You are a summarization assistant that maintains a concise running summary of a learning sequence. "
+        "Keep key topics, concepts, and progression, in at most "
+        f"{max_words} words. The summary will be used as memory when generating subsequent docs."
+    )
+
+    user_parts = []
+    if previous_summary:
+        user_parts.append(f"PREVIOUS SUMMARY:\n{previous_summary}")
+    user_parts.append(f"LATEST DOCUMENT (HTML):\n{new_doc_html}")
+    user_parts.append("Update the running summary.")
+
+    messages = [{"role": "user", "content": "\n\n".join(user_parts)}]
+
+    response = await claude_client.messages.create(
+        model=settings.CLAUDE_MODEL_HUDDLE,
+        max_tokens=settings.MAX_TOKEN,
+        system=base_system_prompt,
+        temperature=0.3,
+        messages=messages,
+    )
+
+    usage = response.usage
+    logging.info(
+        "Memory summary tokens — Input: %s, Output: %s",
+        usage.input_tokens,
+        usage.output_tokens,
+    )
+
+    parts = []
+    for block in getattr(response, "content", []) or []:
+        if isinstance(block, dict):
+            parts.append(block.get("text", ""))
+        else:
+            parts.append(getattr(block, "text", ""))
+    summary_text = "".join(parts).strip()
+
+    return {
+        "summary": summary_text,
+        "tokens": {
+            "input": usage.input_tokens,
+            "output": usage.output_tokens,
+        },
+    }
