@@ -153,3 +153,42 @@ async def process_single_doc(claude_client, doc: dict, doc_id: int, plan_result:
         "content_html": huddle_result["content"],
         "tokens": huddle_result["tokens"]
     }
+
+
+async def process_single_doc_baseline(
+    claude_client,
+    user_prompt: str,
+    doc_id: int,
+    retriever,
+    prompts: dict,
+    min_words: int,
+    max_words: int,
+    duration: int,
+) -> dict:
+    """
+    Baseline: generate one doc from user prompt + retrieval using that same prompt as query.
+    Uses minimal system prompt + user prompt + retrieved context. No curriculum plan.
+    """
+    # Use user prompt as retrieval query
+    retrieved_docs = retriever.get_relevant_documents(query=user_prompt.strip())
+    context = retriever.format_context_with_sources(retrieved_docs)
+
+    constraints = (
+        f"Target length: {min_words}–{max_words} words. Duration: {duration} minutes. "
+        "Output well-structured HTML (e.g. headings, paragraphs, lists) suitable for a PDF."
+    )
+    user_messages = [
+        {"role": "user", "content": f"REQUEST:\n{user_prompt}\n\nCONSTRAINTS:\n{constraints}"},
+        {"role": "user", "content": f"CONTEXT FROM KNOWLEDGEBASE:\n{context}"},
+        {"role": "user", "content": "Generate the full document content now (HTML)."},
+    ]
+
+    huddle_result = await generate_single_doc(
+        claude_client, prompts["system_prompt"], user_messages
+    )
+    return {
+        "huddle_id": doc_id,
+        "title": f"Document {doc_id}",
+        "content_html": huddle_result["content"],
+        "tokens": huddle_result["tokens"],
+    }
