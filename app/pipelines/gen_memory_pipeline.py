@@ -20,7 +20,6 @@ from app.core.content_service import (
 from app.core.pdf_generator import create_pdf
 
 from app.pipelines.gen_pipeline import setup_output_directories, send_job_completion_notification
-from app.pipelines.gen_baseline_pipeline import validate_baseline_payload
 
 
 async def generate_content_memory_background_task(params: dict, claude_client):
@@ -180,4 +179,3 @@ async def generate_content_memory(params: dict, claude_client):
             "success": False,
             "error": str(e),
         }
-
