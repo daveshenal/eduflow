@@ -1,6 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routes.api import router
+from routers.gen import router as gen_router
+from routers.knowledgebase import router as kb_router
+from routers.database import router as prompts_router
 from config.log_config import configure_logging
 
 configure_logging()
@@ -15,7 +17,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(router)
+app.include_router(gen_router)
+app.include_router(kb_router)
+app.include_router(prompts_router)
 
 if __name__ == "__main__":
     import uvicorn
