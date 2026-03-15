@@ -1,7 +1,12 @@
 from typing import List
 from fastapi import APIRouter, HTTPException
 
-from app.adapters.azure_sql import get_db_connection, create_tables, clear_all_huddle_jobs
+from app.adapters.azure_sql import (
+    get_db_connection,
+    create_tables,
+    clear_all_huddle_jobs,
+    get_all_huddle_jobs,
+)
 
 # Prompt management imports
 from app.prompts.prompt_management import (
@@ -29,6 +34,32 @@ async def api_clear_all_huddle_jobs():
     except Exception as e:
         # Optional: log the error here
         raise HTTPException(status_code=500, detail=f"Failed to clear jobs: {str(e)}")
+
+
+@router.get("/huddle_jobs", summary="List all huddle jobs with summary")
+async def api_list_all_huddle_jobs():
+    """
+    Return a summary plus the full list of all huddle_jobs.
+
+    Summary includes total count and counts per status.
+    """
+    try:
+        jobs = await get_all_huddle_jobs()
+        total = len(jobs)
+        by_status = {}
+        for job in jobs:
+            status = job.get("status") or "unknown"
+            by_status[status] = by_status.get(status, 0) + 1
+
+        return {
+            "summary": {
+                "total": total,
+                "by_status": by_status,
+            },
+            "jobs": jobs,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch huddle jobs: {str(e)}")
 
 
  

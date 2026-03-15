@@ -213,8 +213,19 @@ async def process_single_doc_memory(
     context = retriever.format_context_with_sources(retrieved_docs)
 
     constraints = (
-        f"Target length: {min_words}–{max_words} words. Duration: {duration} minutes. "
-        "Output well-structured HTML (e.g. headings, paragraphs, lists) suitable for a PDF."
+        f"""
+        Target length: {min_words}–{max_words} words. Duration: {duration} minutes.
+
+        Output the entire document content using raw HTML tags: <h1>, <h2>, <h3>, <p>, <ul>, <li>, <strong>, <a>.
+        Do NOT use Markdown or any other formatting.
+        Exclude <html>, <body>, or <pre> wrappers.
+        Wrap all standalone text and paragraphs in <p> tags for proper readability.
+
+        Endnote Citations: When referencing a source, place the citation number in superscript in the top-right of the last letter of the referenced text. This should be done by wrapping the citation number in a <sup> tag (e.g., "as shown in recent studies<sup>[1]</sup>"). Ensure the number appears small and in the correct position.
+        Sources Section: At the end of the content, list all sources in the following format:
+        Numbered list: [1] Source name, [2] Source name, etc.
+        Ensure that the sources are listed in the order they were referenced in the document.
+        """
     )
 
     messages = []

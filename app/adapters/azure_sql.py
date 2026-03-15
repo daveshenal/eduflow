@@ -126,7 +126,30 @@ async def get_huddle_job(job_id: str):
             await cursor.execute(query, (job_id,))
             row = await cursor.fetchone()
             return row
-        
+
+
+async def get_all_huddle_jobs():
+    """Return all huddle jobs as a list of dicts, ordered by created_at DESC."""
+    query = """
+        SELECT job_id,
+               index_id,
+               callback_url,
+               status,
+               message,
+               result,
+               error,
+               created_at,
+               updated_at
+        FROM huddle_jobs
+        ORDER BY created_at DESC
+    """
+    async with get_db_connection() as conn:
+        async with conn.cursor(aiomysql.DictCursor) as cursor:
+            await cursor.execute(query)
+            rows = await cursor.fetchall()
+            return rows
+
+
 async def clear_all_huddle_jobs():
     query = "DELETE FROM huddle_jobs"
     async with get_db_connection() as conn:
