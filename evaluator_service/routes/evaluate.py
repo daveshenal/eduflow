@@ -13,7 +13,7 @@ from pathlib import Path
 
 from fastapi import APIRouter, File, UploadFile, HTTPException
 
-from evaluators.document_evaluator import evaluate_documents
+from evaluator_service.evaluators.document_evaluator import evaluate_documents
 
 router = APIRouter(prefix="/evaluate", tags=["evaluation"])
 
