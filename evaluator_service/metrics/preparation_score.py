@@ -47,15 +47,31 @@ def _chunk_text(text: str, *, max_chars: int = 2000, overlap: int = 200) -> list
 def _extract_setup_concepts(doc_text: str) -> list[str]:
     system = (
         "You are extracting forward-looking concepts from training documents.\n"
-        "Return JSON only."
+        "Be precise and evidence-based. Return JSON only."
     )
+
     user = (
-        "Given the document below, list the key concepts that the document INTRODUCES or SETS UP "
-        "for future use (ideas, terms, or methods that are likely needed soon).\n\n"
+        "Given the document below, list ONLY the key concepts that the document EXPLICITLY INTRODUCES "
+        "or CLEARLY PREPARES for future use.\n\n"
+
+        "A concept should be included ONLY if:\n"
+        "- It is clearly introduced, explained, or emphasized in this document\n"
+        "- The document signals it will be important later (e.g., structured sections, emphasis, definitions)\n\n"
+
+        "Do NOT include:\n"
+        "- Concepts that are just mentioned casually\n"
+        "- Concepts that are already well-known or repeated\n"
+        "- Concepts that are guessed to be useful later\n\n"
+
+        "Be strict:\n"
+        "- If the document does not clearly prepare the concept, DO NOT include it\n"
+        "- Prefer fewer, high-confidence concepts\n\n"
+
         "Rules:\n"
-        "- Return 3-25 concise concepts.\n"
-        "- Concepts should be short noun phrases (2-6 words).\n"
-        "- Prefer concepts that are intentionally introduced or motivated.\n\n"
+        "- Return 3-15 concise concepts\n"
+        "- Concepts must be specific and meaningful\n"
+        "- Use short noun phrases (2-6 words)\n\n"
+
         'Return JSON as: {"concepts": ["..."]}\n\n'
         f"DOCUMENT:\n{doc_text}"
     )

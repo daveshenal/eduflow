@@ -47,15 +47,32 @@ def _chunk_text(text: str, *, max_chars: int = 2000, overlap: int = 200) -> list
 def _extract_assumed_concepts(doc_text: str) -> list[str]:
     system = (
         "You are extracting prerequisite concepts from training documents.\n"
-        "Return JSON only."
+        "Be strict and conservative. Return JSON only."
     )
+
     user = (
-        "Given the document below, list the key concepts that the document ASSUMES the reader "
-        "already knows (concepts used without introduction).\n\n"
+        "Given the document below, list ONLY the key concepts that the document CLEARLY ASSUMES "
+        "the reader already knows.\n\n"
+
+        "A concept is ASSUMED only if:\n"
+        "- It is used directly without explanation\n"
+        "- It is NOT defined, described, or introduced in the document\n"
+        "- The reader would need prior knowledge to understand it\n\n"
+
+        "Do NOT include:\n"
+        "- Concepts that are explained even briefly\n"
+        "- Generic domain terms (e.g., 'patient care', 'assessment')\n"
+        "- Concepts that are only loosely implied\n\n"
+
+        "Be conservative:\n"
+        "- If unsure, DO NOT include the concept\n"
+        "- Prefer fewer, high-confidence concepts\n\n"
+
         "Rules:\n"
-        "- Return 3-25 concise concepts.\n"
-        "- Concepts should be short noun phrases (2-6 words).\n"
-        "- Do not include concepts that are introduced/defined in the document.\n\n"
+        "- Return 3-15 concise concepts\n"
+        "- Concepts must be specific (avoid generic phrases)\n"
+        "- Use short noun phrases (2-6 words)\n\n"
+
         'Return JSON as: {"concepts": ["..."]}\n\n'
         f"DOCUMENT:\n{doc_text}"
     )
