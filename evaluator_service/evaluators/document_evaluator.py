@@ -9,7 +9,6 @@ documents prepare the reader for what comes next.
 from __future__ import annotations
 
 import os
-import tempfile
 from pathlib import Path
 
 from evaluator_service.utils.pdf_extractor import extract_text_from_pdf
@@ -25,13 +24,14 @@ def _write_llm_concepts_artifact(
     setup_concepts: list[list[str] | None],
 ) -> str:
     """
-    Persist the LLM-extracted concepts (ASSUMES / INTRODUCES) to a temp file.
+    Persist the LLM-extracted concepts (ASSUMES / INTRODUCES) to a repo-local text file.
 
-    This file is overwritten on each run to make it easy to inspect the latest
-    extraction output when debugging metric behavior.
+    File is overwritten on each run for easy inspection:
+      evaluator_service/tmp/llm_concepts.txt
     """
-    temp_root = Path(tempfile.gettempdir())
-    out_dir = temp_root / "eduflow-evaluator"
+    # Base directory = this file's parent package root (evaluator_service/)
+    base_dir = Path(__file__).resolve().parents[1]
+    out_dir = base_dir / "tmp"
     out_dir.mkdir(parents=True, exist_ok=True)
     out_path = out_dir / "llm_concepts.txt"
 
@@ -67,7 +67,6 @@ def _write_llm_concepts_artifact(
             for c in concepts:
                 lines.append(f"  - {c}")
 
-    # Atomic-ish write on Windows: write then replace.
     tmp_path = out_dir / "llm_concepts.tmp"
     tmp_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
     os.replace(tmp_path, out_path)
