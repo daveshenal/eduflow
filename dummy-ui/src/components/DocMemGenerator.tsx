@@ -116,7 +116,7 @@ const DocMemGenerator: React.FC<DocMemGeneratorProps> = ({ apiService, indexId }
               id="memVoice"
               type="text"
               className="config-input"
-              placeholder="e.g. neutral, enthusiastic"
+              placeholder="Remove this properly"
               value={voice}
               onChange={(e) => setVoice(e.target.value)}
               required

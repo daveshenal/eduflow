@@ -1145,95 +1145,6 @@ body::before {
   }
 }
 
-/* Add these styles to your existing CSS file */
-
-/* PDF Generator View Styles */
-.pdf-generator-view {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-  padding: 2rem;
-  overflow-y: auto;
-}
-
-.pdf-welcome {
-  text-align: center;
-  max-width: 600px;
-  padding: 3rem 2rem;
-}
-
-.pdf-icon {
-  font-size: 4rem;
-  margin-bottom: 1.5rem;
-  opacity: 0.8;
-}
-
-.pdf-welcome h2 {
-  font-size: 1.8rem;
-  font-weight: bold;
-  margin-bottom: 0.75rem;
-  color: #1f2937;
-}
-
-.pdf-welcome p {
-  color: #6b7280;
-  margin-bottom: 2rem;
-  font-size: 1.1rem;
-  line-height: 1.6;
-}
-
-.messages-preview {
-  max-height: 200px;
-  overflow-y: auto;
-  text-align: left;
-}
-
-.message-preview {
-  padding: 0.75rem;
-  margin-bottom: 0.75rem;
-  background: white;
-  border-radius: 0.5rem;
-  border: 1px solid #e5e7eb;
-  font-size: 0.875rem;
-  line-height: 1.4;
-}
-
-.message-preview:last-child {
-  margin-bottom: 0;
-}
-
-/* PDF Actions */
-.pdf-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  align-items: center;
-}
-
-.btn-large {
-  padding: 1rem 2.5rem;
-  font-size: 1.1rem;
-  font-weight: 600;
-  border-radius: 0.75rem;
-  transition: all 0.2s ease-in-out;
-  min-width: 200px;
-}
-
-.btn-large:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow:
-    0 10px 15px -3px rgba(0, 0, 0, 0.1),
-    0 4px 6px -2px rgba(0, 0, 0, 0.05);
-}
-
-.btn-large:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
-}
-
 .main-footer {
   border-top: 1px solid rgba(64, 121, 140, 0.1);
   background: rgba(255, 255, 255, 0.8);
@@ -1241,6 +1152,23 @@ body::before {
   -webkit-backdrop-filter: blur(10px);
   flex-shrink: 0;
   height: 5.8rem;
+}
+
+.huddle-section-title {
+  font-size: 1.125rem /* 18px */;
+  line-height: 1.75rem /* 28px */;
+  font-weight: 600;
+  margin-bottom: 0.7rem;
+  --tw-text-opacity: 1;
+  color: rgb(17 24 39 / var(--tw-text-opacity));
+}
+
+.huddle-label {
+  font-size: 0.875rem /* 14px */;
+  line-height: 1.25rem /* 20px */;
+  --tw-text-opacity: 1;
+  color: rgb(75 85 99 / var(--tw-text-opacity)) /* #4b5563 */;
+  margin-bottom: 0.8rem /* 24px */;
 }
 
 .dropdown {

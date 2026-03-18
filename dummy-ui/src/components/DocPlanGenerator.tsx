@@ -115,7 +115,7 @@ const DocPlanGenerator: React.FC<DocPlanGeneratorProps> = ({ apiService, indexId
               id="baselineVoice"
               type="text"
               className="config-input"
-              placeholder="e.g. neutral, enthusiastic"
+              placeholder="Remove this properly"
               value={voice}
               onChange={(e) => setVoice(e.target.value)}
               required
