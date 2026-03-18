@@ -5,6 +5,7 @@ import Dropdown from './Dropdown';
 import ChatMessages from './ChatMessages';
 import DocumentUpload from './DocumentUpload';
 import PromptEditor from './PromptsEditor';
+import EduflowGenerator from './EduflowGenerator';
 import { DropdownOption, ChatMessage, UserType, ApplicationMode } from '../types';
 
 const userTypeOptions: DropdownOption[] = [
@@ -271,6 +272,10 @@ const ChatInterface: React.FC = () => {
               onClearChat={handleClearChat}
               disabled={state.isStreaming || isLoading}
             />
+          )}
+
+          {state.mode === 'eduflow' && (
+            <EduflowGenerator apiService={apiService} indexId={state.providerId} />
           )}
         </div>
       </div>
