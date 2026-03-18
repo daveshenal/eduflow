@@ -22,7 +22,7 @@ def upload_artifacts(
     voicescripts_dir: Path,
 ) -> dict:
     """
-    Upload generated huddle artifacts to Azure Blob Storage in the structure:
+    Upload generated artifacts to Azure Blob Storage in the structure:
       index-{index_id}/{job_id}/{pdf|audio_mp3|voicescripts}/<files>
 
     Returns a dict with blob paths uploaded per category.
@@ -66,14 +66,14 @@ def upload_artifacts(
             uploads["voicescripts"].append(blob_path)
 
         logging.info(
-            "Uploaded huddle artifacts to container '%s' with base prefix '%s'",
+            "Uploaded generated artifacts to container '%s' with base prefix '%s'",
             container_client.container_name,
             base_prefix,
         )
         return uploads
 
     except Exception as e:
-        logging.error(f"Failed to upload huddle artifacts: {e}")
+        logging.error(f"Failed to upload generated artifacts: {e}")
         raise
     
     
@@ -122,7 +122,7 @@ def upload_generation_logs(
         logging.info(f"Uploaded usage to: {blob_path}")
         
         logging.info(
-            "Uploaded huddle logs to container '%s' with base prefix '%s'",
+            "Uploaded generation logs to container '%s' with base prefix '%s'",
             container_client.container_name,
             base_prefix,
         )

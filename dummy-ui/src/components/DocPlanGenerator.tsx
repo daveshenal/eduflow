@@ -39,7 +39,7 @@ const DocPlanGenerator: React.FC<DocPlanGeneratorProps> = ({ apiService, indexId
 
     if (response.success) {
       setToast({ type: 'success', text: 'Baseline generation job started successfully.' });
-      setJobId(`baseline-${Date.now()}`);
+      setJobId(`job-${Date.now()}`);
     } else {
       setToast({ type: 'error', text: response.error || 'Failed to start baseline generation job.' });
     }

@@ -13,6 +13,8 @@ from app.core.content_upload import upload_artifacts, upload_generation_logs
 from app.core.curriculem_plan_service import get_word_targets, fetch_plan_prompts, format_plan_prompt, generate_plan
 from app.core.content_service import fetch_pdf_prompts, process_single_doc
 from app.core.pdf_generator import create_pdf
+from app.core.voicescript_service import generate_voiceover_script
+from app.core.audio_generator import generate_mp3_from_file
 
 class BackgroundJob:
     def __init__(self, job_id: str, index_id: str, callback_url: str):
@@ -156,6 +158,7 @@ async def generate_content(params: dict, claude_client):
     
     total_input_tokens = 0
     total_output_tokens = 0
+    total_speech_characters = 0
     try:
         dirs = setup_output_directories(params["job_id"])
         
@@ -172,21 +175,7 @@ async def generate_content(params: dict, claude_client):
         total_input_tokens += plan_response["tokens"]["input"]
         total_output_tokens += plan_response["tokens"]["output"]
 
-        # # Save plan locally
-        # plan_file_path = dirs["plan"] / "plan.json"
-        # plan_file_path.write_text(json.dumps(plan_result, indent=2, default=str), encoding="utf-8")
-        # logging.info("Saved plan to %s", plan_file_path.resolve())
-        
-        
-        # plan_file_path = dirs["plan"] / "plan.json"
-        # if plan_file_path.exists():
-        #     # Load existing plan
-        #     plan_result = json.loads(plan_file_path.read_text(encoding="utf-8"))
-        #     logging.info("Loaded existing plan from %s", plan_file_path.resolve())
-        # else:
-        #     raise FileNotFoundError(f"Plan file not found: {plan_file_path}")
-
-        # === CONTENT + PDF GENERATION (save docs locally) ===
+        # === CONTENT + PDF GENERATION ===
         docs = (plan_result or {}).get("docs") or []
         if not docs:
             raise ValueError("Plan contains no docs to generate")
@@ -219,10 +208,54 @@ async def generate_content(params: dict, claude_client):
             except Exception as pdf_error:
                 logging.error("Failed to create PDF for doc %s: %s", doc_id, pdf_error)
                 raise
+            
+            # Generate voiceover
+            try:
+                voiceover_payload = {
+                    "contentHtml": content_html,
+                    "tone": "professional, warm, clear",
+                    "paceWpm": 140,
+                    "duration": params['duration']
+                }
+                voiceover_response = await generate_voiceover_script(payload=voiceover_payload, claude_client=claude_client)
+                
+                # Accumulate tokens from voiceover generation
+                total_input_tokens += voiceover_response["tokens"]["input"]
+                total_output_tokens += voiceover_response["tokens"]["output"]
+                
+                voiceover_script = voiceover_response["script"]
+                
+                # Count characters for Azure Speech
+                total_speech_characters += len(voiceover_script)
+                
+                voiceover_filename = f"huddle-{doc_id}.txt"
+                voiceover_path = dirs['voiceovers'] / voiceover_filename
+                with open(voiceover_path, 'w', encoding='utf-8') as f:
+                    f.write(voiceover_script)
+
+                # Generate MP3
+                try:
+                    mp3_filename = f"huddle-{doc_id}.mp3"
+                    mp3_path = dirs['audio'] / mp3_filename
+                    generate_mp3_from_file(
+                        text_file_path=str(voiceover_path),
+                        output_file_path=mp3_path,
+                        voice = params.get("voice"),
+                        speed="medium",
+                        pitch="medium"
+                    )
+
+                except Exception as mp3_error:
+                    logging.error(f"Failed to generate MP3 for huddle {doc_id}: {mp3_error}")
+                    raise mp3_error
+            except Exception as voiceover_error:
+                logging.error(f"Failed to generate voiceover for huddle {doc_id}: {voiceover_error}")
+                raise voiceover_error
 
         token_usage = {
             "total_input_tokens": total_input_tokens,
             "total_output_tokens": total_output_tokens,
+            "total_speech_characters": total_speech_characters
         }
         
         #=== UPLOAD ALL ARTIFACTS TO AZURE BLOB ===

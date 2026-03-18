@@ -39,7 +39,7 @@ const DocMemGenerator: React.FC<DocMemGeneratorProps> = ({ apiService, indexId }
 
     if (response.success) {
       setToast({ type: 'success', text: 'Memory-based generation job started successfully.' });
-      setJobId(`memory-${Date.now()}`);
+      setJobId(`job-${Date.now()}`);
     } else {
       setToast({ type: 'error', text: response.error || 'Failed to start memory-based generation job.' });
     }
