@@ -235,7 +235,6 @@ class APIService {
     indexId: string;
     prompts: string[];
     duration: number;
-    voice: string;
   }): Promise<APIResponse> {
     const body = {
       job_id: payload.jobId,
@@ -243,7 +242,6 @@ class APIService {
       index_id: payload.indexId,
       prompts: payload.prompts,
       duration: payload.duration,
-      voice: payload.voice,
     };
 
     return this.makeRequest('/gen/start-baseline', {
@@ -258,7 +256,6 @@ class APIService {
     indexId: string;
     prompts: string[];
     duration: number;
-    voice: string;
   }): Promise<APIResponse> {
     const body = {
       job_id: payload.jobId,
@@ -266,7 +263,6 @@ class APIService {
       index_id: payload.indexId,
       prompts: payload.prompts,
       duration: payload.duration,
-      voice: payload.voice,
     };
 
     return this.makeRequest('/gen/start-memory', {

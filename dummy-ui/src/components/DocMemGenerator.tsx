@@ -19,7 +19,6 @@ const DocMemGenerator: React.FC<DocMemGeneratorProps> = ({ apiService, indexId }
   const [callbackUrl, setCallbackUrl] = useState('');
   const [promptsText, setPromptsText] = useState('');
   const [duration, setDuration] = useState<'5' | '10'>('5');
-  const [voice, setVoice] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toast, setToast] = useState<ToastPayload | null>(null);
 
@@ -36,7 +35,6 @@ const DocMemGenerator: React.FC<DocMemGeneratorProps> = ({ apiService, indexId }
       indexId,
       prompts,
       duration: Number(duration),
-      voice,
     });
 
     if (response.success) {
@@ -91,37 +89,20 @@ const DocMemGenerator: React.FC<DocMemGeneratorProps> = ({ apiService, indexId }
           </div>
         </div>
 
-        <div className="config-row" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-          <div className="config-group" style={{ flex: '0 0 calc(25% - 0.75rem)', minWidth: '160px' }}>
-            <label className="config-label" htmlFor="memDuration">
-              Duration
-            </label>
-            <select
-              id="memDuration"
-              className="config-input"
-              value={duration}
-              onChange={(e) => setDuration(e.target.value as '5' | '10')}
-              required
-            >
-              <option value="5">5</option>
-              <option value="10">10</option>
-            </select>
-          </div>
-
-          <div className="config-group" style={{ flex: '1 1 calc(75% - 0.75rem)', minWidth: '260px' }}>
-            <label className="config-label" htmlFor="memVoice">
-              Voice
-            </label>
-            <input
-              id="memVoice"
-              type="text"
-              className="config-input"
-              placeholder="Remove this properly"
-              value={voice}
-              onChange={(e) => setVoice(e.target.value)}
-              required
-            />
-          </div>
+        <div className="config-group" style={{ width: '160px' }}>
+          <label className="config-label" htmlFor="memDuration">
+            Duration
+          </label>
+          <select
+            id="memDuration"
+            className="config-input"
+            value={duration}
+            onChange={(e) => setDuration(e.target.value as '5' | '10')}
+            required
+          >
+            <option value="5">5</option>
+            <option value="10">10</option>
+          </select>
         </div>
 
         <div className="config-group">

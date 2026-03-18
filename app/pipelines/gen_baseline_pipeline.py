@@ -6,7 +6,6 @@ Flow: input validation → for each doc: minimal system prompt + user prompt + r
 
 import json
 import logging
-from pathlib import Path
 
 from config.settings import settings
 from app.retrievers.index_data_retriver import PrioritizedRetriever
@@ -20,8 +19,8 @@ from app.pipelines.gen_pipeline import setup_output_directories, send_job_comple
 
 
 def validate_baseline_payload(payload: dict) -> dict:
-    """Validate and extract baseline payload: job_id, callback_url, index_id, prompts (list), duration, voice."""
-    required = ["job_id", "callback_url", "index_id", "prompts", "duration", "voice"]
+    """Validate and extract baseline payload: job_id, callback_url, index_id, prompts (list), duration."""
+    required = ["job_id", "callback_url", "index_id", "prompts", "duration"]
     missing = [f for f in required if f not in payload]
     if missing:
         raise ValueError(f"Missing required fields: {', '.join(missing)}")
@@ -39,7 +38,6 @@ def validate_baseline_payload(payload: dict) -> dict:
         "index_id": payload.get("index_id"),
         "prompts": prompts,
         "duration": int(payload.get("duration")),
-        "voice": payload.get("voice"),
     }
 
 
