@@ -6,6 +6,8 @@ import ChatMessages from './ChatMessages';
 import DocumentUpload from './DocumentUpload';
 import PromptEditor from './PromptsEditor';
 import EduflowGenerator from './EduflowGenerator';
+import DocPlanGenerator from './DocPlanGenerator';
+import DocMemGenerator from './DocMemGenerator';
 import { DropdownOption, ChatMessage, UserType, ApplicationMode } from '../types';
 
 const userTypeOptions: DropdownOption[] = [
@@ -276,6 +278,14 @@ const ChatInterface: React.FC = () => {
 
           {state.mode === 'eduflow' && (
             <EduflowGenerator apiService={apiService} indexId={state.providerId} />
+          )}
+
+          {state.mode === 'doc_plan' && (
+            <DocPlanGenerator apiService={apiService} indexId={state.providerId} />
+          )}
+
+          {state.mode === 'doc_mem' && (
+            <DocMemGenerator apiService={apiService} indexId={state.providerId} />
           )}
         </div>
       </div>

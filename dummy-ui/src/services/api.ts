@@ -228,6 +228,52 @@ class APIService {
       body: JSON.stringify(body),
     });
   }
+
+  async startBaselineJob(payload: {
+    jobId: string;
+    callbackUrl: string;
+    indexId: string;
+    prompts: string[];
+    duration: number;
+    voice: string;
+  }): Promise<APIResponse> {
+    const body = {
+      job_id: payload.jobId,
+      callback_url: payload.callbackUrl,
+      index_id: payload.indexId,
+      prompts: payload.prompts,
+      duration: payload.duration,
+      voice: payload.voice,
+    };
+
+    return this.makeRequest('/gen/start-baseline', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    });
+  }
+
+  async startMemoryJob(payload: {
+    jobId: string;
+    callbackUrl: string;
+    indexId: string;
+    prompts: string[];
+    duration: number;
+    voice: string;
+  }): Promise<APIResponse> {
+    const body = {
+      job_id: payload.jobId,
+      callback_url: payload.callbackUrl,
+      index_id: payload.indexId,
+      prompts: payload.prompts,
+      duration: payload.duration,
+      voice: payload.voice,
+    };
+
+    return this.makeRequest('/gen/start-memory', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    });
+  }
 }
 
 export default APIService;
