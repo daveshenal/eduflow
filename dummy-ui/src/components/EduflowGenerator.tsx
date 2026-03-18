@@ -69,7 +69,7 @@ const EduflowGenerator: React.FC<EduflowGeneratorProps> = ({ apiService, indexId
             id="topic"
             type="text"
             className="config-input"
-            placeholder="e.g. OASIS documentation best practices"
+            placeholder="e.g. Comprehensive nursing assessment techniques"
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
             required
@@ -84,7 +84,7 @@ const EduflowGenerator: React.FC<EduflowGeneratorProps> = ({ apiService, indexId
             id="learningFocus"
             type="text"
             className="config-input"
-            placeholder="e.g. Skilled nursing assessment techniques"
+            placeholder="e.g. Skilled nursing assessment techniques, Patient evaluation and monitoring skills"
             value={learningFocus}
             onChange={(e) => setLearningFocus(e.target.value)}
             required
