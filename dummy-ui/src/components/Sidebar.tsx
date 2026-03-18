@@ -3,7 +3,6 @@ import { useConfig } from '../contexts/ConfigContext';
 import APIService from '../services/api';
 import Dropdown from './Dropdown';
 import ChatMessages from './ChatMessages';
-import ChatInput from './ChatInput';
 import DocumentUpload from './DocumentUpload';
 import PromptEditor from './PromptsEditor';
 import { DropdownOption, ChatMessage, UserType, ApplicationMode } from '../types';
@@ -147,22 +146,23 @@ const ChatInterface: React.FC = () => {
     return <PromptEditor onBack={() => setShowPromptEditor(false)} />;
   }
 
-  // Show document upload
-  if (showDocumentUpload) {
-    return (
-      <div className="app-container">
-        <DocumentUpload
-          onBack={() => setShowDocumentUpload(false)}
-          apiService={apiService}
-        />
-        <div className="chat-container">
-          <div className="chat-header">
-            <div className="chat-title">Document Manager - Update Knowledgebase</div>
+      // Show document upload
+      if (showDocumentUpload) {
+        return (
+          <div className="app-container">
+            <DocumentUpload
+              onBack={() => setShowDocumentUpload(false)}
+              apiService={apiService}
+            />
+            <div className="right-container">
+              <div className="main-header">
+                <div className="header-title">Document Manager - Update Knowledgebase</div>
+              </div>
+              <div className="content-container" />
+            </div>
           </div>
-        </div>
-      </div>
-    );
-  }
+        );
+      }
 
   return (
     <div className="app-container">
@@ -250,10 +250,10 @@ const ChatInterface: React.FC = () => {
         </div>
       </div>
 
-      {/* Chat Container */}
-      <div className="chat-container">
-        <div className="chat-header">
-          <div className="chat-title">
+      {/* Right Container: Header + Content */}
+      <div className="right-container">
+        <div className="main-header">
+          <div className="header-title">
             EduFlow - System Testing Interface
           </div>
           <div className="metric">
@@ -262,14 +262,17 @@ const ChatInterface: React.FC = () => {
           </div>
         </div>
 
-        <>
-          <ChatMessages messages={messages} error={error} />
-          <ChatInput
-            onSendMessage={handleSendMessage}
-            onClearChat={handleClearChat}
-            disabled={state.isStreaming || isLoading}
-          />
-        </>
+        <div className="content-container">
+          {state.mode === 'chatbot' && (
+            <ChatMessages
+              messages={messages}
+              error={error}
+              onSendMessage={handleSendMessage}
+              onClearChat={handleClearChat}
+              disabled={state.isStreaming || isLoading}
+            />
+          )}
+        </div>
       </div>
     </div>
   );

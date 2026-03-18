@@ -396,11 +396,11 @@ const PromptEditor: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       </div>
 
       {/* Main Content */}
-      <div className="chat-container">
+      <div className="right-container">
         {selectedPrompt ? (
           <>
             <div className="chat-header">
-              <div className="chat-title">{displayPromptName(selectedPrompt.name)}</div>
+              <div className="header-title">{displayPromptName(selectedPrompt.name)}</div>
 
             </div>
 
@@ -476,7 +476,7 @@ const PromptEditor: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         ) : showCreateForm ? (
           <>
             <div className="chat-header">
-              <div className="chat-title">Create New Prompt</div>
+              <div className="header-title">Create New Prompt</div>
             </div>
 
             <div className="editor-container">
@@ -514,8 +514,8 @@ const PromptEditor: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           </>
         ) : (
           <div>
-            <div className="chat-header">
-              <div className="chat-title">Prompt Manager - Edit System Prompts</div>
+            <div className="main-header">
+              <div className="header-title">Prompt Manager - Edit System Prompts</div>
             </div>
 
             <div className="editor-container">

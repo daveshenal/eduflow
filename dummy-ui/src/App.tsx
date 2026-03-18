@@ -1,6 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ConfigProvider } from './contexts/ConfigContext';
-import ChatInterface from './components/ChatInterface';
+import ChatInterface from './components/Sidebar';
 import './App.css';
 
 function App() {

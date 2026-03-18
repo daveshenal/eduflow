@@ -103,7 +103,7 @@ body::before {
   overflow: hidden;
 }
 
-.chat-container {
+.right-container {
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
@@ -113,7 +113,6 @@ body::before {
   height: 100vh;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
   position: relative;
   z-index: 1;
 }
@@ -289,7 +288,7 @@ body::before {
   transform: none !important;
 }
 
-.chat-header {
+.main-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -302,7 +301,14 @@ body::before {
   height: 5rem;
 }
 
-.chat-title {
+.content-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.header-title {
   font-size: 1.8rem;
   font-weight: 700;
   color: #ffffff;
@@ -673,7 +679,7 @@ body::before {
     max-height: 50vh;
   }
 
-  .chat-container {
+  .right-container {
     height: auto;
     flex: 1;
   }
@@ -806,7 +812,7 @@ body::before {
     max-height: 40vh;
   }
 
-  .chat-container {
+  .right-container {
     height: auto;
     flex: 1;
   }
@@ -825,7 +831,7 @@ body::before {
     padding: 0.75rem 1rem;
   }
 
-  .chat-header {
+  .main-header {
     padding: 1rem;
   }
 
@@ -840,7 +846,7 @@ body::before {
     background: linear-gradient(135deg, #1f2937 0%, #111827 50%, #0f172a 100%);
   }
 
-  .chat-container,
+  .right-container,
   .sidebar {
     background: rgba(31, 41, 55, 0.95);
     color: #f9fafb;
@@ -881,7 +887,7 @@ body::before {
     display: none;
   }
 
-  .chat-container {
+  .right-container {
     box-shadow: none;
     background: white;
   }
