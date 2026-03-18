@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import APIService from '../services/api';
+import ToastMessage, { ToastPayload } from './ToastMessage';
 
 interface EduflowGeneratorProps {
   apiService: APIService;
@@ -16,14 +17,12 @@ const EduflowGenerator: React.FC<EduflowGeneratorProps> = ({ apiService, indexId
   const [numDocs, setNumDocs] = useState('3');
   const [voice, setVoice] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [statusMessage, setStatusMessage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [toast, setToast] = useState<ToastPayload | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    setStatusMessage(null);
-    setError(null);
+    setToast(null);
 
     const clampedNumDocs = Math.max(1, Math.min(8, Number(numDocs) || 1));
 
@@ -42,11 +41,11 @@ const EduflowGenerator: React.FC<EduflowGeneratorProps> = ({ apiService, indexId
     const response = await apiService.startEduflowJob(payload);
 
     if (response.success) {
-      setStatusMessage('EduFlow generation job started successfully.');
+      setToast({ type: 'success', text: 'EduFlow generation job started successfully.' });
       // refresh job id for next run
       setJobId(`job-${Date.now()}`);
     } else {
-      setError(response.error || 'Failed to start EduFlow generation job.');
+      setToast({ type: 'error', text: response.error || 'Failed to start EduFlow generation job.' });
     }
 
     setIsSubmitting(false);
@@ -54,6 +53,7 @@ const EduflowGenerator: React.FC<EduflowGeneratorProps> = ({ apiService, indexId
 
   return (
     <div className="editor-container">
+      <ToastMessage message={toast} onClear={() => setToast(null)} />
       <h2 className="huddle-section-title">EduFlow Content Generation</h2>
       <p className="huddle-label">
         Configure the curriculum generation job and start the background process.
@@ -194,18 +194,6 @@ const EduflowGenerator: React.FC<EduflowGeneratorProps> = ({ apiService, indexId
             Start EduFlow Generation
           </button>
         </div>
-
-        {statusMessage && (
-          <div className="success-message" style={{ marginTop: '1rem' }}>
-            {statusMessage}
-          </div>
-        )}
-
-        {error && (
-          <div className="error-message" style={{ marginTop: '1rem' }}>
-            {error}
-          </div>
-        )}
       </form>
     </div>
   );

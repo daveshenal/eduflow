@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import APIService from '../services/api';
+import ToastMessage, { ToastPayload } from './ToastMessage';
 
 interface DocPlanGeneratorProps {
   apiService: APIService;
@@ -20,16 +21,14 @@ const DocPlanGenerator: React.FC<DocPlanGeneratorProps> = ({ apiService, indexId
   const [duration, setDuration] = useState<'5' | '10'>('5');
   const [voice, setVoice] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [statusMessage, setStatusMessage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [toast, setToast] = useState<ToastPayload | null>(null);
 
   const prompts = useMemo(() => parsePrompts(promptsText), [promptsText]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    setStatusMessage(null);
-    setError(null);
+    setToast(null);
 
     const response = await apiService.startBaselineJob({
       jobId,
@@ -41,10 +40,10 @@ const DocPlanGenerator: React.FC<DocPlanGeneratorProps> = ({ apiService, indexId
     });
 
     if (response.success) {
-      setStatusMessage('Baseline generation job started successfully.');
+      setToast({ type: 'success', text: 'Baseline generation job started successfully.' });
       setJobId(`baseline-${Date.now()}`);
     } else {
-      setError(response.error || 'Failed to start baseline generation job.');
+      setToast({ type: 'error', text: response.error || 'Failed to start baseline generation job.' });
     }
 
     setIsSubmitting(false);
@@ -54,6 +53,7 @@ const DocPlanGenerator: React.FC<DocPlanGeneratorProps> = ({ apiService, indexId
 
   return (
     <div className="editor-container">
+      <ToastMessage message={toast} onClear={() => setToast(null)} />
       <h2 className="huddle-section-title">Human-Guided Sequential RAG</h2>
       <p className="huddle-label">
         Provide a list of prompts. Each prompt becomes one document (retrieval query per doc).
@@ -147,18 +147,6 @@ const DocPlanGenerator: React.FC<DocPlanGeneratorProps> = ({ apiService, indexId
             Start Baseline Generation
           </button>
         </div>
-
-        {statusMessage && (
-          <div className="success-message" style={{ marginTop: '1rem' }}>
-            {statusMessage}
-          </div>
-        )}
-
-        {error && (
-          <div className="error-message" style={{ marginTop: '1rem' }}>
-            {error}
-          </div>
-        )}
       </form>
     </div>
   );

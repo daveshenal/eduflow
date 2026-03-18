@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import APIService from '../services/api';
+import ToastMessage, { ToastPayload } from './ToastMessage';
 
 interface DocMemGeneratorProps {
   apiService: APIService;
@@ -20,16 +21,14 @@ const DocMemGenerator: React.FC<DocMemGeneratorProps> = ({ apiService, indexId }
   const [duration, setDuration] = useState<'5' | '10'>('5');
   const [voice, setVoice] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [statusMessage, setStatusMessage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [toast, setToast] = useState<ToastPayload | null>(null);
 
   const prompts = useMemo(() => parsePrompts(promptsText), [promptsText]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    setStatusMessage(null);
-    setError(null);
+    setToast(null);
 
     const response = await apiService.startMemoryJob({
       jobId,
@@ -41,10 +40,10 @@ const DocMemGenerator: React.FC<DocMemGeneratorProps> = ({ apiService, indexId }
     });
 
     if (response.success) {
-      setStatusMessage('Memory-based generation job started successfully.');
+      setToast({ type: 'success', text: 'Memory-based generation job started successfully.' });
       setJobId(`memory-${Date.now()}`);
     } else {
-      setError(response.error || 'Failed to start memory-based generation job.');
+      setToast({ type: 'error', text: response.error || 'Failed to start memory-based generation job.' });
     }
 
     setIsSubmitting(false);
@@ -54,6 +53,7 @@ const DocMemGenerator: React.FC<DocMemGeneratorProps> = ({ apiService, indexId }
 
   return (
     <div className="editor-container">
+      <ToastMessage message={toast} onClear={() => setToast(null)} />
       <h2 className="huddle-section-title">Memory-Augmented Sequential RAG</h2>
       <p className="huddle-label">
         Provide a list of prompts. Each prompt becomes one document, and a running summary is
@@ -148,18 +148,6 @@ const DocMemGenerator: React.FC<DocMemGeneratorProps> = ({ apiService, indexId }
             Start Memory Generation
           </button>
         </div>
-
-        {statusMessage && (
-          <div className="success-message" style={{ marginTop: '1rem' }}>
-            {statusMessage}
-          </div>
-        )}
-
-        {error && (
-          <div className="error-message" style={{ marginTop: '1rem' }}>
-            {error}
-          </div>
-        )}
       </form>
     </div>
   );
