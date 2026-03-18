@@ -13,4 +13,4 @@ db_backups
 # certs
 certs/DigiCertGlobalRootCA.crt.pem
 
-.vscode
+/.vscode
