@@ -5,8 +5,8 @@ import os
 connection_string = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
 
 # Blob path (container name and blob name)
-container_name = "hop-ai-saves"
-blob_name = "provider-595959/ai-1724601234567-42-595959-15-a7b3c9d2/pdf/huddle-1.pdf" # path retruned by job done request
+container_name = "ai-saves"
+blob_name = "provider-595959/ai-1724601234567-42-595959-15-a7b3c9d2/pdf/doc-1.pdf" # path retruned by job done request
 
 # Local file path to save the downloaded file
 download_file_path = "local_file.pdf"

@@ -8,5 +8,6 @@ uvicorn==0.24.0
 # PDF text extraction (matches main project)
 PyPDF2
 
-# Local embeddings (BAAI/bge-large-en-v1.5)
-sentence-transformers>=2.2.0
+# Azure OpenAI client + settings loader (used for GPT-4o + embeddings)
+openai>=1.0.0
+pydantic-settings>=2.0.0

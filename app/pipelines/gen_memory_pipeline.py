@@ -20,12 +20,11 @@ from app.core.content_service import (
 from app.core.pdf_generator import create_pdf
 
 from app.pipelines.gen_pipeline import setup_output_directories, send_job_completion_notification
-from app.pipelines.gen_baseline_pipeline import validate_baseline_payload
 
 
 async def generate_content_memory_background_task(params: dict, claude_client):
     """Background task for memory-based generation (prompt-per-doc + retrieval + running summary)."""
-    from app.adapters.azure_sql import create_bg_job, update_huddle_job
+    from app.adapters.azure_sql import create_bg_job, update_bg_job
 
     job_id = params.get("job_id")
     try:
@@ -39,7 +38,7 @@ async def generate_content_memory_background_task(params: dict, claude_client):
         result = await generate_content_memory(params, claude_client)
 
         if result.get("success") is False:
-            await update_huddle_job(
+            await update_bg_job(
                 job_id=job_id,
                 status="Failed",
                 message="Memory-based generation failed",
@@ -48,7 +47,7 @@ async def generate_content_memory_background_task(params: dict, claude_client):
             await send_job_completion_notification(params, result=None, error=result.get("error"))
             return
 
-        await update_huddle_job(
+        await update_bg_job(
             job_id=job_id,
             status="completed",
             message="Memory-based generation completed",
@@ -180,4 +179,3 @@ async def generate_content_memory(params: dict, claude_client):
             "success": False,
             "error": str(e),
         }
-

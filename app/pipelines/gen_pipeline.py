@@ -97,43 +97,43 @@ def clean_local_directories(job_id: str):
 
 
 async def generate_content_background_task(params: dict, claude_client):
-    """Background task to generate huddles."""
+    """Background task to generate docs."""
     try:
         job_id = params.get("job_id")
         
-        from app.adapters.azure_sql import create_bg_job, update_huddle_job
+        from app.adapters.azure_sql import create_bg_job, update_bg_job
         await create_bg_job(
             job_id=job_id,
             index_id=params.get("index_id"),
             callback_url=params.get("callback_url"),
             status="queued",
-            message="Generating Huddles...",
+            message="Generating docs...",
         )
-        # Call the huddle generation function
-        huddle_outputs = await generate_content(params, claude_client)
+        # Call the docs generation function
+        doc_outputs = await generate_content(params, claude_client)
         
-        if huddle_outputs.get("success") is False:
-            print(huddle_outputs.get("error"))
-            await update_huddle_job(
+        if doc_outputs.get("success") is False:
+            print(doc_outputs.get("error"))
+            await update_bg_job(
                 job_id=job_id,
                 status="Failed",
-                message="Huddle generation failed",
-                result_text=json.dumps(huddle_outputs.get("error")) if huddle_outputs else None,
+                message="Docs generation failed",
+                result_text=json.dumps(doc_outputs.get("error")) if doc_outputs else None,
             )
             
-            # clean_local_directories(job_id)
+            clean_local_directories(job_id)
             # Send notification with error
-            notification_payload = await send_job_completion_notification(params, result=None, error=huddle_outputs.get("error"))
+            notification_payload = await send_job_completion_notification(params, result=None, error=doc_outputs.get("error"))
         else:
-            await update_huddle_job(
+            await update_bg_job(
                 job_id=job_id,
                 status="completed",
-                message="Huddle generation completed successfully",
-                result_text=json.dumps(huddle_outputs.get("returns")) if huddle_outputs else None,
+                message="Docs generation completed successfully",
+                result_text=json.dumps(doc_outputs.get("returns")) if doc_outputs else None,
             )
             
-            results = huddle_outputs.get("returns")
-            logs = huddle_outputs.get("logs")
+            results = doc_outputs.get("returns")
+            logs = doc_outputs.get("logs")
             
             notification_payload = await send_job_completion_notification(params, result=results, error=None)
             logging.info(f"Sent job completed notification for job {job_id}")
@@ -252,7 +252,7 @@ async def generate_content(params: dict, claude_client):
             
             print(upload_result)
             
-            # Find the uploaded paths that match this huddle's files
+            # Find the uploaded paths that match this docs's files
             pdf_path = next((path for path in upload_result["pdf"] if pdf_filename in path), None)
             # audio_path = next((path for path in upload_result["audio_mp3"] if mp3_filename in path), None)
             # voicescript_path = next((path for path in upload_result["voicescripts"] if txt_filename in path), None)
@@ -319,7 +319,7 @@ async def send_job_completion_notification(params: dict, result: dict = None, er
                 json=notification_payload,
                 headers={
                     "Content-Type": "application/json",
-                    "User-Agent": "HuddleGenerator/1.0"
+                    "User-Agent": "DocsGenerator/1.0"
                 }
             )
 

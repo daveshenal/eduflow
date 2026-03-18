@@ -10,12 +10,12 @@ Run application
 from fastapi import FastAPI
 
 # Import evaluation router from routes.evaluate
-from routes.evaluate import router as evaluate_router
+from evaluator_service.routes.evaluate import router as evaluate_router
 
 # Create FastAPI app
 app = FastAPI(
     title="Document Evaluation Service",
-    description="Evaluate PDF documents using coherence and other metrics.",
+    description="Evaluate ordered PDF sequences using dependency + preparation metrics.",
     version="1.0.0",
 )
 
@@ -40,8 +40,7 @@ if __name__ == "__main__":
     import uvicorn
 
     uvicorn.run(
-        "main:app",
+        app,
         host="0.0.0.0",
         port=8002,
-        reload=True,
     )

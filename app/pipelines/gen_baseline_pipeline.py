@@ -45,7 +45,7 @@ def validate_baseline_payload(payload: dict) -> dict:
 
 async def generate_content_baseline_background_task(params: dict, claude_client):
     """Background task for baseline generation (prompt-per-doc + retrieval by that prompt)."""
-    from app.adapters.azure_sql import create_bg_job, update_huddle_job
+    from app.adapters.azure_sql import create_bg_job, update_bg_job
 
     job_id = params.get("job_id")
     try:
@@ -59,7 +59,7 @@ async def generate_content_baseline_background_task(params: dict, claude_client)
         result = await generate_content_baseline(params, claude_client)
 
         if result.get("success") is False:
-            await update_huddle_job(
+            await update_bg_job(
                 job_id=job_id,
                 status="Failed",
                 message="Baseline generation failed",
@@ -68,7 +68,7 @@ async def generate_content_baseline_background_task(params: dict, claude_client)
             await send_job_completion_notification(params, result=None, error=result.get("error"))
             return
 
-        await update_huddle_job(
+        await update_bg_job(
             job_id=job_id,
             status="completed",
             message="Baseline generation completed",
