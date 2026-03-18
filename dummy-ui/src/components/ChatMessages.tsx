@@ -12,10 +12,9 @@ const TypingIndicator: React.FC = () => (
 interface ChatMessagesProps {
   messages?: ChatMessage[];
   error?: string;
-  isHuddlePlanMode?: boolean;
 }
 
-const ChatMessages: React.FC<ChatMessagesProps> = ({ messages = [], error, isHuddlePlanMode = false }) => {
+const ChatMessages: React.FC<ChatMessagesProps> = ({ messages = [], error}) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {

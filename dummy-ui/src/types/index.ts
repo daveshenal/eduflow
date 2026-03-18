@@ -55,5 +55,5 @@ export interface FileInfo {
 }
 
 export type UserType = 'developer' | 'educator' | 'regular';
-export type ApplicationMode = 'chatbot' | 'huddle';
+export type ApplicationMode = 'chatbot';
 export type ProviderCategory = 'accreditations' | 'clinical-protocols' | 'hr-policies'; 

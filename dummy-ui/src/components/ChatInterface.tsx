@@ -15,7 +15,9 @@ const userTypeOptions: DropdownOption[] = [
 ];
 
 const modeOptions: DropdownOption[] = [
-  { value: 'huddle', label: 'Huddle Generator', active: true },
+  { value: 'eduflow', label: 'EduFlow', active: true },
+  { value: 'doc_plan', label: 'Human-Guided Sequential RAG', active: true },
+  { value: 'doc_mem', label: 'Memory-Augmented Sequential RAG', active: true },
   { value: 'chatbot', label: 'Chatbot' },
 ];
 

@@ -24,7 +24,7 @@ const initialState: ConfigState = {
   mode: 'chatbot',
   // backendUrl: 'deployed backend URL',
   backendUrl: 'http://localhost:8000',
-  providerId: '595959',
+  providerId: '0001',
   isStreaming: false,
   responseTime: 0,
 };
