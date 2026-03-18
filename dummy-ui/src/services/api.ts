@@ -199,6 +199,81 @@ class APIService {
   async getAllowedPromptNames(): Promise<APIResponse> {
     return this.makeRequest('/prompts/allowed-names');
   }
+
+  async startEduflowJob(payload: {
+    jobId: string;
+    callbackUrl: string;
+    indexId: string;
+    learningFocus: string;
+    topic: string;
+    targetAudience: string;
+    duration: number;
+    numDocs: number;
+    voice: string;
+  }): Promise<APIResponse> {
+    const body = {
+      job_id: payload.jobId,
+      callback_url: payload.callbackUrl,
+      index_id: payload.indexId,
+      learning_focus: payload.learningFocus,
+      topic: payload.topic,
+      target_audience: payload.targetAudience,
+      duration: payload.duration,
+      num_docs: payload.numDocs,
+      voice: payload.voice,
+    };
+
+    return this.makeRequest('/gen/start', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    });
+  }
+
+  async startBaselineJob(payload: {
+    jobId: string;
+    callbackUrl: string;
+    indexId: string;
+    prompts: string[];
+    duration: number;
+    voice: string;
+  }): Promise<APIResponse> {
+    const body = {
+      job_id: payload.jobId,
+      callback_url: payload.callbackUrl,
+      index_id: payload.indexId,
+      prompts: payload.prompts,
+      duration: payload.duration,
+      voice: payload.voice,
+    };
+
+    return this.makeRequest('/gen/start-baseline', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    });
+  }
+
+  async startMemoryJob(payload: {
+    jobId: string;
+    callbackUrl: string;
+    indexId: string;
+    prompts: string[];
+    duration: number;
+    voice: string;
+  }): Promise<APIResponse> {
+    const body = {
+      job_id: payload.jobId,
+      callback_url: payload.callbackUrl,
+      index_id: payload.indexId,
+      prompts: payload.prompts,
+      duration: payload.duration,
+      voice: payload.voice,
+    };
+
+    return this.makeRequest('/gen/start-memory', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    });
+  }
 }
 
 export default APIService;
