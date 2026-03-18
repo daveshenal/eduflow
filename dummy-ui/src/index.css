@@ -322,12 +322,14 @@ body::before {
 }
 
 .toast {
-  padding: 10px 12px;
+  padding: 10px 20px;
   border-radius: 8px;
   font-weight: 600;
   color: #ffffff;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.18);
   animation: toastSlideIn 0.25s ease-out;
+  min-width: 260px;
+  text-align: left;
 }
 
 .toast-success {
@@ -634,7 +636,7 @@ body::before {
 .loading {
   color: #6b7280;
   text-align: center;
-  padding: 2rem 0;
+  /* padding: 2rem 0; */
   font-size: 0.875rem;
   line-height: 1.5;
 }

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useConfig } from '../contexts/ConfigContext';
 import APIService from '../services/api';
 import Dropdown from './Dropdown';
+import ToastMessage, { ToastPayload } from './ToastMessage';
 import { DropdownOption, PromptTemplate } from '../types';
 
 const allowedNameOptions: DropdownOption[] = [
@@ -34,7 +35,7 @@ const PromptEditor: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
-  const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+  const [toast, setToast] = useState<ToastPayload | null>(null);
 
   // Create form state
   const [createForm, setCreateForm] = useState({
@@ -55,8 +56,7 @@ const PromptEditor: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   });
 
   const showMessage = (text: string, type: 'success' | 'error') => {
-    setMessage({ text, type });
-    setTimeout(() => setMessage(null), 3000);
+    setToast({ text, type });
   };
 
   const loadPrompts = useCallback(async () => {
@@ -66,7 +66,6 @@ const PromptEditor: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       const res = await apiService.getPrompts();
       if (!res.success) throw new Error(res.error || 'Failed to load prompts');
       const data = Array.isArray(res.data) ? res.data : [];
-      // Map backend PromptResponse (uses 'prompt') to UI PromptTemplate (uses 'content')
       const mapped: PromptTemplate[] = data.map((p: any) => ({
         id: p.id,
         name: p.name,
@@ -122,7 +121,6 @@ const PromptEditor: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       if (!res.success) throw new Error(res.error || 'Failed to create prompt');
 
       const created = res.data;
-      // Activate if requested
       if (createForm.status === 'active') {
         await apiService.activatePrompt(created.name, created.version);
         created.status = 'active';
@@ -140,13 +138,7 @@ const PromptEditor: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
       setPrompts(prev => [mapped, ...prev]);
       setShowCreateForm(false);
-      setCreateForm({
-        name: '',
-        version: 'v1',
-        status: 'active',
-        description: '',
-        content: '',
-      });
+      setCreateForm({ name: '', version: 'v1', status: 'active', description: '', content: '' });
       handlePromptSelect(mapped);
       showMessage('Prompt created successfully!', 'success');
     } catch (error) {
@@ -201,10 +193,7 @@ const PromptEditor: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     }
 
     try {
-      const res = await apiService.deletePrompt(
-        selectedPrompt.name,
-        selectedPrompt.version
-      );
+      const res = await apiService.deletePrompt(selectedPrompt.name, selectedPrompt.version);
       if (!res.success) throw new Error(res.error || 'Failed to delete prompt');
 
       setPrompts(prev => prev.filter(p => p.id !== selectedPrompt.id));
@@ -228,28 +217,19 @@ const PromptEditor: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     setShowCreateForm(true);
     setSelectedPrompt(null);
     const first = allowedNameOptions[0]?.value || '';
-    setCreateForm({
-      name: first,
-      version: 'v1',
-      status: 'active',
-      description: '',
-      content: '',
-    });
+    setCreateForm({ name: first, version: 'v1', status: 'active', description: '', content: '' });
   };
 
   const handleCancelCreate = () => {
     setShowCreateForm(false);
-    setCreateForm({
-      name: '',
-      version: 'v1',
-      status: 'active',
-      description: '',
-      content: '',
-    });
+    setCreateForm({ name: '', version: 'v1', status: 'active', description: '', content: '' });
   };
 
   return (
     <div className="app-container">
+      {/* Toast Notification */}
+      <ToastMessage message={toast} onClear={() => setToast(null)} />
+
       {/* Sidebar */}
       <div className="sidebar">
         <div className="sidebar-header">
@@ -258,7 +238,6 @@ const PromptEditor: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         </div>
 
         <div className="sidebar-content">
-          {/* Create New Prompt Form */}
           {showCreateForm && (
             <div className="config-section">
               <div className="config-section-title">Prompt Details</div>
@@ -274,9 +253,7 @@ const PromptEditor: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
               <div className="config-row" style={{ display: 'flex', gap: '1rem' }}>
                 <div className="config-group" style={{ flex: 1 }}>
-                  <label className="config-label" htmlFor="newPromptVersion">
-                    Version
-                  </label>
+                  <label className="config-label" htmlFor="newPromptVersion">Version</label>
                   <input
                     type="text"
                     className="config-input"
@@ -298,9 +275,7 @@ const PromptEditor: React.FC<{ onBack: () => void }> = ({ onBack }) => {
               </div>
 
               <div className="config-group">
-                <label className="config-label" htmlFor="newPromptDescription">
-                  Description
-                </label>
+                <label className="config-label" htmlFor="newPromptDescription">Description</label>
                 <input
                   type="text"
                   className="config-input"
@@ -313,7 +288,6 @@ const PromptEditor: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             </div>
           )}
 
-          {/* Scrollable section */}
           {!showCreateForm && (
             <div className="scrollable-content">
               <div className="prompts-list">
@@ -374,21 +348,13 @@ const PromptEditor: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           <div className="fixed-buttons">
             {!showCreateForm ? (
               <>
-                <button className="btn btn-primary" onClick={handleShowCreateForm}>
-                  Add New
-                </button>
-                <button className="btn btn-secondary" onClick={onBack}>
-                  Back
-                </button>
+                <button className="btn btn-primary" onClick={handleShowCreateForm}>Add New</button>
+                <button className="btn btn-secondary" onClick={onBack}>Back</button>
               </>
             ) : (
               <>
-                <button className="btn btn-primary" onClick={handleCreatePrompt}>
-                  Create
-                </button>
-                <button className="btn btn-secondary" onClick={handleCancelCreate}>
-                  Cancel
-                </button>
+                <button className="btn btn-primary" onClick={handleCreatePrompt}>Create</button>
+                <button className="btn btn-secondary" onClick={handleCancelCreate}>Cancel</button>
               </>
             )}
           </div>
@@ -399,9 +365,8 @@ const PromptEditor: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       <div className="right-container">
         {selectedPrompt ? (
           <>
-            <div className="chat-header">
+            <div className="main-header">
               <div className="header-title">{displayPromptName(selectedPrompt.name)}</div>
-
             </div>
 
             <div className="editor-container">
@@ -426,18 +391,8 @@ const PromptEditor: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                   />
                 </div>
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end', marginLeft: 'auto' }}>
-                  <button
-                    className="btn btn-primary"
-                    onClick={handleUpdatePrompt}
-                  >
-                    Update
-                  </button>
-                  <button
-                    className="btn btn-secondary"
-                    onClick={handleDeletePrompt}
-                  >
-                    Delete
-                  </button>
+                  <button className="btn btn-primary" onClick={handleUpdatePrompt}>Update</button>
+                  <button className="btn btn-secondary" onClick={handleDeletePrompt}>Delete</button>
                 </div>
               </div>
 
@@ -475,7 +430,7 @@ const PromptEditor: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           </>
         ) : showCreateForm ? (
           <>
-            <div className="chat-header">
+            <div className="main-header">
               <div className="header-title">Create New Prompt</div>
             </div>
 
@@ -527,28 +482,8 @@ const PromptEditor: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           </div>
         )}
       </div>
-
-      {/* Success/Error Messages */}
-      {message && (
-        <div
-          style={{
-            position: 'fixed',
-            top: '20px',
-            right: '10px',
-            zIndex: 1000,
-            padding: '10px 10px',
-            borderRadius: '6px',
-            fontWeight: '500',
-            backgroundColor: message.type === 'success' ? '#10b981' : '#ef4444',
-            color: 'white',
-            animation: 'slideIn 0.3s ease',
-          }}
-        >
-          {message.text}
-        </div>
-      )}
     </div>
   );
 };
 
-export default PromptEditor; 
+export default PromptEditor;
