@@ -1,9 +1,9 @@
 """
 Concept-to-concept semantic matching utilities.
 
-We intentionally match short concept strings (2-6 words) against other short concept
-strings, rather than raw document text. This avoids embedding dilution from long
-paragraphs and makes matching more robust.
+This is intentionally a utility (not a metric): multiple metrics need to match short
+concept strings against other short concept strings, rather than matching against raw
+document text (which can cause embedding dilution and false negatives).
 """
 
 from __future__ import annotations
@@ -23,7 +23,7 @@ def _get_embeddings(concepts: list[str]) -> list[list[float]]:
     """
     Embed concepts with a simple in-memory cache.
 
-    This is process-local and resets when the server restarts.
+    Cache is process-local and resets when the server restarts.
     """
     missing: list[str] = []
     for c in concepts:
@@ -58,7 +58,7 @@ def is_concept_covered(
     """
     Return True if `concept` is semantically covered by any item in `previous_concepts`.
 
-    Matching is embedding cosine similarity with a conservative default threshold.
+    Matching method: embeddings cosine similarity with a conservative default threshold.
     """
     concept = (concept or "").strip()
     if not concept:

@@ -18,7 +18,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from evaluator_service.adapters.azure_openai import chat_json
-from evaluator_service.metrics.concept_matching import is_concept_covered
+from evaluator_service.utils.concept_matching import is_concept_covered
 
 
 @dataclass(frozen=True)
