@@ -14,7 +14,7 @@
 ## Project Structure
 
 ```text
-hop-phoenix-ml/
+eduflow/
 ├── app/                  # FastAPI application core
 │   ├── adapters          # External services
 │   ├── core/             # Application wide core logic

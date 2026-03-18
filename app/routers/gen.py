@@ -40,7 +40,7 @@ async def stream_endpoint(request: Request):
     
 # Endpoint to test background job
 @router.post("/gen/start-test")
-async def start_huddle_generation(request: Request):
+async def start_docs_generation(request: Request):
     """Start Doc generation as background job."""
     payload = await request.json()
     
@@ -60,7 +60,7 @@ async def start_huddle_generation(request: Request):
     return JSONResponse(
         content={
             "status": "started",
-            "message": "Huddle generation started successfully",
+            "message": "Docs generation started successfully",
         },
         headers={
             "Cache-Control": "no-cache",
@@ -88,7 +88,7 @@ async def start_content_generation(request: Request):
     return JSONResponse(
         content={
             "status": "started",
-            "message": "Huddle generation started successfully",
+            "message": "Docs generation started successfully",
         },
         headers={
             "Cache-Control": "no-cache",

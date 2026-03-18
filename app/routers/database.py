@@ -4,8 +4,8 @@ from fastapi import APIRouter, HTTPException
 from app.adapters.azure_sql import (
     get_db_connection,
     create_tables,
-    clear_all_huddle_jobs,
-    get_all_huddle_jobs,
+    clear_all_bg_jobs,
+    get_all_bg_jobs,
 )
 
 # Prompt management imports
@@ -26,25 +26,25 @@ router = APIRouter()
 ############################################
 
 
-@router.delete("/huddle_jobs/clear", summary="Clear all huddle jobs")
-async def api_clear_all_huddle_jobs():
+@router.delete("/bg_jobs/clear", summary="Clear all background jobs")
+async def api_clear_all_bg_jobs():
     try:
-        deleted_count = await clear_all_huddle_jobs()
+        deleted_count = await clear_all_bg_jobs()
         return {"success": True, "deleted_jobs": deleted_count}
     except Exception as e:
         # Optional: log the error here
         raise HTTPException(status_code=500, detail=f"Failed to clear jobs: {str(e)}")
 
 
-@router.get("/huddle_jobs", summary="List all huddle jobs with summary")
-async def api_list_all_huddle_jobs():
+@router.get("/bg_jobs", summary="List all background jobs with summary")
+async def api_list_all_bg_jobs():
     """
-    Return a summary plus the full list of all huddle_jobs.
+    Return a summary plus the full list of all background_jobs.
 
     Summary includes total count and counts per status.
     """
     try:
-        jobs = await get_all_huddle_jobs()
+        jobs = await get_all_bg_jobs()
         total = len(jobs)
         by_status = {}
         for job in jobs:
@@ -59,7 +59,7 @@ async def api_list_all_huddle_jobs():
             "jobs": jobs,
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to fetch huddle jobs: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch background jobs: {str(e)}")
 
 
  

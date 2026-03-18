@@ -6,8 +6,8 @@ import os
 connection_string = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
 
 # Specify container and blob
-container_name = "hop-ai-saves"
-blob_name = "provider-595959/ai-1724601234567-42-595959-15-a7b3c9d2/pdf/huddle-1.pdf"
+container_name = "ai-saves"
+blob_name = "provider-595959/ai-1724601234567-42-595959-15-a7b3c9d2/pdf/doc-1.pdf"
 
 # Initialize BlobServiceClient
 blob_service_client = BlobServiceClient.from_connection_string(connection_string)

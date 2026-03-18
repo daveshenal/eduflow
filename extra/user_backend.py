@@ -8,7 +8,7 @@ app = FastAPI()
 
 # Define the Pydantic models for the job-done notification request
 
-class Huddle(BaseModel):
+class Doc(BaseModel):
     doc_index: int = Field(..., ge=1)
     title: str
     pdf_path: str
@@ -18,7 +18,7 @@ class Huddle(BaseModel):
 class GeneratedSequence(BaseModel):
     title: str
     doc_duration: int
-    docs: List[Huddle] = Field(..., min_length=1)
+    docs: List[Doc] = Field(..., min_length=1)
 
 class JobDoneRequest(BaseModel):
     job_id: str
@@ -40,16 +40,16 @@ class JobDoneRequest(BaseModel):
                         {
                             "doc_index": 1,
                             "title": "Initial Patient Assessment",
-                            "pdf_path": "provider-595959/huddles/job-12345/huddle-1.pdf",
-                            "audio_path": "provider-595959/huddles/job-12345/huddle-1.mp3",
-                            "voicescript_path": "provider-595959/huddles/job-12345/huddle-1.txt"
+                            "pdf_path": "provider-595959/docs/job-12345/doc-1.pdf",
+                            "audio_path": "provider-595959/docs/job-12345/doc-1.mp3",
+                            "voicescript_path": "provider-595959/docs/job-12345/doc-1.txt"
                         },
                         {
                             "doc_index": 2,
                             "title": "Documentation Best Practices",
-                            "pdf_path": "provider-595959/huddles/job-12345/huddle-2.pdf",
-                            "audio_path": "provider-595959/huddles/job-12345/huddle-2.mp3",
-                            "voicescript_path": "provider-595959/huddles/job-12345/huddle-2.txt"
+                            "pdf_path": "provider-595959/docs/job-12345/doc-2.pdf",
+                            "audio_path": "provider-595959/docs/job-12345/doc-2.mp3",
+                            "voicescript_path": "provider-595959/docs/job-12345/doc-2.txt"
                         }
                     ]
                 }
@@ -57,14 +57,14 @@ class JobDoneRequest(BaseModel):
         }
     }
 
-@app.post("/job-done", description="Endpoint to receive notifications when huddle generation job completed")
+@app.post("/job-done", description="Endpoint to receive notifications when doc generation job completed")
 async def job_done(request: JobDoneRequest):
 
     if request.status == "completed":
         if not request.generated_sequence or len(request.generated_sequence.docs) == 0:
             raise HTTPException(
                 status_code=400,
-                detail="Completed jobs must include at least one huddle in generated_sequence"
+                detail="Completed jobs must include at least one doc in generated_sequence"
             )
 
     # Print log with current local time

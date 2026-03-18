@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 from config.settings import settings
 
 async def create_tables():
-    """Create the prompt tables and huddle jobs table if they don't exist (async)."""
+    """Create the prompt tables and background jobs table if they don't exist (async)."""
     prompt_table_schema = """
     CREATE TABLE IF NOT EXISTS {table_name} (
         id CHAR(36) PRIMARY KEY DEFAULT (UUID()),
@@ -20,9 +20,9 @@ async def create_tables():
     );
     """
 
-    # Huddle jobs table schema
+    # Background jobs table schema
     bg_jobs_table_schema = """
-    CREATE TABLE IF NOT EXISTS huddle_jobs (
+    CREATE TABLE IF NOT EXISTS background_jobs (
         job_id VARCHAR(255) PRIMARY KEY,
         index_id VARCHAR(255) NOT NULL,
         callback_url TEXT NOT NULL,
@@ -47,7 +47,7 @@ async def create_tables():
                 await cursor.execute(prompt_table_schema.format(table_name=table))
                 print(f"Created or verified table: {table}")
             await cursor.execute(bg_jobs_table_schema)
-            print("Created or verified table: huddle_jobs")
+            print("Created or verified table: background_jobs")
 
 
 # Async MySQL connection
@@ -78,7 +78,7 @@ async def create_bg_job(
     message: str = "Job queued for processing",
 ):
     query = (
-        "INSERT INTO huddle_jobs (job_id, index_id, callback_url, status, message) "
+        "INSERT INTO background_jobs (job_id, index_id, callback_url, status, message) "
         "VALUES (%s, %s, %s, %s, %s)"
     )
     async with get_db_connection() as conn:
@@ -95,7 +95,7 @@ async def create_bg_job(
             )
 
 
-async def update_huddle_job(
+async def update_bg_job(
     *,
     job_id: str,
     status: str,
@@ -113,14 +113,14 @@ async def update_huddle_job(
         values.append(error_text)
     values.append(job_id)
 
-    query = f"UPDATE huddle_jobs SET {', '.join(fields)} WHERE job_id = %s"
+    query = f"UPDATE background_jobs SET {', '.join(fields)} WHERE job_id = %s"
     async with get_db_connection() as conn:
         async with conn.cursor() as cursor:
             await cursor.execute(query, values)
 
 
-async def get_huddle_job(job_id: str):
-    query = "SELECT job_id, index_id, callback_url, status, message, result, error, created_at, updated_at FROM huddle_jobs WHERE job_id = %s"
+async def get_bg_job(job_id: str):
+    query = "SELECT job_id, index_id, callback_url, status, message, result, error, created_at, updated_at FROM background_jobs WHERE job_id = %s"
     async with get_db_connection() as conn:
         async with conn.cursor(aiomysql.DictCursor) as cursor:
             await cursor.execute(query, (job_id,))
@@ -128,8 +128,8 @@ async def get_huddle_job(job_id: str):
             return row
 
 
-async def get_all_huddle_jobs():
-    """Return all huddle jobs as a list of dicts, ordered by created_at DESC."""
+async def get_all_bg_jobs():
+    """Return all background jobs as a list of dicts, ordered by created_at DESC."""
     query = """
         SELECT job_id,
                index_id,
@@ -140,7 +140,7 @@ async def get_all_huddle_jobs():
                error,
                created_at,
                updated_at
-        FROM huddle_jobs
+        FROM background_jobs
         ORDER BY created_at DESC
     """
     async with get_db_connection() as conn:
@@ -150,8 +150,8 @@ async def get_all_huddle_jobs():
             return rows
 
 
-async def clear_all_huddle_jobs():
-    query = "DELETE FROM huddle_jobs"
+async def clear_all_bg_jobs():
+    query = "DELETE FROM background_jobs"
     async with get_db_connection() as conn:
         async with conn.cursor() as cursor:
             await cursor.execute(query)
