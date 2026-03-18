@@ -17,7 +17,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from evaluator_service.adapters.azure_openai import chat_json, cosine_similarity, embed_texts
+from evaluator_service.adapters.azure_openai import chat_json
+from evaluator_service.metrics.concept_matching import is_concept_covered
 
 
 @dataclass(frozen=True)
@@ -93,25 +94,43 @@ def _extract_setup_concepts(doc_text: str) -> list[str]:
     return out
 
 
-def _is_concept_present_in_next_doc(
-    concept: str,
-    next_doc: str,
-    *,
-    similarity_threshold: float = 0.78,
-) -> bool:
-    concept_embs = embed_texts([concept])
-    if not concept_embs:
-        return False
-    concept_emb = concept_embs[0]
+def _extract_present_concepts(doc_text: str) -> list[str]:
+    """
+    Extract concepts that are clearly present/used in the document.
 
-    chunks = _chunk_text(next_doc)
-    if not chunks:
-        return False
-    chunk_embs = embed_texts(chunks)
-    if not chunk_embs:
-        return False
-    best = max(cosine_similarity(concept_emb, e) for e in chunk_embs)
-    return best >= similarity_threshold
+    We use this as a compact "target set" for concept-to-concept matching, avoiding
+    matching against raw paragraphs.
+    """
+    system = (
+        "You are extracting concepts present in a training document.\n"
+        "Be strict and evidence-based. Return JSON only."
+    )
+    user = (
+        "Given the document below, list the key concepts that are CLEARLY PRESENT in the document "
+        "(used, discussed, or applied).\n\n"
+        "Rules:\n"
+        "- Return 5-25 concise concepts\n"
+        "- Use short noun phrases (2-6 words)\n"
+        "- Do NOT include generic filler concepts\n\n"
+        'Return JSON as: {"concepts": ["..."]}\n\n'
+        f"DOCUMENT:\n{doc_text}"
+    )
+    data = chat_json(system=system, user=user)
+    concepts = data.get("concepts", [])
+    if not isinstance(concepts, list):
+        return []
+    cleaned: list[str] = []
+    for c in concepts:
+        if isinstance(c, str) and c.strip():
+            cleaned.append(c.strip())
+    seen: set[str] = set()
+    out: list[str] = []
+    for c in cleaned:
+        key = c.lower()
+        if key not in seen:
+            seen.add(key)
+            out.append(c)
+    return out
 
 
 def calculate_preparation_score(documents: list[str]) -> PreparationResult:
@@ -130,9 +149,12 @@ def calculate_preparation_score(documents: list[str]) -> PreparationResult:
     setup_per_doc: list[list[str] | None] = []
     prep_values: list[float] = []
 
+    present_concepts_per_doc: list[list[str]] = []
+    for d in documents:
+        present_concepts_per_doc.append(_extract_present_concepts(d))
+
     for idx in range(0, len(documents) - 1):
         doc = documents[idx]
-        next_doc = documents[idx + 1]
         setup = _extract_setup_concepts(doc)
         setup_per_doc.append(setup)
         if not setup:
@@ -141,9 +163,10 @@ def calculate_preparation_score(documents: list[str]) -> PreparationResult:
             prep_values.append(prep_n)
             continue
 
+        next_concepts = present_concepts_per_doc[idx + 1]
         covered = 0
         for concept in setup:
-            if _is_concept_present_in_next_doc(concept, next_doc):
+            if is_concept_covered(concept, next_concepts, similarity_threshold=0.85):
                 covered += 1
         prep_n = covered / max(1, len(setup))
         per_doc.append(round(prep_n, 4))

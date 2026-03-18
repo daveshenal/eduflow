@@ -18,7 +18,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from evaluator_service.adapters.azure_openai import chat_json, cosine_similarity, embed_texts
+from evaluator_service.adapters.azure_openai import chat_json
+from evaluator_service.metrics.concept_matching import flatten_concepts, is_concept_covered
 
 @dataclass(frozen=True)
 class DependencyResult:
@@ -95,29 +96,42 @@ def _extract_assumed_concepts(doc_text: str) -> list[str]:
     return out
 
 
-def _is_concept_covered_in_previous_docs(
-    concept: str,
-    previous_docs: list[str],
-    *,
-    similarity_threshold: float = 0.78,
-) -> bool:
-    # Embed concept once
-    concept_embs = embed_texts([concept])
-    if not concept_embs:
-        return False
-    concept_emb = concept_embs[0]
+def _extract_introduced_concepts(doc_text: str) -> list[str]:
+    """
+    Extract concepts that the document introduces/defines (i.e., makes available for later).
 
-    # Embed chunks from previous docs and take max similarity.
-    chunks: list[str] = []
-    for d in previous_docs:
-        chunks.extend(_chunk_text(d))
-    if not chunks:
-        return False
-    chunk_embs = embed_texts(chunks)
-    if not chunk_embs:
-        return False
-    best = max(cosine_similarity(concept_emb, e) for e in chunk_embs)
-    return best >= similarity_threshold
+    These are used as the "coverage set" when checking later documents' assumed knowledge.
+    """
+    system = (
+        "You are extracting introduced concepts from training documents.\n"
+        "Be strict and evidence-based. Return JSON only."
+    )
+    user = (
+        "Given the document below, list ONLY the key concepts that the document EXPLICITLY INTRODUCES "
+        "or DEFINES (new terms, methods, frameworks, definitions).\n\n"
+        "Rules:\n"
+        "- Return 3-20 concise concepts\n"
+        "- Use short noun phrases (2-6 words)\n"
+        "- Do NOT include concepts that are merely mentioned without explanation\n\n"
+        'Return JSON as: {"concepts": ["..."]}\n\n'
+        f"DOCUMENT:\n{doc_text}"
+    )
+    data = chat_json(system=system, user=user)
+    concepts = data.get("concepts", [])
+    if not isinstance(concepts, list):
+        return []
+    cleaned: list[str] = []
+    for c in concepts:
+        if isinstance(c, str) and c.strip():
+            cleaned.append(c.strip())
+    seen: set[str] = set()
+    out: list[str] = []
+    for c in cleaned:
+        key = c.lower()
+        if key not in seen:
+            seen.add(key)
+            out.append(c)
+    return out
 
 
 def calculate_dependency_score(documents: list[str]) -> DependencyResult:
@@ -136,6 +150,10 @@ def calculate_dependency_score(documents: list[str]) -> DependencyResult:
     assumed_per_doc: list[list[str] | None] = [None]
     dep_values: list[float] = []
 
+    introduced_per_doc: list[list[str]] = []
+    for d in documents:
+        introduced_per_doc.append(_extract_introduced_concepts(d))
+
     for idx in range(1, len(documents)):
         doc = documents[idx]
         assumed = _extract_assumed_concepts(doc)
@@ -146,10 +164,10 @@ def calculate_dependency_score(documents: list[str]) -> DependencyResult:
             dep_values.append(dep_n)
             continue
 
-        prev_docs = documents[:idx]
+        prev_concepts = flatten_concepts(introduced_per_doc[:idx])
         covered = 0
         for concept in assumed:
-            if _is_concept_covered_in_previous_docs(concept, prev_docs):
+            if is_concept_covered(concept, prev_concepts, similarity_threshold=0.85):
                 covered += 1
         dep_n = covered / max(1, len(assumed))
         per_doc.append(round(dep_n, 4))
