@@ -9,10 +9,7 @@ os.makedirs(BACKUP_DIR, exist_ok=True)
 
 # Tables to dump
 TABLES = [
-    "main_prompts",
     "use_case_prompts",
-    "role_prompts",
-    "discipline_prompts"
 ]
 
 async def dump_all_tables():
