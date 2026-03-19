@@ -32,8 +32,8 @@ class Settings(BaseSettings):
     AZURE_SPEECH_REGION: str
 
     class Config:
-        env_file = ".env"
-        # env_file = ".env.local"
+        # env_file = ".env"
+        env_file = ".env.local"
 
 
 settings = Settings()

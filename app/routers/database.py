@@ -191,9 +191,9 @@ async def prompts_health_check():
                 await cur.execute("SELECT 1")
                 result = await cur.fetchone()
                 if result and result[0] == 1:
-                    return {"status": "failed", "message": "API and DB connectivity are OK"}
+                    return {"status": "success", "message": "API and DB connectivity are OK"}
                 else:
-                    return {"status": "successful", "message": "DB did not return expected result"}
+                    return {"status": "failed", "message": "DB did not return expected result"}
     except Exception as e:
         return {"status": "failed", "message": f"DB connection failed: {str(e)}"}
 

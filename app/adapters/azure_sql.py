@@ -1,11 +1,12 @@
 import aiomysql
-# import ssl
+import ssl
 from contextlib import asynccontextmanager
 
 from config.settings import settings
 
+
 async def create_tables():
-    """Create the prompt tables and background jobs table if they don't exist (async)."""
+    """Create the database and tables if they don't exist (async)."""
     prompt_table_schema = """
     CREATE TABLE IF NOT EXISTS {table_name} (
         id CHAR(36) PRIMARY KEY DEFAULT (UUID()),
@@ -20,7 +21,6 @@ async def create_tables():
     );
     """
 
-    # Background jobs table schema
     bg_jobs_table_schema = """
     CREATE TABLE IF NOT EXISTS background_jobs (
         job_id VARCHAR(255) PRIMARY KEY,
@@ -37,12 +37,21 @@ async def create_tables():
     );
     """
 
-    prompt_tables = [
-        "use_case_prompts",
-    ]
+    prompt_tables = ["use_case_prompts"]
 
-    async with get_db_connection() as conn:
+    # Connect without db= to create the database if it doesn't exist
+    conn = await aiomysql.connect(
+        host=settings.MYSQL_HOST,
+        port=settings.MYSQL_PORT,
+        user=settings.MYSQL_USER,
+        password=settings.MYSQL_PASSWORD,
+        autocommit=True,
+        ssl=ssl.create_default_context(),
+    )
+    async with conn:
         async with conn.cursor() as cursor:
+            await cursor.execute(f"CREATE DATABASE IF NOT EXISTS `{settings.MYSQL_DB}`")
+            await cursor.execute(f"USE `{settings.MYSQL_DB}`")
             for table in prompt_tables:
                 await cursor.execute(prompt_table_schema.format(table_name=table))
                 print(f"Created or verified table: {table}")
@@ -53,7 +62,7 @@ async def create_tables():
 # Async MySQL connection
 @asynccontextmanager
 async def get_db_connection():
-    # ssl_context = ssl.create_default_context()
+    ssl_context = ssl.create_default_context()
     conn = await aiomysql.connect(
         host=settings.MYSQL_HOST,
         port=settings.MYSQL_PORT,
@@ -61,7 +70,7 @@ async def get_db_connection():
         password=settings.MYSQL_PASSWORD,
         db=settings.MYSQL_DB,
         autocommit=True,
-        # ssl=ssl_context,
+        ssl=ssl_context,
     )
     try:
         yield conn
