@@ -8,7 +8,7 @@ import httpx
 
 from config.settings import settings
 from app.retrievers.index_data_retriver import PrioritizedRetriever
-from app.adapters.azure_sql import get_db_connection
+from app.adapters.azure_sql import get_db_connection, create_bg_job, update_bg_job
 from app.core.content_upload import upload_artifacts, upload_generation_logs
 from app.core.curriculem_plan_service import get_word_targets, fetch_plan_prompts, format_plan_prompt, generate_plan
 from app.core.content_service import fetch_pdf_prompts, process_single_doc
@@ -90,7 +90,7 @@ def setup_output_directories(job_id: str) -> dict:
 
 def clean_local_directories(job_id: str):
     """Delete the entire job directory."""
-    job_dir = Path("temp/docs") / job_id
+    job_dir = Path("temp/generated_content") / job_id
     try:
         if job_dir.exists() and job_dir.is_dir():
             shutil.rmtree(job_dir, ignore_errors=True)
@@ -100,10 +100,8 @@ def clean_local_directories(job_id: str):
 
 async def generate_content_background_task(params: dict, claude_client):
     """Background task to generate docs."""
+    job_id = params.get("job_id")
     try:
-        job_id = params.get("job_id")
-        
-        from app.adapters.azure_sql import create_bg_job, update_bg_job
         await create_bg_job(
             job_id=job_id,
             index_id=params.get("index_id"),
@@ -120,7 +118,7 @@ async def generate_content_background_task(params: dict, claude_client):
                 job_id=job_id,
                 status="Failed",
                 message="Docs generation failed",
-                result_text=json.dumps(doc_outputs.get("error")) if doc_outputs else None,
+                error_text=json.dumps(doc_outputs.get("error")) if doc_outputs else None,
             )
             
             clean_local_directories(job_id)
@@ -149,6 +147,16 @@ async def generate_content_background_task(params: dict, claude_client):
             )
         
     except Exception as e:
+        # Ensure the DB reflects unexpected crashes too.
+        try:
+            await update_bg_job(
+                job_id=job_id,
+                status="Failed",
+                message="Docs generation crashed",
+                error_text=str(e),
+            )
+        except Exception:
+            logging.exception("Failed to update background job failure status for %s", job_id)
         await send_job_completion_notification(params, result=None, error=str(e))
         logging.error(f"Background job {params.get('job_id')} failed: {e}")
 
@@ -190,7 +198,11 @@ async def generate_content(params: dict, claude_client):
             pdf_prompts = await fetch_pdf_prompts(db_conn)
 
         for doc in docs:
-            doc_id = doc.get("id")
+            doc_id_raw = doc.get("id")
+            try:
+                doc_id = int(doc_id_raw)
+            except (TypeError, ValueError):
+                raise ValueError(f"Invalid doc id from plan: {doc_id_raw!r}")
 
             # Generate pdf content
             result = await process_single_doc(
@@ -228,14 +240,14 @@ async def generate_content(params: dict, claude_client):
                 # Count characters for Azure Speech
                 total_speech_characters += len(voiceover_script)
                 
-                voiceover_filename = f"huddle-{doc_id}.txt"
+                voiceover_filename = f"voicescript-{doc_id}.txt"
                 voiceover_path = dirs['voiceovers'] / voiceover_filename
                 with open(voiceover_path, 'w', encoding='utf-8') as f:
                     f.write(voiceover_script)
 
                 # Generate MP3
                 try:
-                    mp3_filename = f"huddle-{doc_id}.mp3"
+                    mp3_filename = f"voiceover-{doc_id}.mp3"
                     mp3_path = dirs['audio'] / mp3_filename
                     generate_mp3_from_file(
                         text_file_path=str(voiceover_path),
@@ -271,29 +283,28 @@ async def generate_content(params: dict, claude_client):
             logging.error(f"Failed to upload doc artifacts to Azure Blob: {upload_error}")
             raise upload_error
         
-        # clean_local_directories(params["job_id"])
+        clean_local_directories(params["job_id"])
         
         # Initialize an empty list for the generated documents
         generated_docs = []
         for i, doc in enumerate(docs):
-            doc_id = doc.get("id")
+            doc_id_raw = doc.get("id")
+            try:
+                doc_id = int(doc_id_raw)
+            except (TypeError, ValueError):
+                raise ValueError(f"Invalid doc id from plan: {doc_id_raw!r}")
             
             # Find the corresponding uploaded file paths by matching filenames
             pdf_filename = f"doc-{doc_id}.pdf"
             mp3_filename = f"voiceover-{doc_id}.mp3"
             txt_filename = f"voicescript-{doc_id}.txt"
             
-            print(upload_result)
-            
-            # Find the uploaded paths that match this docs's files
+            # Find the uploaded paths that match this doc's files
             pdf_path = next((path for path in upload_result["pdf"] if pdf_filename in path), None)
-            # audio_path = next((path for path in upload_result["audio_mp3"] if mp3_filename in path), None)
-            # voicescript_path = next((path for path in upload_result["voicescripts"] if txt_filename in path), None)
+            audio_path = next((path for path in upload_result["audio_mp3"] if mp3_filename in path), None)
+            voicescript_path = next((path for path in upload_result["voicescripts"] if txt_filename in path), None)
             
-            print(f'pdf_path:{pdf_path}')
-            
-            # if not pdf_path or not audio_path or not voicescript_path:
-            if not pdf_path:
+            if not pdf_path or not audio_path or not voicescript_path:
                 logging.error(f"Missing uploaded artifact for doc {doc_id}")
                 raise ValueError(f"Uploaded artifacts missing for doc {doc_id}")
             
@@ -301,16 +312,18 @@ async def generate_content(params: dict, claude_client):
                 "doc_index": i + 1,
                 "title": doc.get("title"),
                 "pdf_path": pdf_path,
-                "audio_path": mp3_filename,
-                "voicescript_path": txt_filename
+                "audio_path": audio_path,
+                "voicescript_path": voicescript_path,
             }
             
             generated_docs.append(doc_data)
 
+        curriculum_metadata = (plan_result or {}).get("curriculum_metadata") or {}
+        curriculum_title = curriculum_metadata.get("title") or ""
         return {
             "success": True,
             "returns": {
-                "title": plan_result.get("curriculum_metadata").get("title"),
+                "title": curriculum_title,
                 "doc_duration": params['duration'],
                 "docs": generated_docs,
             },
