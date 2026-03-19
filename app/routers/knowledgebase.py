@@ -57,7 +57,7 @@ async def upload_documents_to_knowledgebase(
     except Exception as e:
         logging.exception("Failed to upload documents")
         raise HTTPException(status_code=500, detail=str(e))
-   
+
 
 @router.delete("/knowledgebase/{index_id}/documents")
 async def delete_documents_by_filename(

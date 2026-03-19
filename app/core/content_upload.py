@@ -4,7 +4,7 @@ import logging
 import mimetypes
 import io
 
-from app.adapters.azure_blob import get_hop_saves_container_client
+from app.adapters.azure_blob import get_ai_saves_container_client
 from azure.storage.blob import ContentSettings
 
 
@@ -29,7 +29,7 @@ def upload_artifacts(
     """
     base_prefix = f"index-{index_id}/{job_id}"
 
-    container_client = get_hop_saves_container_client()
+    container_client = get_ai_saves_container_client()
 
     uploads = {"pdf": [], "audio_mp3": [], "voicescripts": []}
 
@@ -92,7 +92,7 @@ def upload_generation_logs(
 
     base_prefix = f"index-{index_id}/{job_id}/logs"
 
-    container_client = get_hop_saves_container_client()
+    container_client = get_ai_saves_container_client()
 
     def _upload_json(data: dict, blob_name: str, prefix: str):
         """Upload a JSON dict directly to blob storage without saving locally."""

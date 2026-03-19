@@ -157,6 +157,11 @@ async def generate_content_background_task(params: dict, claude_client):
             )
         except Exception:
             logging.exception("Failed to update background job failure status for %s", job_id)
+        # Best-effort cleanup in case we crashed before the normal "success=False" return.
+        try:
+            clean_local_directories(job_id)
+        except Exception:
+            logging.exception("Failed to clean up local job directory for %s", job_id)
         await send_job_completion_notification(params, result=None, error=str(e))
         logging.error(f"Background job {params.get('job_id')} failed: {e}")
 
@@ -258,10 +263,10 @@ async def generate_content(params: dict, claude_client):
                     )
 
                 except Exception as mp3_error:
-                    logging.error(f"Failed to generate MP3 for huddle {doc_id}: {mp3_error}")
+                    logging.error(f"Failed to generate MP3 for document {doc_id}: {mp3_error}")
                     raise mp3_error
             except Exception as voiceover_error:
-                logging.error(f"Failed to generate voiceover for huddle {doc_id}: {voiceover_error}")
+                logging.error(f"Failed to generate voiceover for document {doc_id}: {voiceover_error}")
                 raise voiceover_error
 
         token_usage = {

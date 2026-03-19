@@ -1,17 +1,16 @@
 from config.settings import settings
-from app.prompts.prompt_management import get_manager, get_db_connection
+from app.prompts.prompt_management import get_prompt_manager, PromptNames
+from app.adapters.azure_sql import get_db_connection
 
-async def fetch_voicescript_prompts() -> dict:
+async def fetch_voicescript_prompts(db_conn) -> dict:
     """Fetch voice script prompt from database."""
-    async with get_db_connection() as db_conn:
-        manager = get_manager("use_case_prompts")
-        obj = await manager.get_active_prompt("voice_script", db_conn)
-        
-        if not obj or not obj.prompt.strip():
-            error_msg = "Required voice_script prompt not found in database"
-            raise ValueError(error_msg)
-        
-        return {"voice_script_prompt": obj.prompt}
+    manager = get_prompt_manager()
+    voice_prompt_resp = await manager.get_active_prompt(PromptNames.VOICESCRIPT.value, db_conn)
+    
+    if not voice_prompt_resp:
+        raise ValueError("No active prompt found for 'voice_script'. Activate a version via /prompts/activate.")
+    
+    return {"voice_script_prompt": voice_prompt_resp.prompt}
 
 async def generate_voiceover_script(payload: dict, claude_client) -> dict:
     """Convert a generated content (HTML) into a narration-ready voiceover script.
@@ -30,7 +29,8 @@ async def generate_voiceover_script(payload: dict, claude_client) -> dict:
     duration = payload.get("duration")
 
     # Fetch prompt from database
-    prompts = await fetch_voicescript_prompts()
+    async with get_db_connection() as db_conn:
+        prompts = await fetch_voicescript_prompts()
     
     # Format the system prompt with parameters
     system_prompt = prompts['voice_script_prompt'].format(

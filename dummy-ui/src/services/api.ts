@@ -270,6 +270,10 @@ class APIService {
       body: JSON.stringify(body),
     });
   }
+
+  async getBgJobStatus(jobId: string): Promise<APIResponse> {
+    return this.makeRequest(`/bg_jobs/${encodeURIComponent(jobId)}`);
+  }
 }
 
 export default APIService;

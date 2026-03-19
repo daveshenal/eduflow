@@ -15,7 +15,7 @@ from app.core.curriculem_plan_service import get_word_targets
 from app.core.content_service import fetch_pdf_prompts, process_single_doc_baseline
 from app.core.pdf_generator import create_pdf
 
-from app.pipelines.gen_pipeline import setup_output_directories, send_job_completion_notification
+from app.pipelines.gen_pipeline import setup_output_directories, send_job_completion_notification, clean_local_directories
 
 
 def validate_baseline_payload(payload: dict) -> dict:
@@ -158,6 +158,9 @@ async def generate_content_baseline(params: dict, claude_client):
 
         baseline_plan = {"baseline": True, "num_docs": len(prompts_list)}
 
+        # Ensure we don't leave local generation traces after upload.
+        clean_local_directories(params["job_id"])
+
         return {
             "success": True,
             "returns": {
@@ -171,6 +174,11 @@ async def generate_content_baseline(params: dict, claude_client):
             },
         }
     except Exception as e:
+        # Best-effort cleanup on error.
+        try:
+            clean_local_directories(params["job_id"])
+        except Exception:
+            logging.exception("Failed to clean up baseline job directory for %s", params.get("job_id"))
         return {
             "success": False,
             "error": str(e),

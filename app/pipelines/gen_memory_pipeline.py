@@ -19,7 +19,7 @@ from app.core.content_service import (
 )
 from app.core.pdf_generator import create_pdf
 
-from app.pipelines.gen_pipeline import setup_output_directories, send_job_completion_notification
+from app.pipelines.gen_pipeline import setup_output_directories, send_job_completion_notification, clean_local_directories
 
 
 async def generate_content_memory_background_task(params: dict, claude_client):
@@ -162,6 +162,9 @@ async def generate_content_memory(params: dict, claude_client):
             "num_docs": len(prompts_list),
         }
 
+        # Ensure we don't leave local generation traces after upload.
+        clean_local_directories(params["job_id"])
+
         return {
             "success": True,
             "returns": {
@@ -175,6 +178,11 @@ async def generate_content_memory(params: dict, claude_client):
             },
         }
     except Exception as e:
+        # Best-effort cleanup on error.
+        try:
+            clean_local_directories(params["job_id"])
+        except Exception:
+            logging.exception("Failed to clean up memory job directory for %s", params.get("job_id"))
         return {
             "success": False,
             "error": str(e),

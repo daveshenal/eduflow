@@ -1,4 +1,7 @@
-from typing import List
+from typing import List, Optional, Any
+from datetime import datetime, timedelta
+import json
+
 from fastapi import APIRouter, HTTPException
 
 from app.adapters.azure_sql import (
@@ -6,7 +9,9 @@ from app.adapters.azure_sql import (
     create_tables,
     clear_all_bg_jobs,
     get_all_bg_jobs,
+    get_bg_job,
 )
+from app.adapters.azure_blob import get_blob_service_client, generate_sas_token
 
 # Prompt management imports
 from app.prompts.prompt_management import (
@@ -60,6 +65,108 @@ async def api_list_all_bg_jobs():
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch background jobs: {str(e)}")
+
+
+@router.get("/bg_jobs/{job_id}", summary="Get background job status")
+async def api_get_bg_job_status(job_id: str):
+    """
+    Poll-friendly endpoint.
+    - Returns `status`/`message` for any job state.
+    - When `status` is `completed`, returns `result` with per-doc SAS URLs for downloads.
+    """
+    try:
+        job = await get_bg_job(job_id)
+        if not job:
+            raise HTTPException(status_code=404, detail=f"No background job found for job_id={job_id}")
+
+        status = job.get("status") or "unknown"
+        message = job.get("message")
+        error = job.get("error")
+
+        # `result` is stored as TEXT in the DB.
+        result: Optional[Any] = None
+        raw_result = job.get("result")
+        if raw_result:
+            if isinstance(raw_result, (dict, list)):
+                result = raw_result
+            else:
+                try:
+                    result = json.loads(raw_result)
+                except Exception:
+                    result = raw_result
+
+        # Enrich docs with blob SAS URLs after completion.
+        if isinstance(status, str) and status.lower() == "completed" and isinstance(result, dict):
+            docs = result.get("docs") or []
+            if isinstance(docs, list) and docs:
+                blob_service_client = get_blob_service_client()
+                container_name = "ai-saves"
+                expiry_time = datetime.utcnow() + timedelta(hours=2)
+
+                index_id = str(job.get("index_id") or "")
+
+                def to_blob_name(blob_path: Any, kind: str) -> Optional[str]:
+                    if not blob_path:
+                        return None
+                    blob_path_str = str(blob_path).strip()
+                    if not blob_path_str:
+                        return None
+
+                    # If the path already contains a virtual directory (e.g. `index-.../.../file.ext`), use it as-is.
+                    # Otherwise infer it using the known artifact layout.
+                    if "/" in blob_path_str or blob_path_str.startswith("index-"):
+                        return blob_path_str
+
+                    if kind == "pdf":
+                        return f"index-{index_id}/{job_id}/pdf/{blob_path_str}"
+                    if kind == "audio_mp3":
+                        return f"index-{index_id}/{job_id}/audio_mp3/{blob_path_str}"
+                    if kind == "voicescripts":
+                        return f"index-{index_id}/{job_id}/voicescripts/{blob_path_str}"
+                    return blob_path_str
+
+                def to_sas_url(blob_path: Any, kind: str) -> Optional[str]:
+                    blob_name = to_blob_name(blob_path, kind=kind)
+                    if not blob_name:
+                        return None
+                    try:
+                        sas_token = generate_sas_token(
+                            container_name=container_name,
+                            blob_name=blob_name,
+                            expiry_time=expiry_time,
+                        )
+                        return (
+                            f"https://{blob_service_client.account_name}.blob.core.windows.net/"
+                            f"{container_name}/{blob_name}?{sas_token}"
+                        )
+                    except Exception:
+                        return None
+
+                enriched_docs: list[dict[str, Any]] = []
+                for doc in docs:
+                    if not isinstance(doc, dict):
+                        continue
+
+                    doc = dict(doc)  # shallow copy for safety
+                    doc["pdf_url"] = to_sas_url(doc.get("pdf_path"), kind="pdf")
+                    doc["audio_url"] = to_sas_url(doc.get("audio_path"), kind="audio_mp3")
+                    doc["voicescript_url"] = to_sas_url(doc.get("voicescript_path"), kind="voicescripts")
+                    enriched_docs.append(doc)
+
+                result["docs"] = enriched_docs
+
+        return {
+            "job_id": job.get("job_id"),
+            "index_id": job.get("index_id"),
+            "status": status,
+            "message": message,
+            "error": error,
+            "result": result,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 
  
