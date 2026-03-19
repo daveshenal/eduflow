@@ -100,7 +100,7 @@ async def start_content_generation(request: Request):
 async def start_baseline_generation(request: Request):
     """
     Baseline generation: no curriculum plan.
-    Body: job_id, callback_url, index_id, prompts (list of strings), duration, voice.
+    Body: job_id, callback_url, index_id, prompts (list of strings), duration.
     Each prompt is used as the retrieval query for that doc; docs are generated with
     minimal system prompt + user prompt + retrieved context.
     """
@@ -125,7 +125,7 @@ async def start_baseline_generation(request: Request):
 async def start_memory_generation(request: Request):
     """
     Memory-based generation workflow.
-    Body: job_id, callback_url, index_id, prompts (list of strings), duration, voice.
+    Body: job_id, callback_url, index_id, prompts (list of strings), duration.
     Each prompt is used as the retrieval query for that doc; a running summary of previous
     docs is added as memory when generating each subsequent doc.
     """

@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     AZURE_STORAGE_CONNECTION_STRING: str
     
     CLAUDE_API_KEY: str
-    CLAUDE_MODEL_HUDDLE: str
+    CLAUDE_MODEL_DOC: str
     CLAUDE_MODEL_CHATBOT: str
     MAX_TOKEN: int
     
@@ -28,8 +28,8 @@ class Settings(BaseSettings):
     MYSQL_PASSWORD: str
     MYSQL_DB: str
     
-    # AZURE_SPEECH_KEY: str
-    # AZURE_SPEECH_REGION: str
+    AZURE_SPEECH_KEY: str
+    AZURE_SPEECH_REGION: str
 
     class Config:
         env_file = ".env"

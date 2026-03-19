@@ -175,12 +175,12 @@ def read_file(file_path):
         print(f"Error reading file {file_path}: {str(e)}")
         return None
 
-async def create_pdf(huddle_id: int, huddle_content: str, output_dir: Path) -> str:
-    """Create a PDF file for a single huddle.
+async def create_pdf(doc_id: int, doc_content: str, output_dir: Path) -> str:
+    """Create a PDF file for a single document.
     
     Args:
-        huddle_id: The ID of the huddle
-        huddle_content: The content text to include in the PDF
+        doc_id: The ID of the document
+        doc_content: The content text to include in the PDF
         output_dir: Directory where the PDF should be saved
         
     Returns:
@@ -190,7 +190,7 @@ async def create_pdf(huddle_id: int, huddle_content: str, output_dir: Path) -> s
         Exception: If PDF creation fails
     """
     try:
-        pdf_filename = f"doc-{huddle_id}.pdf"
+        pdf_filename = f"doc-{doc_id}.pdf"
         pdf_path = output_dir / pdf_filename
         
         # HTML wrapper for the content
@@ -199,10 +199,10 @@ async def create_pdf(huddle_id: int, huddle_content: str, output_dir: Path) -> s
         <html>
         <head>
             <meta charset="utf-8">
-            <title>Huddle {huddle_id}</title>
+            <title>Document {doc_id}</title>
         </head>
         <body>
-            {huddle_content}
+            {doc_content}
         </body>
         </html>
         """
@@ -228,7 +228,7 @@ async def create_pdf(huddle_id: int, huddle_content: str, output_dir: Path) -> s
         return str(pdf_path)
         
     except Exception as pdf_error:
-        logging.error(f"Failed to create PDF for huddle {huddle_id}: {pdf_error}")
+        logging.error(f"Failed to create PDF for document {doc_id}: {pdf_error}")
         raise pdf_error
 
 def main():
@@ -553,10 +553,10 @@ if __name__ == "__main__":
         """
         
         # Convert sample HTML to PDF
-        success = html_to_pdf(sample_html, "temp/huddles/sample_output.pdf")
+        success = html_to_pdf(sample_html, "temp/docs/sample_output.pdf")
         
         if success:
-            print("\nSample PDF created: temp/huddles/sample_output.pdf")
+            print("\nSample PDF created: temp/docss/sample_output.pdf")
             print("\nTo use with your own HTML:")
             print("python html_to_pdf.py your_file.html -o your_output.pdf")
     else:

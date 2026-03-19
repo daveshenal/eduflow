@@ -5,13 +5,13 @@ from config.settings import settings
 # Initialize the BlobServiceClient
 blob_service_client = BlobServiceClient.from_connection_string(settings.AZURE_STORAGE_CONNECTION_STRING)
 
-hop_saves_container_client = blob_service_client.get_container_client("ai-saves")
+ai_saves_container_client = blob_service_client.get_container_client("ai-saves")
 
 def get_blob_service_client():
     return blob_service_client
 
-def get_hop_saves_container_client():
-    return hop_saves_container_client
+def get_ai_saves_container_client():
+    return ai_saves_container_client
 
 def generate_sas_token(container_name, blob_name, expiry_time):    
     # Generate the SAS token with read permissions for the specific blob

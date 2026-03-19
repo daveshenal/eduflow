@@ -4,7 +4,7 @@ import logging
 import mimetypes
 import io
 
-from app.adapters.azure_blob import get_hop_saves_container_client
+from app.adapters.azure_blob import get_ai_saves_container_client
 from azure.storage.blob import ContentSettings
 
 
@@ -22,14 +22,14 @@ def upload_artifacts(
     voicescripts_dir: Path,
 ) -> dict:
     """
-    Upload generated huddle artifacts to Azure Blob Storage in the structure:
+    Upload generated artifacts to Azure Blob Storage in the structure:
       index-{index_id}/{job_id}/{pdf|audio_mp3|voicescripts}/<files>
 
     Returns a dict with blob paths uploaded per category.
     """
     base_prefix = f"index-{index_id}/{job_id}"
 
-    container_client = get_hop_saves_container_client()
+    container_client = get_ai_saves_container_client()
 
     uploads = {"pdf": [], "audio_mp3": [], "voicescripts": []}
 
@@ -66,14 +66,14 @@ def upload_artifacts(
             uploads["voicescripts"].append(blob_path)
 
         logging.info(
-            "Uploaded huddle artifacts to container '%s' with base prefix '%s'",
+            "Uploaded generated artifacts to container '%s' with base prefix '%s'",
             container_client.container_name,
             base_prefix,
         )
         return uploads
 
     except Exception as e:
-        logging.error(f"Failed to upload huddle artifacts: {e}")
+        logging.error(f"Failed to upload generated artifacts: {e}")
         raise
     
     
@@ -92,7 +92,7 @@ def upload_generation_logs(
 
     base_prefix = f"index-{index_id}/{job_id}/logs"
 
-    container_client = get_hop_saves_container_client()
+    container_client = get_ai_saves_container_client()
 
     def _upload_json(data: dict, blob_name: str, prefix: str):
         """Upload a JSON dict directly to blob storage without saving locally."""
@@ -122,7 +122,7 @@ def upload_generation_logs(
         logging.info(f"Uploaded usage to: {blob_path}")
         
         logging.info(
-            "Uploaded huddle logs to container '%s' with base prefix '%s'",
+            "Uploaded generation logs to container '%s' with base prefix '%s'",
             container_client.container_name,
             base_prefix,
         )

@@ -8,8 +8,8 @@ from app.prompts.prompt_management import get_prompt_manager, PromptNames
 async def fetch_pdf_prompts(db_conn) -> dict:
     """
     Load PDF/document-generation prompts from the prompt manager (DB).
-    Uses active prompts: main_prompt (system), pdf_generator (huddle_prompt).
-    Returns dict with system_prompt and huddle_prompt.
+    Uses active prompts: main_prompt (system), pdf_generator (doc_prompt).
+    Returns dict with system_prompt and doc_prompt.
     """
     manager = get_prompt_manager()
     system_prompt_resp = await manager.get_active_prompt(PromptNames.MAIN_PROMPT.value, db_conn)
@@ -20,18 +20,18 @@ async def fetch_pdf_prompts(db_conn) -> dict:
         raise ValueError("No active prompt found for 'pdf_generator'. Activate a version via /prompts/activate.")
     return {
         "system_prompt": system_prompt_resp.prompt,
-        "huddle_prompt": pdf_prompt_resp.prompt,
+        "doc_prompt": pdf_prompt_resp.prompt,
     }
 
 
-def get_previous_doc_info(huddles: list, huddle_id: int) -> dict:
-    """Get previous huddle information for context."""
-    if huddle_id > 1:
-        prev_huddle = huddles[huddle_id - 2]
+def get_previous_doc_info(docs: list, doc_id: int) -> dict:
+    """Get previous document information for context."""
+    if doc_id > 1:
+        prev_doc = docs[doc_id - 2]
         return {
-            'title': prev_huddle.get("title", "N/A"),
-            'main_focus': prev_huddle.get("main_focus", "N/A"),
-            'key_concepts': ", ".join(prev_huddle.get("key_concepts", [])) or "N/A"
+            'title': prev_doc.get("title", "N/A"),
+            'main_focus': prev_doc.get("main_focus", "N/A"),
+            'key_concepts': ", ".join(prev_doc.get("key_concepts", [])) or "N/A"
         }
     else:
         return {
@@ -43,11 +43,11 @@ def get_previous_doc_info(huddles: list, huddle_id: int) -> dict:
 
 def format_pdf_prompt(template: str, plan_result: dict, doc: dict, 
                         prev_doc: dict, min_words: int, max_words: int, duration: int,
-                        doc_id: int, total_huddles: int) -> str:
+                        doc_id: int, total_docs: int) -> str:
     """Format pdf generation prompt."""
     try:
-        # Determine if this is first or last huddle
-        is_first_or_last = doc_id == 1 or doc_id == total_huddles
+        # Determine if this is first or last document
+        is_first_or_last = doc_id == 1 or doc_id == total_docs
         
         # Convert dict to JSON string for template formatting
         if is_first_or_last:
@@ -76,15 +76,15 @@ def format_pdf_prompt(template: str, plan_result: dict, doc: dict,
             complete_curriculum=complete_curriculum
         )
     except KeyError as ke:
-        error_msg = f"Template formatting error - missing placeholder in huddle prompt: {ke}"
+        error_msg = f"Template formatting error - missing placeholder in pdf prompt: {ke}"
         logging.error(error_msg)
         raise ValueError(error_msg)
 
 
 async def generate_single_doc(claude_client, system_prompt: str, user_messages: list) -> dict:
-    """Generate content for a single huddle."""
-    huddle_response = await claude_client.messages.create(
-        model=settings.CLAUDE_MODEL_HUDDLE,
+    """Generate content for a single document."""
+    response = await claude_client.messages.create(
+        model=settings.CLAUDE_MODEL_DOC,
         max_tokens=settings.MAX_TOKEN,
         system=system_prompt,
         temperature=0.3,
@@ -92,18 +92,18 @@ async def generate_single_doc(claude_client, system_prompt: str, user_messages: 
     )
     
     # Log usage
-    usage = huddle_response.usage
-    logging.info(f"Huddle tokens — Input: {usage.input_tokens}, Output: {usage.output_tokens}")
+    usage = response.usage
+    logging.info(f"Document tokens — Input: {usage.input_tokens}, Output: {usage.output_tokens}")
     
-    # Extract huddle content
-    huddle_parts = []
-    for block in getattr(huddle_response, "content", []) or []:
+    # Extract content
+    doc_parts = []
+    for block in getattr(response, "content", []) or []:
         if isinstance(block, dict):
-            huddle_parts.append(block.get("text", ""))
+            doc_parts.append(block.get("text", ""))
         else:
-            huddle_parts.append(getattr(block, "text", ""))
+            doc_parts.append(getattr(block, "text", ""))
     
-    content = "".join(huddle_parts).strip()
+    content = "".join(doc_parts).strip()
     
     # Return both content and token usage
     return {
@@ -129,29 +129,29 @@ async def process_single_doc(claude_client, doc: dict, doc_id: int, plan_result:
     retrieved_docs = retriever.get_relevant_documents(query=retrieval_query.strip())
     context = retriever.format_context_with_sources(retrieved_docs)
     
-    # Get previous huddle info
-    prev_huddle = get_previous_doc_info(docs, doc_id)
+    # Get previous doc info
+    prev_doc = get_previous_doc_info(docs, doc_id)
     
-    # Format huddle prompt
-    huddle_details = format_pdf_prompt(
-        prompts['huddle_prompt'], plan_result, doc, prev_huddle,
+    # Format doc prompt
+    doc_details = format_pdf_prompt(
+        prompts['doc_prompt'], plan_result, doc, prev_doc,
         min_words, max_words, duration, doc_id, len(docs)
     )
     
     user_messages = [
-        {"role": "user", "content": f"DOCUMENT DETAILS (from plan):\n{huddle_details}"},
+        {"role": "user", "content": f"DOCUMENT DETAILS (from plan):\n{doc_details}"},
         {"role": "user", "content": f"CONTEXT FROM KNOWLEDGEBASE:\n{context}"},
         {"role": "user", "content": "Generate the full document content now."},
     ]
     
-    # Generate and return huddle content
-    huddle_result = await generate_single_doc(claude_client, prompts['system_prompt'], user_messages)
+    # Generate and return doc content
+    doc_result = await generate_single_doc(claude_client, prompts['system_prompt'], user_messages)
     
     return {
-        "huddle_id": doc_id,
+        "doc_id": doc_id,
         "title": title,
-        "content_html": huddle_result["content"],
-        "tokens": huddle_result["tokens"]
+        "content_html": doc_result["content"],
+        "tokens": doc_result["tokens"]
     }
 
 
@@ -194,14 +194,14 @@ async def process_single_doc_baseline(
         {"role": "user", "content": "Generate the full document content now (HTML)."},
     ]
 
-    huddle_result = await generate_single_doc(
+    doc_result = await generate_single_doc(
         claude_client, prompts["system_prompt"], user_messages
     )
     return {
-        "huddle_id": doc_id,
+        "doc_id": doc_id,
         "title": f"Document {doc_id}",
-        "content_html": huddle_result["content"],
-        "tokens": huddle_result["tokens"],
+        "content_html": doc_result["content"],
+        "tokens": doc_result["tokens"],
     }
 
 
@@ -265,14 +265,14 @@ async def process_single_doc_memory(
         ]
     )
 
-    huddle_result = await generate_single_doc(
+    doc_result = await generate_single_doc(
         claude_client, prompts["system_prompt"], messages
     )
     return {
-        "huddle_id": doc_id,
+        "doc_id": doc_id,
         "title": f"Document {doc_id}",
-        "content_html": huddle_result["content"],
-        "tokens": huddle_result["tokens"],
+        "content_html": doc_result["content"],
+        "tokens": doc_result["tokens"],
     }
 
 
@@ -301,7 +301,7 @@ async def update_memory_summary(
     messages = [{"role": "user", "content": "\n\n".join(user_parts)}]
 
     response = await claude_client.messages.create(
-        model=settings.CLAUDE_MODEL_HUDDLE,
+        model=settings.CLAUDE_MODEL_DOC,
         max_tokens=settings.MAX_TOKEN,
         system=base_system_prompt,
         temperature=0.3,

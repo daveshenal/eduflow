@@ -63,11 +63,11 @@ def format_plan_prompt(prompts: dict, params: dict, min_words: int, max_words: i
 
 
 async def generate_plan(claude_client, system_prompt: str, user_prompt: str) -> dict:
-    """Generate huddle plan using Claude."""
+    """Generate plan using Claude."""
     user_messages = [{"role": "user", "content": user_prompt}]
     
     response = await claude_client.messages.create(
-        model=settings.CLAUDE_MODEL_HUDDLE,
+        model=settings.CLAUDE_MODEL_DOC,
         max_tokens=settings.MAX_TOKEN,
         system=system_prompt,
         temperature=0.3,
