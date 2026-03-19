@@ -30,7 +30,7 @@ async def generate_voiceover_script(payload: dict, claude_client) -> dict:
 
     # Fetch prompt from database
     async with get_db_connection() as db_conn:
-        prompts = await fetch_voicescript_prompts()
+        prompts = await fetch_voicescript_prompts(db_conn)
     
     # Format the system prompt with parameters
     system_prompt = prompts['voice_script_prompt'].format(
