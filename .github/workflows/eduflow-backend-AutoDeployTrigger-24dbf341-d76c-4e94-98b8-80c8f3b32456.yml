@@ -35,15 +35,11 @@ jobs:
         uses: azure/container-apps-deploy-action@v2
         with:
           appSourcePath: ${{ github.workspace }}
-          _dockerfilePathKey_: _dockerfilePath_
-          _targetLabelKey_: _targetLabel_
+          dockerfilePath: ./Dockerfile
           registryUrl: eduflow001-fuc3dpevgpbvdtgp.azurecr.io
           registryUsername: ${{ secrets.EDUFLOWBACKEND_REGISTRY_USERNAME }}
           registryPassword: ${{ secrets.EDUFLOWBACKEND_REGISTRY_PASSWORD }}
           containerAppName: eduflow-backend
           resourceGroup: rg-eduflow-res-dev-001
           imageToBuild: eduflow001-fuc3dpevgpbvdtgp.azurecr.io/eduflow-backend:${{ github.sha }}
-          _buildArgumentsKey_: |
-            _buildArgumentsValues_
-
-
+          
