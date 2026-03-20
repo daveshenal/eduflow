@@ -209,9 +209,9 @@ class APIService {
     targetAudience: string;
     duration: number;
     numDocs: number;
-    voice: string;
+    voice?: string;
   }): Promise<APIResponse> {
-    const body = {
+    const body: any = {
       job_id: payload.jobId,
       callback_url: payload.callbackUrl,
       index_id: payload.indexId,
@@ -220,8 +220,11 @@ class APIService {
       target_audience: payload.targetAudience,
       duration: payload.duration,
       num_docs: payload.numDocs,
-      voice: payload.voice,
     };
+
+    if (payload.voice) {
+      body.voice = payload.voice;
+    }
 
     return this.makeRequest('/gen/start', {
       method: 'POST',

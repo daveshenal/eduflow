@@ -40,8 +40,14 @@ def validate_payload(payload: dict) -> dict:
     
     # Required fields
     required_fields = [
-        "job_id", "callback_url", "index_id", "learning_focus", "topic", 
-        "target_audience", "duration", "num_docs", "voice"
+        "job_id",
+        "callback_url",
+        "index_id",
+        "learning_focus",
+        "topic",
+        "target_audience",
+        "duration",
+        "num_docs",
     ]
     
     # List to store missing fields
@@ -66,6 +72,7 @@ def validate_payload(payload: dict) -> dict:
         "target_audience": payload.get("target_audience"),
         "duration": int(payload.get("duration")),
         "num_docs": int(payload.get("num_docs")),
+        # Voice is optional; may be None / missing
         "voice": payload.get("voice"),
     }
 
@@ -226,48 +233,52 @@ async def generate_content(params: dict, claude_client):
                 logging.error("Failed to create PDF for doc %s: %s", doc_id, pdf_error)
                 raise
             
-            # Generate voiceover
-            try:
-                voiceover_payload = {
-                    "contentHtml": content_html,
-                    "tone": "professional, warm, clear",
-                    "paceWpm": 140,
-                    "duration": params['duration']
-                }
-                voiceover_response = await generate_voiceover_script(payload=voiceover_payload, claude_client=claude_client)
-                
-                # Accumulate tokens from voiceover generation
-                total_input_tokens += voiceover_response["tokens"]["input"]
-                total_output_tokens += voiceover_response["tokens"]["output"]
-                
-                voiceover_script = voiceover_response["script"]
-                
-                # Count characters for Azure Speech
-                total_speech_characters += len(voiceover_script)
-                
-                voiceover_filename = f"voicescript-{doc_id}.txt"
-                voiceover_path = dirs['voiceovers'] / voiceover_filename
-                with open(voiceover_path, 'w', encoding='utf-8') as f:
-                    f.write(voiceover_script)
-
-                # Generate MP3
+            # Generate voiceover + audio only if a voice was provided
+            if params.get("voice"):
                 try:
-                    mp3_filename = f"voiceover-{doc_id}.mp3"
-                    mp3_path = dirs['audio'] / mp3_filename
-                    generate_mp3_from_file(
-                        text_file_path=str(voiceover_path),
-                        output_file_path=mp3_path,
-                        voice = params.get("voice"),
-                        speed="medium",
-                        pitch="medium"
+                    voiceover_payload = {
+                        "contentHtml": content_html,
+                        "tone": "professional, warm, clear",
+                        "paceWpm": 140,
+                        "duration": params['duration']
+                    }
+                    voiceover_response = await generate_voiceover_script(
+                        payload=voiceover_payload,
+                        claude_client=claude_client,
                     )
+                    
+                    # Accumulate tokens from voiceover generation
+                    total_input_tokens += voiceover_response["tokens"]["input"]
+                    total_output_tokens += voiceover_response["tokens"]["output"]
+                    
+                    voiceover_script = voiceover_response["script"]
+                    
+                    # Count characters for Azure Speech
+                    total_speech_characters += len(voiceover_script)
+                    
+                    voiceover_filename = f"voicescript-{doc_id}.txt"
+                    voiceover_path = dirs['voiceovers'] / voiceover_filename
+                    with open(voiceover_path, 'w', encoding='utf-8') as f:
+                        f.write(voiceover_script)
 
-                except Exception as mp3_error:
-                    logging.error(f"Failed to generate MP3 for document {doc_id}: {mp3_error}")
-                    raise mp3_error
-            except Exception as voiceover_error:
-                logging.error(f"Failed to generate voiceover for document {doc_id}: {voiceover_error}")
-                raise voiceover_error
+                    # Generate MP3
+                    try:
+                        mp3_filename = f"voiceover-{doc_id}.mp3"
+                        mp3_path = dirs['audio'] / mp3_filename
+                        generate_mp3_from_file(
+                            text_file_path=str(voiceover_path),
+                            output_file_path=mp3_path,
+                            voice=params.get("voice"),
+                            speed="medium",
+                            pitch="medium",
+                        )
+
+                    except Exception as mp3_error:
+                        logging.error(f"Failed to generate MP3 for document {doc_id}: {mp3_error}")
+                        raise mp3_error
+                except Exception as voiceover_error:
+                    logging.error(f"Failed to generate voiceover for document {doc_id}: {voiceover_error}")
+                    raise voiceover_error
 
         token_usage = {
             "total_input_tokens": total_input_tokens,
@@ -309,17 +320,20 @@ async def generate_content(params: dict, claude_client):
             audio_path = next((path for path in upload_result["audio_mp3"] if mp3_filename in path), None)
             voicescript_path = next((path for path in upload_result["voicescripts"] if txt_filename in path), None)
             
-            if not pdf_path or not audio_path or not voicescript_path:
-                logging.error(f"Missing uploaded artifact for doc {doc_id}")
-                raise ValueError(f"Uploaded artifacts missing for doc {doc_id}")
+            if not pdf_path:
+                logging.error(f"Missing uploaded PDF artifact for doc {doc_id}")
+                raise ValueError(f"Uploaded PDF artifact missing for doc {doc_id}")
             
             doc_data = {
                 "doc_index": i + 1,
                 "title": doc.get("title"),
                 "pdf_path": pdf_path,
-                "audio_path": audio_path,
-                "voicescript_path": voicescript_path,
             }
+            # Only include audio / voicescript paths if they exist (voice was provided)
+            if audio_path:
+                doc_data["audio_path"] = audio_path
+            if voicescript_path:
+                doc_data["voicescript_path"] = voicescript_path
             
             generated_docs.append(doc_data)
 

@@ -3,6 +3,8 @@ __pycache__
 
 # For better security and scalability, use a Azure Key Vault
 .env
+# Keys used in local development
+.env.local
 
 # Temporary files
 temp
@@ -10,7 +12,8 @@ temp
 # Prompt DB Dump
 db_backups
 
-# certs
+# certs (Azure SQL)
 certs/DigiCertGlobalRootCA.crt.pem
 
+# IDE settings
 /.vscode

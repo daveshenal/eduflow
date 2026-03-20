@@ -22,8 +22,8 @@ type ConfigAction =
 const initialState: ConfigState = {
   userType: 'developer',
   mode: 'chatbot',
-  // backendUrl: 'deployed backend URL',
-  backendUrl: 'http://localhost:8000',
+  backendUrl: 'https://eduflow-backend.icybay-63ca310b.southeastasia.azurecontainerapps.io',
+  // backendUrl: 'http://localhost:8000',
   providerId: '0001',
   isStreaming: false,
   responseTime: 0,

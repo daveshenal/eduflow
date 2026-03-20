@@ -30,6 +30,8 @@ const EduflowGenerator: React.FC<EduflowGeneratorProps> = ({ apiService, indexId
 
     const clampedNumDocs = Math.max(1, Math.min(8, Number(numDocs) || 1));
 
+    const trimmedVoice = voice.trim();
+
     const payload = {
       jobId,
       callbackUrl,
@@ -39,7 +41,8 @@ const EduflowGenerator: React.FC<EduflowGeneratorProps> = ({ apiService, indexId
       targetAudience,
       duration: Number(duration),
       numDocs: clampedNumDocs,
-      voice,
+      // Treat empty string as "no voice provided"
+      voice: trimmedVoice.length > 0 ? trimmedVoice : undefined,
     };
 
     const response = await apiService.startEduflowJob(payload);
@@ -209,16 +212,15 @@ const EduflowGenerator: React.FC<EduflowGeneratorProps> = ({ apiService, indexId
 
           <div className="config-group" style={{ flex: '1 1 calc(50% - 0.75rem)', minWidth: '260px' }}>
             <label className="config-label" htmlFor="voice">
-              Voice
+              Voice (optional)
             </label>
             <input
               id="voice"
               type="text"
               className="config-input"
-              placeholder="e.g. neutral, enthusiastic - leave blank to skip audio"
+              placeholder="e.g. en-US-JennyNeural, leave blank to skip audio"
               value={voice}
               onChange={(e) => setVoice(e.target.value)}
-              required
             />
           </div>
         </div>
