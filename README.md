@@ -18,7 +18,6 @@ eduflow/
 ├── app/                  # FastAPI application core
 │   ├── adapters          # External services
 │   ├── core/             # Application wide core logic
-│   ├── evaluator/        # Evaluator service
 │   ├── knowledgebase/    # Index management scripts
 │   ├── pipeline/         # Main workflow pipelines
 │   ├── prompts/          # Prompts management scripts
@@ -28,6 +27,7 @@ eduflow/
 ├── config/               # Configuration files
 ├── docs/                 # Architecture diagrams and documentation
 ├── dummy-ui/             # User Interface
+├── evaluator_service     # Evaluator micro service (Local API)
 ├── tests/                # Test cases
 ├── .gitignore
 └── README.md
