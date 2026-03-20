@@ -9,6 +9,7 @@ on:
 jobs:
   deploy-backend:
     runs-on: ubuntu-latest
+    environment: development
     permissions:
       id-token: write
       contents: read
@@ -37,6 +38,7 @@ jobs:
 
   deploy-frontend:
     runs-on: ubuntu-latest
+    environment: development
     permissions:
       id-token: write
       contents: read
