@@ -1,0 +1,49 @@
+name: Trigger auto deployment for eduflow-backend
+
+# When this action will be executed
+on:
+  # Automatically trigger it when detected changes in repo
+  push:
+    branches: 
+      [ master ]
+    paths:
+    - '**'
+    - '.github/workflows/eduflow-backend-AutoDeployTrigger-24dbf341-d76c-4e94-98b8-80c8f3b32456.yml'
+
+  # Allow manual trigger 
+  workflow_dispatch:      
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions: 
+      id-token: write #This is required for requesting the OIDC JWT Token
+      contents: read #Required when GH token is used to authenticate with private repo
+
+    steps:
+      - name: Checkout to the branch
+        uses: actions/checkout@v2
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.EDUFLOWBACKEND_AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.EDUFLOWBACKEND_AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.EDUFLOWBACKEND_AZURE_SUBSCRIPTION_ID }}
+
+      - name: Build and push container image to registry
+        uses: azure/container-apps-deploy-action@v2
+        with:
+          appSourcePath: ${{ github.workspace }}
+          _dockerfilePathKey_: _dockerfilePath_
+          _targetLabelKey_: _targetLabel_
+          registryUrl: eduflow001-fuc3dpevgpbvdtgp.azurecr.io
+          registryUsername: ${{ secrets.EDUFLOWBACKEND_REGISTRY_USERNAME }}
+          registryPassword: ${{ secrets.EDUFLOWBACKEND_REGISTRY_PASSWORD }}
+          containerAppName: eduflow-backend
+          resourceGroup: rg-eduflow-res-dev-001
+          imageToBuild: eduflow001-fuc3dpevgpbvdtgp.azurecr.io/eduflow-backend:${{ github.sha }}
+          _buildArgumentsKey_: |
+            _buildArgumentsValues_
+
+
