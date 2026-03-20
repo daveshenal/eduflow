@@ -56,8 +56,8 @@ jobs:
       - name: Build and push frontend
         uses: azure/container-apps-deploy-action@v2
         with:
-        appSourcePath: ${{ github.workspace }}/dummy-ui
-        dockerfilePath: ./Dockerfile
+          appSourcePath: ${{ github.workspace }}/dummy-ui
+          dockerfilePath: ./Dockerfile
           registryUrl: eduflow001-fuc3dpevgpbvdtgp.azurecr.io
           registryUsername: ${{ secrets.EDUFLOWFRONTEND_REGISTRY_USERNAME }}
           registryPassword: ${{ secrets.EDUFLOWFRONTEND_REGISTRY_PASSWORD }}
