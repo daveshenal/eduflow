@@ -20,9 +20,18 @@ jobs:
     permissions:
       id-token: write
       contents: read
+      deployments: write
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+
+      - name: Start deployment record
+        uses: bobheadxi/deployments@v1
+        id: deployment-backend
+        with:
+          step: start
+          token: ${{ secrets.GITHUB_TOKEN }}
+          env: backend
 
       - name: Azure Login
         uses: azure/login@v2
@@ -43,14 +52,33 @@ jobs:
           resourceGroup: rg-eduflow-res-dev-001
           imageToBuild: eduflow001-fuc3dpevgpbvdtgp.azurecr.io/eduflow-backend:${{ github.sha }}
 
+      - name: Finish deployment record
+        uses: bobheadxi/deployments@v1
+        if: always()
+        with:
+          step: finish
+          token: ${{ secrets.GITHUB_TOKEN }}
+          env: backend
+          status: ${{ job.status }}
+          deployment_id: ${{ steps.deployment-backend.outputs.deployment_id }}
+
   deploy-frontend:
     runs-on: ubuntu-latest
     permissions:
       id-token: write
       contents: read
+      deployments: write
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+
+      - name: Start deployment record
+        uses: bobheadxi/deployments@v1
+        id: deployment-frontend
+        with:
+          step: start
+          token: ${{ secrets.GITHUB_TOKEN }}
+          env: frontend
 
       - name: Azure Login
         uses: azure/login@v2
@@ -70,3 +98,13 @@ jobs:
           containerAppName: eduflow-frontend
           resourceGroup: rg-eduflow-res-dev-001
           imageToBuild: eduflow001-fuc3dpevgpbvdtgp.azurecr.io/eduflow-frontend:${{ github.sha }}
+
+      - name: Finish deployment record
+        uses: bobheadxi/deployments@v1
+        if: always()
+        with:
+          step: finish
+          token: ${{ secrets.GITHUB_TOKEN }}
+          env: frontend
+          status: ${{ job.status }}
+          deployment_id: ${{ steps.deployment-frontend.outputs.deployment_id }}
