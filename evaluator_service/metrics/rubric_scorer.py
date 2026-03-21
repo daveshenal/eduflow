@@ -20,7 +20,6 @@ class RubricScorer:
         "content_progression",
         "non_redundancy",
     ]
-    _ALLOWED_CRITERIA = set(_DEFAULT_CRITERIA)
 
     def _normalize_documents(self, documents: list[str]) -> list[str]:
         normalized: list[str] = []
@@ -147,12 +146,6 @@ Be strict and consistent. Use the full range of the scale.
 
     def run_evaluation(self, sequence: dict[str, Any], criteria: list[str], runs: int) -> dict[str, Any]:
         selected_criteria = criteria or self._DEFAULT_CRITERIA
-        invalid = [c for c in selected_criteria if c not in self._ALLOWED_CRITERIA]
-        if invalid:
-            raise ValueError(
-                f"Invalid criteria: {invalid}. Allowed criteria are: {self._DEFAULT_CRITERIA}"
-            )
-
         documents = self._normalize_documents(sequence.get("documents", []))
         architecture = sequence.get("architecture", "unknown")
 
@@ -176,19 +169,11 @@ Be strict and consistent. Use the full range of the scale.
                 }
             )
 
-        # Aggregate from the actual keys returned in run_details scores.
-        # This guarantees response keys align with what each run produced.
-        observed_keys: list[str] = []
-        if run_details:
-            observed_keys = list(run_details[0]["scores"].keys())
-
         mean_scores: dict[str, float] = {}
         std_scores: dict[str, float] = {}
 
-        for criterion in observed_keys:
-            values = per_criterion_values.get(criterion, [])
-            if not values:
-                continue
+        for criterion in selected_criteria:
+            values = per_criterion_values[criterion]
             mean = sum(values) / len(values)
             var = sum((v - mean) ** 2 for v in values) / len(values)
             std = math.sqrt(var)
@@ -196,8 +181,8 @@ Be strict and consistent. Use the full range of the scale.
             std_scores[criterion] = self._round2(std)
 
         all_scores: list[int] = []
-        for criterion in observed_keys:
-            all_scores.extend(per_criterion_values.get(criterion, []))
+        for criterion in selected_criteria:
+            all_scores.extend(per_criterion_values[criterion])
         overall_mean = self._round2(sum(all_scores) / len(all_scores)) if all_scores else 0.0
 
         return {
