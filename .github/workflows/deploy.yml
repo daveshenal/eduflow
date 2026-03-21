@@ -5,7 +5,7 @@ on:
     branches:
       - master
     paths-ignore:
-      - "evaluator-service/**"
+      - "evaluator_service/**"
       - "tests/**"
       - "docs/**"
       - "**.md"
