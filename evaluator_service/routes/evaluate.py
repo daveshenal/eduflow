@@ -12,12 +12,48 @@ import os
 from pathlib import Path
 
 from fastapi import APIRouter, File, UploadFile, HTTPException
+from pydantic import BaseModel, Field
 
 from evaluator_service.evaluators.document_evaluator import evaluate_documents
+from evaluator_service.metrics.pairwise_judge import PairwiseJudge
 
 router = APIRouter(prefix="/evaluate", tags=["evaluation"])
 
 MAX_FILES = 10
+DEFAULT_PAIRWISE_CRITERIA = [
+    "coherence",
+    "dependency_flow",
+    "content_progression",
+    "non_redundancy",
+]
+
+
+class PairwiseSequenceInput(BaseModel):
+    architecture: str
+    documents: list[str] = Field(default_factory=list)
+
+
+class PairwiseEvaluateRequest(BaseModel):
+    sequence_a: PairwiseSequenceInput
+    sequence_b: PairwiseSequenceInput
+    criteria: list[str] = Field(default_factory=lambda: DEFAULT_PAIRWISE_CRITERIA.copy())
+    runs: int = Field(default=3, ge=1)
+
+
+class PairwiseRunDetail(BaseModel):
+    run: int
+    order_shown: list[str]
+    winner: str
+    reasoning: str
+    criteria_scores: dict = Field(default_factory=dict)
+
+
+class PairwiseEvaluateResponse(BaseModel):
+    winner: str
+    win_counts: dict[str, int]
+    win_rate: dict[str, float]
+    run_details: list[PairwiseRunDetail]
+    consensus: str
 
 
 @router.post("")
@@ -80,3 +116,32 @@ async def evaluate(
                     os.unlink(path)
             except OSError:
                 pass
+
+
+@router.post("/pairwise", response_model=PairwiseEvaluateResponse)
+async def evaluate_pairwise(payload: PairwiseEvaluateRequest):
+    """
+    POST /evaluate/pairwise - Compare two document sequences using an LLM judge.
+    """
+    if not payload.sequence_a.documents or not payload.sequence_b.documents:
+        raise HTTPException(
+            status_code=400,
+            detail="Both sequence_a.documents and sequence_b.documents must be provided.",
+        )
+
+    judge = PairwiseJudge()
+    try:
+        result = judge.run_evaluation(
+            sequence_a=payload.sequence_a.model_dump(),
+            sequence_b=payload.sequence_b.model_dump(),
+            criteria=payload.criteria or DEFAULT_PAIRWISE_CRITERIA,
+            runs=payload.runs,
+        )
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Pairwise evaluation failed: {str(e)}")
+
+    return result
