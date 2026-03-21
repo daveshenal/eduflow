@@ -48,6 +48,7 @@ def chat_json(
         model=model,
         temperature=temperature,
         max_tokens=max_output_tokens,
+        timeout=120,
         messages=[
             {"role": "system", "content": system},
             {"role": "user", "content": user},
