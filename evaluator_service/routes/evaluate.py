@@ -139,12 +139,12 @@ class RubricEvaluateResponse(BaseModel):
     }
 
 
-@router.post("")
+@router.post("/custom")
 async def evaluate(
     files: list[UploadFile] = File(..., description="PDF files to evaluate (max 10)"),
 ):
     """
-    POST /evaluate - Accept up to 10 PDF files and return evaluation metrics.
+    POST /evaluate/custom - Accept up to 10 PDF files and return custom evaluation metrics.
     """
     # VALIDATE: if number_of_files > 10 return error
     if len(files) > MAX_FILES:
