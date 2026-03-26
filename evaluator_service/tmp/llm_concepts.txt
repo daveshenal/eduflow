@@ -1,68 +1,137 @@
 EduFlow evaluator - LLM extracted concepts
-document_count: 3
+document_count: 4
 
 ASSUMES (dependency)
 Doc 1: (n/a)
 Doc 2:
-  - OASIS assessment
-  - Medicare home health benefit
-  - Functional health status items
-  - Brief Interview for Mental Status (BIMS)
-  - M0090 Date Assessment Completed
-  - CMS OASIS updates
-  - Section GG Functional Abilities Assessment
-  - Section C Cognitive Patterns
-  - Section N Medications Environmental Assessment
-  - Section Q Participation Assessment
-  - Clinical record audits
-  - Home Health Quality Help Desk
-  - Regulatory compliance for OASIS
-Doc 3:
-  - OASIS documentation
-  - Medicare Conditions of Participation
-  - interdisciplinary collaboration
-  - functional abilities assessment
-  - Brief Interview for Mental Status (BIMS)
-  - drug regimen review
+  - OASIS structure
+  - Medicare compliance
+  - M-item categories
+  - Care Compare
+  - Value-Based Purchasing outcomes
+  - Patient-Driven Groupings Model
+  - Section GG functional items
   - CMS Quarterly OASIS Q&As
-  - clinical record discrepancies
-  - coding instructions for functional assessment
-  - bilateral lower extremity amputees
-  - peripheral vascular disease
-  - professional judgment in assessment
-  - environmental assessments
+  - Medicare Conditions of Participation
+  - Direct observation framework
+  - 50% rule for variability
+  - Interdisciplinary collaboration protocols
+  - Legal attestation for OASIS responses
+  - Audit readiness documentation
+  - Adaptive equipment evaluation
+Doc 3:
+  - OASIS data
+  - M-item scoring
+  - Functional status evaluation
+  - Risk stratification
+  - Medicare compliance
+  - CMS quality measures
+  - Value-based purchasing initiatives
+  - Cognitive impairment scores
+  - Medication management capabilities
+  - Functional decline patterns
+  - Skilled nursing interventions
+  - Interdisciplinary team roles
+  - Medical necessity of skilled services
+  - Comprehensive assessment documentation
+  - Physician-ordered plan of care
+Doc 4:
+  - OASIS assessment
+  - CMS quality measures
+  - value-based purchasing outcomes
+  - Care Compare ratings
+  - risk stratification techniques
+  - functional improvement measures
+  - process measures for care coordination
+  - utilization measures for hospitalizations
+  - M1830 (Bathing) quality measure
+  - risk adjustment models
+  - Home Health Review and Correct Report
+  - interdisciplinary team roles
+  - CMS Quarterly Q&As
+  - OASIS-E1 Manual
+  - iQIES reporting system
 
-INTRODUCES/SETS UP (preparation)
+INTRODUCES (for later scaffolding)
 Doc 1:
+  - OASIS-Based Clinical Assessment Mastery series
   - Outcome and Assessment Information Set (OASIS)
-  - Standardized data collection instrument
-  - Comprehensive assessment integration
-  - Physician-ordered Plan of Care
-  - Qualified clinicians for OASIS
-  - Assessment time points
-  - Medicare Conditions of Participation standards
-  - Data accuracy and quality assurance
-  - Clinical record audits
-  - Outcome-based quality improvement (OBQI)
-  - Quality measures from OASIS
-  - CMS guidance updates
-  - Direct observation assessment method
-  - Collaborative assessment documentation
-  - Home Health Value-Based Purchasing Model
+  - Patient-Driven Groupings Model (PDGM)
+  - Start of Care (SOC) assessments
+  - Comprehensive assessment domains
+  - Functional Status Assessment (Section GG)
+  - Clinical Status Evaluation
+  - Cognitive and Behavioral Assessment
+  - Medication Management (Section N)
+  - Social and Environmental Factors assessment
+  - Interdisciplinary team roles in OASIS
+  - Medicare Conditions of Participation
+  - iQIES (internet Quality Improvement and Evaluation System)
+  - OASIS-E1 manual
+  - Standardized screening tools (e.g., PHQ-2)
+  - OASIS data accuracy and completeness standards
+  - OASIS documentation timeframes
+  - Observation tasks for OASIS skill development
+  - OASIS-E1 item-specific guidance
 Doc 2:
-  - Accurate OASIS assessment
-  - Direct observation for functional status
-  - Patient and caregiver interviews
-  - Environmental evaluation for assessments
-  - Collaboration in data collection
-  - M0090 Date Assessment Completed
-  - Standardized cognitive interview protocols
-  - Task inclusions and exclusions in OASIS
-  - Coding assistance requirements
-  - Quality assurance for OASIS data
-  - Clinical record audits
-  - Professional judgment in OASIS coding
-  - CMS OASIS updates and resources
-  - Follow-up and discharge assessment strategies
-  - Interdisciplinary collaboration in assessments
-Doc 3: (n/a)
+  - OASIS structure and regulatory requirements
+  - Comprehensive assessment domains
+  - M-item categories
+  - Systematic observation framework
+  - Environmental assessment techniques
+  - Performance validation
+  - Patient-driven groupings model
+  - Demonstration-based assessment techniques
+  - Section GG functional items
+  - Clinical judgment in OASIS coding
+  - CMS Quarterly OASIS Q&As
+  - Interdisciplinary collaboration protocols
+  - Comprehensive data integration
+  - Assessment variability standards
+  - 50% rule for functional assessment
+  - Legal attestation in documentation
+  - Audit readiness for OASIS data
+  - Medicare Conditions of Participation
+  - Qualified clinician definitions
+  - OASIS-E1 guidance manual
+Doc 3:
+  - OASIS data collection
+  - functional status evaluation
+  - clinical observation techniques
+  - risk stratification using OASIS data
+  - low, moderate, high-risk categories
+  - evidence-based care planning
+  - skilled nursing interventions
+  - medical necessity documentation
+  - goal setting based on OASIS data
+  - interdisciplinary team roles
+  - psychosocial assessment integration
+  - clinical reasoning documentation
+  - functional status risk indicators
+  - cognitive risk assessment
+  - medication management risk indicators
+  - medical complexity assessment
+  - value-based purchasing initiatives
+  - CMS quality measures compliance
+  - comprehensive care planning
+Doc 4:
+  - OASIS assessment findings
+  - Risk stratification techniques
+  - Evidence-based care plans
+  - CMS quality measures
+  - Value-based purchasing outcomes
+  - Care Compare ratings
+  - OASIS-based quality measures
+  - Outcome measures
+  - Process measures
+  - Utilization measures
+  - Risk adjustment models
+  - Home Health Review and Correct Report
+  - Assessment checklists
+  - Interdisciplinary collaboration
+  - CMS Quarterly Q&As
+  - Continuing education opportunities
+  - Functional status evaluation
+  - Assessment documentation requirements
+  - Systematic self-assessment
+  - Interdisciplinary team roles

@@ -11,3 +11,6 @@ PyPDF2
 # Azure OpenAI client + settings loader (used for GPT-4o + embeddings)
 openai>=1.0.0
 pydantic-settings>=2.0.0
+
+# Local embedding model (sentence-transformers)
+sentence-transformers

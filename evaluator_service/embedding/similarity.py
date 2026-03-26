@@ -1,16 +1,23 @@
 """
-Load embedding model (BAAI/bge-large-en-v1.5 locally via sentence-transformers).
-Function get_embedding(text)
-Function cosine_similarity(vectorA, vectorB)
-Function semantic_similarity(textA, textB)
+Embedding similarity utilities used by evaluator metrics.
+
+This module uses `sentence-transformers` and caches both:
+- the SentenceTransformer model (loaded once per process)
+- embeddings (so repeated concept comparisons don't re-encode)
 """
 
 import math
 from typing import List
 from sentence_transformers import SentenceTransformer
 
-_MODEL_NAME = "BAAI/bge-large-en-v1.5"
+_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
 _model: SentenceTransformer | None = None
+_embedding_cache: dict[str, List[float]] = {}
+
+
+def _normalize(text: str) -> str:
+    """Normalization used for embedding cache keys and semantic matching."""
+    return (text or "").lower().strip()
 
 
 def _get_model() -> SentenceTransformer:
@@ -23,18 +30,22 @@ def _get_model() -> SentenceTransformer:
 
 def get_embedding(text: str) -> List[float]:
     """
-    CLEAN text if needed
-    GENERATE embedding vector using BAAI/bge-large-en-v1.5 (local)
-    RETURN vector
+    Generate (or fetch from cache) an embedding vector for the given text.
     """
-    text = (text or "").strip()
-    if not text:
+    key = _normalize(text)
+    if not key:
         raise ValueError("Cannot embed empty text")
 
+    cached = _embedding_cache.get(key)
+    if cached is not None:
+        return cached
+
     model = _get_model()
-    # Model truncates to 512 tokens by default
-    embedding = model.encode(text, convert_to_numpy=True)
-    return embedding.tolist()
+    # Model truncates to 512 tokens by default.
+    embedding = model.encode(key, convert_to_numpy=True)
+    vector = embedding.tolist()
+    _embedding_cache[key] = vector
+    return vector
 
 
 def cosine_similarity(vector_a: List[float], vector_b: List[float]) -> float:
