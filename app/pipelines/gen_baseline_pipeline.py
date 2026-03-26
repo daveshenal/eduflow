@@ -20,7 +20,7 @@ from app.pipelines.gen_pipeline import setup_output_directories, send_job_comple
 
 def validate_baseline_payload(payload: dict) -> dict:
     """Validate and extract baseline payload: job_id, callback_url, index_id, prompts (list), duration."""
-    required = ["job_id", "callback_url", "index_id", "prompts", "duration"]
+    required = ["job_id", "index_id", "prompts", "duration"]
     missing = [f for f in required if f not in payload]
     if missing:
         raise ValueError(f"Missing required fields: {', '.join(missing)}")
@@ -34,6 +34,7 @@ def validate_baseline_payload(payload: dict) -> dict:
 
     return {
         "job_id": payload.get("job_id"),
+        # Optional: when omitted, we rely on status polling from the frontend.
         "callback_url": payload.get("callback_url"),
         "index_id": payload.get("index_id"),
         "prompts": prompts,
@@ -47,10 +48,11 @@ async def generate_content_baseline_background_task(params: dict, claude_client)
 
     job_id = params.get("job_id")
     try:
+        callback_url = (params.get("callback_url") or "").strip()
         await create_bg_job(
             job_id=job_id,
             index_id=params.get("index_id"),
-            callback_url=params.get("callback_url"),
+            callback_url=callback_url,
             status="queued",
             message="Baseline generation started...",
         )

@@ -13,7 +13,7 @@ const EduflowGenerator: React.FC<EduflowGeneratorProps> = ({ apiService, indexId
   const [jobStatus, setJobStatus] = useState<any>(null);
   const [isPolling, setIsPolling] = useState(false);
   const [lastKnownStatus, setLastKnownStatus] = useState<string | null>(null);
-  const [callbackUrl, setCallbackUrl] = useState('http://host.docker.internal:8001/job-done');
+  const [callbackUrl, setCallbackUrl] = useState('');
   const [learningFocus, setLearningFocus] = useState('');
   const [topic, setTopic] = useState('');
   const [targetAudience, setTargetAudience] = useState('');
@@ -32,9 +32,10 @@ const EduflowGenerator: React.FC<EduflowGeneratorProps> = ({ apiService, indexId
 
     const trimmedVoice = voice.trim();
 
+    const trimmedCallbackUrl = callbackUrl.trim();
     const payload = {
       jobId,
-      callbackUrl,
+      callbackUrl: trimmedCallbackUrl.length > 0 ? trimmedCallbackUrl : undefined,
       indexId,
       learningFocus,
       topic,
@@ -241,7 +242,7 @@ const EduflowGenerator: React.FC<EduflowGeneratorProps> = ({ apiService, indexId
 
           <div className="config-group">
             <label className="config-label" htmlFor="callbackUrl">
-              Callback URL
+              Callback URL (optional)
             </label>
             <input
               id="callbackUrl"
@@ -250,7 +251,6 @@ const EduflowGenerator: React.FC<EduflowGeneratorProps> = ({ apiService, indexId
               placeholder="https://your-app.com/api/eduflow/callback"
               value={callbackUrl}
               onChange={(e) => setCallbackUrl(e.target.value)}
-              required
             />
           </div>
         </div>

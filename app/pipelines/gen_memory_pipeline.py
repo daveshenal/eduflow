@@ -28,10 +28,11 @@ async def generate_content_memory_background_task(params: dict, claude_client):
 
     job_id = params.get("job_id")
     try:
+        callback_url = (params.get("callback_url") or "").strip()
         await create_bg_job(
             job_id=job_id,
             index_id=params.get("index_id"),
-            callback_url=params.get("callback_url"),
+            callback_url=callback_url,
             status="queued",
             message="Memory-based generation started...",
         )

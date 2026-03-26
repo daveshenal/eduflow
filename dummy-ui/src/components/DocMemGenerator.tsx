@@ -20,7 +20,7 @@ const DocMemGenerator: React.FC<DocMemGeneratorProps> = ({ apiService, indexId }
   const [jobStatus, setJobStatus] = useState<any>(null);
   const [isPolling, setIsPolling] = useState(false);
   const [lastKnownStatus, setLastKnownStatus] = useState<string | null>(null);
-  const [callbackUrl, setCallbackUrl] = useState('http://host.docker.internal:8001/job-done');
+  const [callbackUrl, setCallbackUrl] = useState('');
   const [promptsText, setPromptsText] = useState('');
   const [duration, setDuration] = useState<'5' | '10'>('5');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -33,9 +33,10 @@ const DocMemGenerator: React.FC<DocMemGeneratorProps> = ({ apiService, indexId }
     setIsSubmitting(true);
     setToast(null);
 
+    const trimmedCallbackUrl = callbackUrl.trim();
     const response = await apiService.startMemoryJob({
       jobId,
-      callbackUrl,
+      callbackUrl: trimmedCallbackUrl.length > 0 ? trimmedCallbackUrl : undefined,
       indexId,
       prompts,
       duration: Number(duration),
@@ -141,7 +142,7 @@ const DocMemGenerator: React.FC<DocMemGeneratorProps> = ({ apiService, indexId }
 
           <div className="config-group" style={{ flex: '2 1 380px' }}>
             <label className="config-label" htmlFor="memCallbackUrl">
-              Callback URL
+              Callback URL (optional)
             </label>
             <input
               id="memCallbackUrl"
@@ -150,7 +151,6 @@ const DocMemGenerator: React.FC<DocMemGeneratorProps> = ({ apiService, indexId }
               placeholder="https://your-app.com/api/memory/callback"
               value={callbackUrl}
               onChange={(e) => setCallbackUrl(e.target.value)}
-              required
             />
           </div>
         </div>

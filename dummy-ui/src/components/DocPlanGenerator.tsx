@@ -20,7 +20,7 @@ const DocPlanGenerator: React.FC<DocPlanGeneratorProps> = ({ apiService, indexId
   const [jobStatus, setJobStatus] = useState<any>(null);
   const [isPolling, setIsPolling] = useState(false);
   const [lastKnownStatus, setLastKnownStatus] = useState<string | null>(null);
-  const [callbackUrl, setCallbackUrl] = useState('http://host.docker.internal:8001/job-done');
+  const [callbackUrl, setCallbackUrl] = useState('');
   const [promptsText, setPromptsText] = useState('');
   const [duration, setDuration] = useState<'5' | '10'>('5');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -33,9 +33,10 @@ const DocPlanGenerator: React.FC<DocPlanGeneratorProps> = ({ apiService, indexId
     setIsSubmitting(true);
     setToast(null);
 
+    const trimmedCallbackUrl = callbackUrl.trim();
     const response = await apiService.startBaselineJob({
       jobId,
-      callbackUrl,
+      callbackUrl: trimmedCallbackUrl.length > 0 ? trimmedCallbackUrl : undefined,
       indexId,
       prompts,
       duration: Number(duration),
@@ -140,7 +141,7 @@ const DocPlanGenerator: React.FC<DocPlanGeneratorProps> = ({ apiService, indexId
 
           <div className="config-group" style={{ flex: '2 1 380px' }}>
             <label className="config-label" htmlFor="baselineCallbackUrl">
-              Callback URL
+              Callback URL (optional)
             </label>
             <input
               id="baselineCallbackUrl"
@@ -149,7 +150,6 @@ const DocPlanGenerator: React.FC<DocPlanGeneratorProps> = ({ apiService, indexId
               placeholder="https://your-app.com/api/baseline/callback"
               value={callbackUrl}
               onChange={(e) => setCallbackUrl(e.target.value)}
-              required
             />
           </div>
         </div>
