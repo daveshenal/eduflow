@@ -5,6 +5,7 @@ import ToastMessage, { ToastPayload } from './ToastMessage';
 interface DocPlanGeneratorProps {
   apiService: APIService;
   indexId: string;
+  onJobRunningChange?: (isRunning: boolean) => void;
 }
 
 function parsePrompts(value: string): string[] {
@@ -14,7 +15,7 @@ function parsePrompts(value: string): string[] {
     .filter(Boolean);
 }
 
-const DocPlanGenerator: React.FC<DocPlanGeneratorProps> = ({ apiService, indexId }) => {
+const DocPlanGenerator: React.FC<DocPlanGeneratorProps> = ({ apiService, indexId, onJobRunningChange }) => {
   const [jobId, setJobId] = useState(() => `job-${Date.now()}`);
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
   const [jobStatus, setJobStatus] = useState<any>(null);
@@ -98,6 +99,11 @@ const DocPlanGenerator: React.FC<DocPlanGeneratorProps> = ({ apiService, indexId
       if (intervalId) window.clearInterval(intervalId);
     };
   }, [activeJobId, apiService]);
+
+  useEffect(() => {
+    onJobRunningChange?.(isPolling);
+    return () => onJobRunningChange?.(false);
+  }, [isPolling, onJobRunningChange]);
 
   useEffect(() => {
     if (!jobStatus?.status) return;

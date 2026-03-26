@@ -136,6 +136,17 @@ body::before {
   overflow: hidden;
 }
 
+.sidebar-disabled {
+  pointer-events: none;
+}
+
+.sidebar-lock-note {
+  margin-top: 0.75rem;
+  font-size: 0.75rem;
+  color: #b91c1c;
+  line-height: 1.4;
+}
+
 .sidebar-header {
   padding: 1.5rem;
   border-bottom: 1px solid rgba(64, 121, 140, 0.1);

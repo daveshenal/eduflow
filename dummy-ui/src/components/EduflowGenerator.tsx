@@ -5,9 +5,10 @@ import ToastMessage, { ToastPayload } from './ToastMessage';
 interface EduflowGeneratorProps {
   apiService: APIService;
   indexId: string;
+  onJobRunningChange?: (isRunning: boolean) => void;
 }
 
-const EduflowGenerator: React.FC<EduflowGeneratorProps> = ({ apiService, indexId }) => {
+const EduflowGenerator: React.FC<EduflowGeneratorProps> = ({ apiService, indexId, onJobRunningChange }) => {
   const [jobId, setJobId] = useState(() => `job-${Date.now()}`);
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
   const [jobStatus, setJobStatus] = useState<any>(null);
@@ -105,6 +106,11 @@ const EduflowGenerator: React.FC<EduflowGeneratorProps> = ({ apiService, indexId
       if (intervalId) window.clearInterval(intervalId);
     };
   }, [activeJobId, apiService]);
+
+  useEffect(() => {
+    onJobRunningChange?.(isPolling);
+    return () => onJobRunningChange?.(false);
+  }, [isPolling, onJobRunningChange]);
 
   useEffect(() => {
     if (!jobStatus?.status) return;
