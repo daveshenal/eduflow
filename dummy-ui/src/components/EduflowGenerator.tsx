@@ -23,6 +23,16 @@ const EduflowGenerator: React.FC<EduflowGeneratorProps> = ({ apiService, indexId
   const [voice, setVoice] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toast, setToast] = useState<ToastPayload | null>(null);
+  const [jobAcceptedAt, setJobAcceptedAt] = useState<number | null>(null);
+  const [completedDurationMs, setCompletedDurationMs] = useState<number | null>(null);
+
+  const formatDuration = (ms: number): string => {
+    const totalSeconds = Math.max(0, Math.round(ms / 1000));
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    if (minutes === 0) return `${seconds}s`;
+    return `${minutes}m ${seconds}s`;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,10 +67,14 @@ const EduflowGenerator: React.FC<EduflowGeneratorProps> = ({ apiService, indexId
       setJobStatus(null);
       setIsPolling(true);
       setLastKnownStatus(null);
+      setJobAcceptedAt(Date.now());
+      setCompletedDurationMs(null);
       // refresh job id for next run
       setJobId(`job-${Date.now()}`);
     } else {
       setToast({ type: 'error', text: response.error || 'Failed to start EduFlow generation job.' });
+      setJobAcceptedAt(null);
+      setCompletedDurationMs(null);
     }
 
     setIsSubmitting(false);
@@ -92,6 +106,11 @@ const EduflowGenerator: React.FC<EduflowGeneratorProps> = ({ apiService, indexId
 
       const statusLower = String(data?.status || '').toLowerCase();
       if (statusLower === 'completed' || statusLower === 'failed') {
+        if (statusLower === 'completed' && jobAcceptedAt) {
+          setCompletedDurationMs(Date.now() - jobAcceptedAt);
+        } else if (statusLower === 'failed') {
+          setCompletedDurationMs(null);
+        }
         setIsPolling(false);
         if (intervalId) window.clearInterval(intervalId);
       }
@@ -105,7 +124,7 @@ const EduflowGenerator: React.FC<EduflowGeneratorProps> = ({ apiService, indexId
       cancelled = true;
       if (intervalId) window.clearInterval(intervalId);
     };
-  }, [activeJobId, apiService]);
+  }, [activeJobId, apiService, jobAcceptedAt]);
 
   useEffect(() => {
     onJobRunningChange?.(isPolling);
@@ -127,8 +146,26 @@ const EduflowGenerator: React.FC<EduflowGeneratorProps> = ({ apiService, indexId
   }, [jobStatus, lastKnownStatus]);
 
   const statusLower = String(jobStatus?.status || '').toLowerCase();
-  const docs = jobStatus?.result?.docs || [];
+  // const docs = jobStatus?.result?.docs || [];
 
+  const docs = [
+    {
+      title: 'OASIS-Based Clinical Assessment Mastery for Home Health Nurses',
+      pdf_url: '#',
+      audio_url: '#',
+      voicescript_url: '#',
+    },
+    {
+      title: 'OASIS Fundamentals: Building the Foundation for Clinical Excellence',
+      pdf_url: '#',
+      audio_url: '#',
+    },
+    {
+      title: 'Clinical Assessment Techniques: Mastering OASIS Data Collection',
+      pdf_url: '#',
+      voicescript_url: '#',
+    },
+  ];
   return (
     <div className="editor-container">
       <ToastMessage message={toast} onClear={() => setToast(null)} />
@@ -225,7 +262,7 @@ const EduflowGenerator: React.FC<EduflowGeneratorProps> = ({ apiService, indexId
               id="voice"
               type="text"
               className="config-input"
-              placeholder="e.g. en-US-JennyNeural, leave blank to skip audio"
+              placeholder="e.g. en-US-AndrewNeural, leave blank to skip audio"
               value={voice}
               onChange={(e) => setVoice(e.target.value)}
             />
@@ -279,41 +316,36 @@ const EduflowGenerator: React.FC<EduflowGeneratorProps> = ({ apiService, indexId
       )}
 
       {activeJobId && jobStatus && statusLower === 'completed' && (
-        <div style={{ marginTop: '1.5rem' }}>
+        <div style={{ marginTop: '1.5rem', maxWidth: '920px' }}>
           <div className="success-message">Generation completed. Download the results below.</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             {docs.map((doc: any, i: number) => {
               const docTitle = doc?.title || `Document ${doc?.doc_index || i + 1}`;
               return (
-                <div
-                  key={doc?.doc_index ?? i}
-                  style={{
-                    padding: '0.9rem',
-                    borderRadius: '0.75rem',
-                    background: 'rgba(255, 255, 255, 0.7)',
-                    border: '1px solid rgba(64, 121, 140, 0.12)',
-                    boxShadow: '0 2px 12px rgba(64, 121, 140, 0.08)',
-                  }}
-                >
-                  <div style={{ fontWeight: 700, marginBottom: '0.5rem' }}>{docTitle}</div>
-                  <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-                    {doc?.pdf_url && (
-                      <a href={doc.pdf_url} target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}>
-                        Download PDF
-                      </a>
-                    )}
-                    {doc?.audio_url && (
-                      <a href={doc.audio_url} target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}>
-                        Download Audio
-                      </a>
-                    )}
-                    {doc?.voicescript_url && (
-                      <a href={doc.voicescript_url} target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}>
-                        Download Voice Script
-                      </a>
-                    )}
-                  </div>
+                <div className='downloads' key={doc?.doc_index ?? i}>
+
+                <div className = 'dropdown' style={{ fontWeight: 500, marginBottom: '0.6rem' }}>
+                  {docTitle}:
                 </div>
+
+                <div className = 'dropdown' style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
+                  {doc?.pdf_url && (
+                    <a className="doc-link" href={doc.pdf_url} target="_blank" rel="noreferrer">
+                      Download PDF
+                    </a>
+                  )}
+                  {doc?.audio_url && (
+                    <a className="doc-link" href={doc.audio_url} target="_blank" rel="noreferrer">
+                      Download MP3
+                    </a>
+                  )}
+                  {doc?.voicescript_url && (
+                    <a className="doc-link" href={doc.voicescript_url} target="_blank" rel="noreferrer">
+                      Download Voice Script
+                    </a>
+                  )}
+                </div>
+              </div>
               );
             })}
           </div>
