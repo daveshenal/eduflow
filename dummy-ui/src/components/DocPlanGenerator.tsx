@@ -228,7 +228,10 @@ const DocPlanGenerator: React.FC<DocPlanGeneratorProps> = ({ apiService, indexId
 
       {activeJobId && jobStatus && statusLower === 'completed' && (
         <div style={{ marginTop: '1.5rem', maxWidth: '920px' }}>
-          <div className="success-message">Generation completed. Download the results below.</div>
+          <div className="success-message">
+            Generation completed
+            {completedDurationMs !== null ? ` in ${formatDuration(completedDurationMs)}` : ''}. Download the results below.
+          </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             {docs.map((doc: any, i: number) => {
               const docTitle = doc?.title || `Document ${doc?.doc_index || i + 1}`;
