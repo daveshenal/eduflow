@@ -202,7 +202,7 @@ class APIService {
 
   async startEduflowJob(payload: {
     jobId: string;
-    callbackUrl: string;
+    callbackUrl?: string;
     indexId: string;
     learningFocus: string;
     topic: string;
@@ -213,7 +213,6 @@ class APIService {
   }): Promise<APIResponse> {
     const body: any = {
       job_id: payload.jobId,
-      callback_url: payload.callbackUrl,
       index_id: payload.indexId,
       learning_focus: payload.learningFocus,
       topic: payload.topic,
@@ -221,6 +220,11 @@ class APIService {
       duration: payload.duration,
       num_docs: payload.numDocs,
     };
+
+    const callbackUrl = payload.callbackUrl?.trim();
+    if (callbackUrl) {
+      body.callback_url = callbackUrl;
+    }
 
     if (payload.voice) {
       body.voice = payload.voice;
@@ -234,18 +238,22 @@ class APIService {
 
   async startBaselineJob(payload: {
     jobId: string;
-    callbackUrl: string;
+    callbackUrl?: string;
     indexId: string;
     prompts: string[];
     duration: number;
   }): Promise<APIResponse> {
-    const body = {
+    const body: any = {
       job_id: payload.jobId,
-      callback_url: payload.callbackUrl,
       index_id: payload.indexId,
       prompts: payload.prompts,
       duration: payload.duration,
     };
+
+    const callbackUrl = payload.callbackUrl?.trim();
+    if (callbackUrl) {
+      body.callback_url = callbackUrl;
+    }
 
     return this.makeRequest('/gen/start-baseline', {
       method: 'POST',
@@ -255,18 +263,22 @@ class APIService {
 
   async startMemoryJob(payload: {
     jobId: string;
-    callbackUrl: string;
+    callbackUrl?: string;
     indexId: string;
     prompts: string[];
     duration: number;
   }): Promise<APIResponse> {
-    const body = {
+    const body: any = {
       job_id: payload.jobId,
-      callback_url: payload.callbackUrl,
       index_id: payload.indexId,
       prompts: payload.prompts,
       duration: payload.duration,
     };
+
+    const callbackUrl = payload.callbackUrl?.trim();
+    if (callbackUrl) {
+      body.callback_url = callbackUrl;
+    }
 
     return this.makeRequest('/gen/start-memory', {
       method: 'POST',

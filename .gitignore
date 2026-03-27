@@ -8,6 +8,7 @@ __pycache__
 
 # Temporary files
 temp
+/evaluator_service/tmp
 
 # Prompt DB Dump
 db_backups

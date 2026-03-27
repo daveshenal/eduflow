@@ -13,15 +13,14 @@ from pathlib import Path
 
 from evaluator_service.utils.pdf_extractor import extract_text_from_pdf
 
-from evaluator_service.metrics.dependency_score import calculate_dependency_score
-from evaluator_service.metrics.preparation_score import calculate_preparation_score
+from evaluator_service.metrics.all_metrics import calculate_all_metrics, extract_concepts
 
 
 def _write_llm_concepts_artifact(
     *,
     documents: list[str],
     assumed_concepts: list[list[str] | None],
-    setup_concepts: list[list[str] | None],
+    introduces_concepts: list[list[str] | None],
 ) -> str:
     """
     Persist the LLM-extracted concepts (ASSUMES / INTRODUCES) to a repo-local text file.
@@ -54,12 +53,9 @@ def _write_llm_concepts_artifact(
                 lines.append(f"  - {c}")
     lines.append("")
 
-    lines.append("INTRODUCES/SETS UP (preparation)")
+    lines.append("INTRODUCES (for later scaffolding)")
     for i in range(len(documents)):
-        if i == len(documents) - 1:
-            lines.append(f"Doc {i+1}: (n/a)")
-            continue
-        concepts = setup_concepts[i] if i < len(setup_concepts) else None
+        concepts = introduces_concepts[i] if i < len(introduces_concepts) else None
         lines.append(f"Doc {i+1}:")
         if not concepts:
             lines.append("  - (none)")
@@ -77,7 +73,7 @@ def evaluate_documents(pdf_file_paths: list[str]) -> dict:
     """
     Evaluate documents from PDF file paths.
 
-    Documents are processed in the order given. Returns dependency + preparation
+    Documents are processed in the order given. Returns the new scaffolding + progression
     metrics with per-document breakdowns for interpretability.
     """
     documents: list[str] = []
@@ -88,30 +84,18 @@ def evaluate_documents(pdf_file_paths: list[str]) -> dict:
             raise ValueError(f"PDF contains no extractable text: {pdf_path}")
         documents.append(text.strip())
 
-    dep = calculate_dependency_score(documents)
-    prep = calculate_preparation_score(documents)
+    concept_docs = extract_concepts(documents)
+    metrics = calculate_all_metrics(concept_docs)
 
     _write_llm_concepts_artifact(
         documents=documents,
-        assumed_concepts=dep.assumed_concepts,
-        setup_concepts=prep.setup_concepts,
+        assumed_concepts=[d.ASSUMES for d in concept_docs],
+        introduces_concepts=[d.INTRODUCES for d in concept_docs],
     )
-
-    per_document: list[dict] = []
-    for i in range(len(documents)):
-        per_document.append(
-            {
-                "doc_index": i + 1,
-                "dependency": dep.per_document[i] if i < len(dep.per_document) else None,
-                "preparation": prep.per_document[i] if i < len(prep.per_document) else None,
-            }
-        )
 
     return {
         "document_count": len(documents),
         "metrics": {
-            "dependency_score": dep.score,
-            "preparation_score": prep.score,
-            "per_document": per_document,
+            **metrics,
         },
     }

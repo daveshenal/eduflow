@@ -28,6 +28,7 @@ const ChatInterface: React.FC = () => {
   const { state, setUserType, setMode, setBackendUrl, setProviderId, setStreaming, updateResponseTime } = useConfig();
   const [showDocumentUpload, setShowDocumentUpload] = useState(false);
   const [showPromptEditor, setShowPromptEditor] = useState(false);
+  const [isGenerationLocked, setIsGenerationLocked] = useState(false);
   const [apiService] = useState(() => new APIService(state.backendUrl));
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>('');
@@ -170,7 +171,7 @@ const ChatInterface: React.FC = () => {
   return (
     <div className="app-container">
       {/* Main Sidebar */}
-      <div className="sidebar">
+      <div className={`sidebar ${isGenerationLocked ? 'sidebar-disabled' : ''}`}>
         <div className="sidebar-header">
           <div className="sidebar-title">Configuration</div>
           <div className="sidebar-subtitle">Backend & Testing Settings</div>
@@ -185,6 +186,7 @@ const ChatInterface: React.FC = () => {
                 options={userTypeOptions}
                 value={state.userType}
                 onChange={handleUserTypeChange}
+                disabled={isGenerationLocked}
               />
             </div>
           </div>
@@ -197,6 +199,7 @@ const ChatInterface: React.FC = () => {
                 options={modeOptions}
                 value={state.mode}
                 onChange={handleModeChange}
+                disabled={isGenerationLocked}
               />
             </div>
           </div>
@@ -214,6 +217,7 @@ const ChatInterface: React.FC = () => {
                 placeholder="Enter backend URL"
                 value={state.backendUrl}
                 onChange={(e) => setBackendUrl(e.target.value)}
+                disabled={isGenerationLocked}
               />
             </div>
 
@@ -228,6 +232,7 @@ const ChatInterface: React.FC = () => {
                 placeholder="Enter provider ID"
                 value={state.providerId}
                 onChange={(e) => setProviderId(e.target.value)}
+                disabled={isGenerationLocked}
               />
             </div>
           </div>
@@ -239,6 +244,7 @@ const ChatInterface: React.FC = () => {
               className="btn btn-primary"
               onClick={() => setShowPromptEditor(true)}
               title="Open prompt editor"
+              disabled={isGenerationLocked}
             >
               Prompts
             </button>
@@ -246,10 +252,16 @@ const ChatInterface: React.FC = () => {
               className="btn btn-secondary"
               onClick={() => setShowDocumentUpload(true)}
               title="Upload documents"
+              disabled={isGenerationLocked}
             >
               Documents
             </button>
           </div>
+          {isGenerationLocked && (
+            <div className="sidebar-lock-note">
+              Generation in progress. Sidebar is locked until job completes or fails.
+            </div>
+          )}
         </div>
       </div>
 
@@ -277,15 +289,27 @@ const ChatInterface: React.FC = () => {
           )}
 
           {state.mode === 'eduflow' && (
-            <EduflowGenerator apiService={apiService} indexId={state.providerId} />
+            <EduflowGenerator
+              apiService={apiService}
+              indexId={state.providerId}
+              onJobRunningChange={setIsGenerationLocked}
+            />
           )}
 
           {state.mode === 'doc_plan' && (
-            <DocPlanGenerator apiService={apiService} indexId={state.providerId} />
+            <DocPlanGenerator
+              apiService={apiService}
+              indexId={state.providerId}
+              onJobRunningChange={setIsGenerationLocked}
+            />
           )}
 
           {state.mode === 'doc_mem' && (
-            <DocMemGenerator apiService={apiService} indexId={state.providerId} />
+            <DocMemGenerator
+              apiService={apiService}
+              indexId={state.providerId}
+              onJobRunningChange={setIsGenerationLocked}
+            />
           )}
         </div>
       </div>

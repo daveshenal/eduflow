@@ -41,7 +41,6 @@ def validate_payload(payload: dict) -> dict:
     # Required fields
     required_fields = [
         "job_id",
-        "callback_url",
         "index_id",
         "learning_focus",
         "topic",
@@ -65,6 +64,7 @@ def validate_payload(payload: dict) -> dict:
     # Extract and return fields from payload
     return {
         "job_id": payload.get("job_id"),
+        # Optional: when omitted, we rely on status polling from the frontend.
         "callback_url": payload.get("callback_url"),
         "index_id": payload.get("index_id"),
         "learning_focus": payload.get("learning_focus"),
@@ -109,10 +109,11 @@ async def generate_content_background_task(params: dict, claude_client):
     """Background task to generate docs."""
     job_id = params.get("job_id")
     try:
+        callback_url = (params.get("callback_url") or "").strip()
         await create_bg_job(
             job_id=job_id,
             index_id=params.get("index_id"),
-            callback_url=params.get("callback_url"),
+            callback_url=callback_url,
             status="queued",
             message="Generating docs...",
         )
@@ -365,8 +366,15 @@ async def send_job_completion_notification(params: dict, result: dict = None, er
     if faild; result = none
     """
     
-    callback_url = params.get("callback_url")
+    callback_url = (params.get("callback_url") or "").strip()
     job_id = params.get("job_id")
+
+    if not callback_url:
+        return {
+            "job_id": job_id,
+            "status": "notification_skipped",
+            "error": "No callback_url provided",
+        }
     
     # Prepare the notification payload with dummy data for now
     notification_payload = {

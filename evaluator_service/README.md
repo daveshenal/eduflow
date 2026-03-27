@@ -1,6 +1,6 @@
 # Document Evaluation Microservice
 
-Evaluates ordered PDF document sequences using dependency + preparation metrics. Accepts up to 10 PDFs via API.
+Evaluates ordered PDF document sequences using scaffolding + progression metrics. Accepts up to 10 PDFs via API.
 
 ## Install Required Packages
 
@@ -33,7 +33,7 @@ python main.py
 
 - `GET /` — Health check
 - `POST /evaluate` — Upload PDFs (max 10), returns:
-  - `{"document_count": N, "metrics": {"dependency_score": 0.82, "preparation_score": 0.64, "per_document": [...]}}`
+  - `{"document_count": N, "metrics": {"scaffolding_connectivity_score": {...}, "concept_progression_velocity": {...}, "long_range_scaffolding_depth": {...}}}`
 
 Example with curl:
 
