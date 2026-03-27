@@ -7,6 +7,7 @@ from __future__ import annotations
 import math
 from pathlib import Path
 from typing import Any
+import time
 
 from evaluator_service.adapters.azure_openai import chat_json
 from evaluator_service.utils.pdf_extractor import extract_text_from_pdf
@@ -122,25 +123,44 @@ Be strict and consistent. Use the full range of the scale.
 
         while attempts < max_attempts:
             attempts += 1
-            data = chat_json(
-                system="You are a strict JSON evaluator. Output JSON only.",
-                user=prompt,
-                model="gpt-4o",
-                temperature=0,
-                max_output_tokens=1200,
-            )
+            print(f"[run_single_scoring] Attempt {attempts}/{max_attempts} starting...")
+
+            try:
+                data = chat_json(
+                    system="You are a strict JSON evaluator. Output JSON only.",
+                    user=prompt,
+                    model="gpt-4o",
+                    temperature=0,
+                    max_output_tokens=1200,
+                )
+
+            except Exception as e:
+                print(f"[run_single_scoring] Attempt {attempts} — EXCEPTION: {type(e).__name__}: {e}")
+                if attempts < max_attempts:
+                    sleep_time = 10 * attempts
+                    print(f"[run_single_scoring] Sleeping {sleep_time}s before retry...")
+                    time.sleep(sleep_time)
+                continue
 
             reasoning = data.get("reasoning")
             if isinstance(reasoning, str) and reasoning.strip():
                 last_reasoning = reasoning.strip()
+            else:
+                print(f"[run_single_scoring] Attempt {attempts} — reasoning missing or invalid: {reasoning!r}")
 
             parsed_scores = self._parse_scores(data, criteria)
             if parsed_scores is None:
+                print(f"[run_single_scoring] Attempt {attempts} — score parsing FAILED. scores field was: {data.get('scores')!r}")
+                if attempts < max_attempts:
+                    sleep_time = 20
+                    print(f"[run_single_scoring] Sleeping {sleep_time}s before retry...")
+                    time.sleep(sleep_time)
                 continue
 
+            print(f"[run_single_scoring] Attempt {attempts} — SUCCESS")
             return {"scores": parsed_scores, "reasoning": last_reasoning}
 
-        # Graceful fallback if model never returns valid JSON payload
+        print(f"[run_single_scoring] All {max_attempts} attempts failed. Using fallback scores.")
         fallback_scores = {criterion: 3 for criterion in criteria}
         return {"scores": fallback_scores, "reasoning": last_reasoning}
 
@@ -156,8 +176,11 @@ Be strict and consistent. Use the full range of the scale.
         per_criterion_values: dict[str, list[int]] = {c: [] for c in selected_criteria}
 
         for idx in range(1, runs + 1):
+            print(f"\n[run_evaluation] Starting run {idx}/{runs}...")
             result = self.run_single_scoring(documents=documents, criteria=selected_criteria)
             scores: dict[str, int] = result["scores"]
+            print(f"[run_evaluation] Run {idx} scores: {scores}")
+
             for criterion in selected_criteria:
                 per_criterion_values[criterion].append(scores[criterion])
 
@@ -168,6 +191,10 @@ Be strict and consistent. Use the full range of the scale.
                     "reasoning": result.get("reasoning", self._DEFAULT_REASONING),
                 }
             )
+
+            if idx < runs:
+                print(f"[run_evaluation] Sleeping 20s before next run...")
+                time.sleep(20)
 
         mean_scores: dict[str, float] = {}
         std_scores: dict[str, float] = {}
