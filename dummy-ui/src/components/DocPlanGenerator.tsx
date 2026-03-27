@@ -209,7 +209,7 @@ const DocPlanGenerator: React.FC<DocPlanGeneratorProps> = ({ apiService, indexId
       )}
 
       {activeJobId && jobStatus && statusLower === 'completed' && (
-        <div style={{ marginTop: '1.5rem' }}>
+        <div>
           <div className="success-message">Generation completed. Download the results below.</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             {docs.map((doc: any, i: number) => {
@@ -227,16 +227,6 @@ const DocPlanGenerator: React.FC<DocPlanGeneratorProps> = ({ apiService, indexId
                       PDF File
                     </a>
                   )}
-                  {doc?.audio_url && (
-                    <a className="doc-link" href={doc.audio_url} target="_blank" rel="noreferrer">
-                      Audio MP3
-                    </a>
-                  )}
-                  {doc?.voicescript_url && (
-                    <a className="doc-link" href={doc.voicescript_url} target="_blank" rel="noreferrer">
-                      Voice Script
-                    </a>
-                  )}
                 </div>
               </div>
               );
@@ -246,13 +236,8 @@ const DocPlanGenerator: React.FC<DocPlanGeneratorProps> = ({ apiService, indexId
       )}
       
       {activeJobId && jobStatus && statusLower === 'failed' && (
-        <div className="error-message" style={{
-          padding: '10px 20px',
-          display: 'inline-block',
-          boxSizing: 'border-box',
-          wordBreak: 'break-word',
-        }}>
-          {jobStatus.message || 'Generation failed.'}
+        <div className="error-message" style={{ maxWidth: '920px' }}>
+          {jobStatus.message || 'Content Generation failed.'}
         </div>
       )}
     </div>

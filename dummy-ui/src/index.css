@@ -142,9 +142,10 @@ body::before {
 
 .sidebar-lock-note {
   margin-top: 0.75rem;
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   color: #b91c1c;
   line-height: 1.4;
+  text-align: center;
 }
 
 .sidebar-header {
@@ -536,6 +537,7 @@ body::before {
   color: #dc2626;
   border: 1px solid rgba(239, 68, 68, 0.3);
   border-left: 4px solid #ef4444;
+  padding: 1rem 1.5rem;
   border-radius: 0.5rem;
   margin-right: auto;
   backdrop-filter: blur(10px);

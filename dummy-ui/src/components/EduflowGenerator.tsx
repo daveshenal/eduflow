@@ -321,8 +321,8 @@ const EduflowGenerator: React.FC<EduflowGeneratorProps> = ({ apiService, indexId
       )}
 
       {activeJobId && jobStatus && statusLower === 'failed' && (
-        <div className="error-message" style={{ marginTop: '1.5rem' }}>
-          {jobStatus.message || 'Generation failed.'}
+        <div className="error-message" style={{ maxWidth: '920px' }}>
+          {jobStatus.message || 'Content Generation failed.'}
         </div>
       )}
     </div>
