@@ -19,10 +19,10 @@ eduflow/
 │   ├── adapters          # External services
 │   ├── core/             # Application wide core logic
 │   ├── knowledgebase/    # Index management scripts
-│   ├── pipeline/         # Main workflow pipelines
+│   ├── pipelines/        # Main workflow pipelines
 │   ├── prompts/          # Prompts management scripts
 │   ├── retrievers/       # Data retrievers
-│   ├── routes/           # API route definitions
+│   ├── routers/          # API route definitions
 │   └── main.py           # API entrypoint
 ├── config/               # Configuration files
 ├── docs/                 # Architecture diagrams and documentation

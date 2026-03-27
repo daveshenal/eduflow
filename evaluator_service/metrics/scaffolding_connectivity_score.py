@@ -15,10 +15,15 @@ from __future__ import annotations
 from typing import Any
 
 from evaluator_service.metrics.concept_docs import ConceptDoc
-from evaluator_service.utils.hybrid_concept_matching import hybrid_match
+from evaluator_service.utils.llm_concept_matching import llm_match_concepts
 
 
-def calculate_scs(docs: list[ConceptDoc], *, threshold: float = 0.75) -> dict[str, Any]:
+def calculate_scs(
+    docs: list[ConceptDoc],
+    *,
+    threshold: float = 0.7,
+    concept_embeddings: dict[str, list[float]] | None = None,
+) -> dict[str, Any]:
     """
     Calculate Scaffolding Connectivity Score (SCS).
 
@@ -39,6 +44,7 @@ def calculate_scs(docs: list[ConceptDoc], *, threshold: float = 0.75) -> dict[st
     total_assumptions = 0
     satisfied_assumptions = 0
 
+    # LLM is used for matching (deterministic temperature=0). Embeddings are no longer used here.
     all_introduced_so_far: list[str] = []
     per_doc_results: list[dict[str, Any]] = []
 
@@ -55,15 +61,26 @@ def calculate_scs(docs: list[ConceptDoc], *, threshold: float = 0.75) -> dict[st
         doc_satisfied = 0
         unsatisfied: list[str] = []
 
+        matches, details = llm_match_concepts(
+            queries=current_assumes,
+            candidates=all_introduced_so_far,
+            temperature=0.0,
+        )
+
         for concept in current_assumes:
             total_assumptions += 1
             doc_total += 1
 
-            matched, _ = hybrid_match(concept, all_introduced_so_far, threshold=threshold)
-            if matched:
+            mapped = matches.get(concept)
+            if mapped is not None:
                 satisfied_assumptions += 1
                 doc_satisfied += 1
             else:
+                # Temporary debug logging for unmatched concepts.
+                d = details.get(concept, {})
+                print("UNMATCHED QUERY:", concept)
+                print("BEST CANDIDATE:", d.get("suggested"))
+                print("SIMILARITY SCORE:", d.get("confidence"))
                 unsatisfied.append(concept)
 
         per_doc_results.append(

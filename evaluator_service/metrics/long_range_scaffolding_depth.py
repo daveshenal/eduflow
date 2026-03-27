@@ -16,10 +16,15 @@ from __future__ import annotations
 from typing import Any
 
 from evaluator_service.metrics.concept_docs import ConceptDoc
-from evaluator_service.utils.hybrid_concept_matching import find_best_match, normalize
+from evaluator_service.utils.llm_concept_matching import llm_match_concepts
 
 
-def calculate_lsd(docs: list[ConceptDoc], *, threshold: float = 0.75) -> dict[str, Any]:
+def calculate_lsd(
+    docs: list[ConceptDoc],
+    *,
+    threshold: float = 0.7,
+    concept_embeddings: dict[str, list[float]] | None = None,
+) -> dict[str, Any]:
     """
     Calculate Long-Range Scaffolding Depth (LSD).
 
@@ -43,16 +48,21 @@ def calculate_lsd(docs: list[ConceptDoc], *, threshold: float = 0.75) -> dict[st
       }
     """
 
+    # LLM is used for matching (deterministic temperature=0). Embeddings are no longer used here.
     introduction_index: dict[str, int] = {}
+    all_introduced_so_far: list[str] = []
 
-    # Earliest introduction index for each normalized introduced concept.
+    # Earliest introduction index for each introduced concept (raw string).
     for doc_index in range(len(docs)):
         for concept in docs[doc_index].INTRODUCES:
-            norm = normalize(concept)
-            if norm and norm not in introduction_index:
-                introduction_index[norm] = doc_index
+            c = (concept or "").strip()
+            if not c:
+                continue
+            if c not in introduction_index:
+                introduction_index[c] = doc_index
+            all_introduced_so_far.append(c)
 
-    introduction_keys = list(introduction_index.keys())
+    introduced_candidates = list(introduction_index.keys())
 
     total_depth = 0
     total_matched = 0
@@ -66,10 +76,16 @@ def calculate_lsd(docs: list[ConceptDoc], *, threshold: float = 0.75) -> dict[st
         doc_matched = 0
         links: list[dict[str, Any]] = []
 
+        matches, details = llm_match_concepts(
+            queries=docs[doc_index].ASSUMES,
+            candidates=introduced_candidates,
+            temperature=0.0,
+        )
+
         for concept in docs[doc_index].ASSUMES:
-            match = find_best_match(concept, introduction_keys, threshold=threshold)
-            if match is not None:
-                intro_idx = introduction_index[match]
+            mapped = matches.get(concept)
+            if mapped is not None:
+                intro_idx = introduction_index[mapped]
                 depth = doc_index - intro_idx
 
                 if depth > 0:
@@ -89,6 +105,11 @@ def calculate_lsd(docs: list[ConceptDoc], *, threshold: float = 0.75) -> dict[st
                         }
                     )
             else:
+                # Temporary debug logging for unmatched concepts.
+                d = details.get(concept, {})
+                print("UNMATCHED QUERY:", concept)
+                print("BEST CANDIDATE:", d.get("suggested"))
+                print("SIMILARITY SCORE:", d.get("confidence"))
                 unmatched += 1
 
         per_doc.append(

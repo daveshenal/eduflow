@@ -134,12 +134,9 @@ def calculate_all_metrics(docs: list[ConceptDoc]) -> dict[str, Any]:
     """
     Compute all three metrics from concept-annotated documents.
 
-    Returns:
-      {
-        "scaffolding_connectivity_score": ...,
-        "concept_progression_velocity": ...,
-        "long_range_scaffolding_depth": ...,
-      }
+    NOTE:
+      Matching is now performed via deterministic LLM calls (temperature=0),
+      not embedding-based semantic similarity.
     """
 
     return {

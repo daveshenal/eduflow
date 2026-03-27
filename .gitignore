@@ -8,6 +8,7 @@ __pycache__
 
 # Temporary files
 temp
+tmp
 
 # Prompt DB Dump
 db_backups
