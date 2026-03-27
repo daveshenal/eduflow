@@ -35,7 +35,7 @@ const ChatInterface: React.FC = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: '1',
-      content: `<strong>EduFlow</strong><br /> Hello! I'm ready to help you test your backend. 
+      content: `<strong>EduFlow</strong><br /> Hello! 👋 I'm ready to help you test your backend. 
       The interface is configured to connect to your streaming chat endpoint. Try sending me a message!`,
       isUser: false,
       timestamp: new Date(),
@@ -235,6 +235,12 @@ const ChatInterface: React.FC = () => {
                 disabled={isGenerationLocked}
               />
             </div>
+
+            {isGenerationLocked && (
+            <div className="sidebar-lock-note">
+              Content generation in progress. Sidebar is locked until generation completes or fails.
+            </div>
+          )}
           </div>
         </div>
 
@@ -257,11 +263,6 @@ const ChatInterface: React.FC = () => {
               Documents
             </button>
           </div>
-          {isGenerationLocked && (
-            <div className="sidebar-lock-note">
-              Generation in progress. Sidebar is locked until job completes or fails.
-            </div>
-          )}
         </div>
       </div>
 

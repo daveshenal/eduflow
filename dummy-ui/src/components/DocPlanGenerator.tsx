@@ -26,8 +26,17 @@ const DocPlanGenerator: React.FC<DocPlanGeneratorProps> = ({ apiService, indexId
   const [duration, setDuration] = useState<'5' | '10'>('5');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toast, setToast] = useState<ToastPayload | null>(null);
+  const [jobAcceptedAt, setJobAcceptedAt] = useState<number | null>(null);
+  const [completedDurationMs, setCompletedDurationMs] = useState<number | null>(null);
 
   const prompts = useMemo(() => parsePrompts(promptsText), [promptsText]);
+  const formatDuration = (ms: number): string => {
+    const totalSeconds = Math.max(0, Math.round(ms / 1000));
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    if (minutes === 0) return `${seconds}s`;
+    return `${minutes}m ${seconds}s`;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,9 +59,13 @@ const DocPlanGenerator: React.FC<DocPlanGeneratorProps> = ({ apiService, indexId
       setJobStatus(null);
       setIsPolling(true);
       setLastKnownStatus(null);
+      setJobAcceptedAt(Date.now());
+      setCompletedDurationMs(null);
       setJobId(`job-${Date.now()}`);
     } else {
       setToast({ type: 'error', text: response.error || 'Failed to start baseline generation job.' });
+      setJobAcceptedAt(null);
+      setCompletedDurationMs(null);
     }
 
     setIsSubmitting(false);
@@ -86,6 +99,11 @@ const DocPlanGenerator: React.FC<DocPlanGeneratorProps> = ({ apiService, indexId
 
       const statusLower = String(data?.status || '').toLowerCase();
       if (statusLower === 'completed' || statusLower === 'failed') {
+        if (statusLower === 'completed' && jobAcceptedAt) {
+          setCompletedDurationMs(Date.now() - jobAcceptedAt);
+        } else if (statusLower === 'failed') {
+          setCompletedDurationMs(null);
+        }
         setIsPolling(false);
         if (intervalId) window.clearInterval(intervalId);
       }
@@ -98,7 +116,7 @@ const DocPlanGenerator: React.FC<DocPlanGeneratorProps> = ({ apiService, indexId
       cancelled = true;
       if (intervalId) window.clearInterval(intervalId);
     };
-  }, [activeJobId, apiService]);
+  }, [activeJobId, apiService, jobAcceptedAt]);
 
   useEffect(() => {
     onJobRunningChange?.(isPolling);
@@ -209,7 +227,7 @@ const DocPlanGenerator: React.FC<DocPlanGeneratorProps> = ({ apiService, indexId
       )}
 
       {activeJobId && jobStatus && statusLower === 'completed' && (
-        <div style={{ marginTop: '1.5rem' }}>
+        <div style={{ marginTop: '1.5rem', maxWidth: '920px' }}>
           <div className="success-message">Generation completed. Download the results below.</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             {docs.map((doc: any, i: number) => {
@@ -217,24 +235,14 @@ const DocPlanGenerator: React.FC<DocPlanGeneratorProps> = ({ apiService, indexId
               return (
                 <div className='downloads' key={doc?.doc_index ?? i}>
 
-                <div className = 'dropdown' style={{ fontWeight: 500 }}>
+                <div className = 'dropdown' style={{ fontWeight: 500, marginBottom: '0.6rem' }}>
                   {docTitle}:
                 </div>
 
                 <div className = 'dropdown' style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
                   {doc?.pdf_url && (
                     <a className="doc-link" href={doc.pdf_url} target="_blank" rel="noreferrer">
-                      PDF File
-                    </a>
-                  )}
-                  {doc?.audio_url && (
-                    <a className="doc-link" href={doc.audio_url} target="_blank" rel="noreferrer">
-                      Audio MP3
-                    </a>
-                  )}
-                  {doc?.voicescript_url && (
-                    <a className="doc-link" href={doc.voicescript_url} target="_blank" rel="noreferrer">
-                      Voice Script
+                      Download PDF
                     </a>
                   )}
                 </div>
@@ -246,13 +254,8 @@ const DocPlanGenerator: React.FC<DocPlanGeneratorProps> = ({ apiService, indexId
       )}
       
       {activeJobId && jobStatus && statusLower === 'failed' && (
-        <div className="error-message" style={{
-          padding: '10px 20px',
-          display: 'inline-block',
-          boxSizing: 'border-box',
-          wordBreak: 'break-word',
-        }}>
-          {jobStatus.message || 'Generation failed.'}
+        <div className="error-message" style={{ maxWidth: '920px' }}>
+          {jobStatus.message || 'Content Generation failed.'}
         </div>
       )}
     </div>

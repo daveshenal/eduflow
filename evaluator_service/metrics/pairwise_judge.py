@@ -5,6 +5,7 @@ Pairwise LLM judge for comparing two document sequences.
 from __future__ import annotations
 
 import random
+import time
 from pathlib import Path
 from typing import Any
 
@@ -18,11 +19,6 @@ class PairwiseJudge:
     _DEFAULT_REASONING = "Judge response could not be parsed reliably."
 
     def _normalize_documents(self, documents: list[str]) -> list[str]:
-        """
-        Normalize input documents:
-        - If item is a path to a PDF file, extract PDF text
-        - Otherwise treat item as raw text
-        """
         normalized: list[str] = []
         for item in documents:
             candidate = (item or "").strip()
@@ -119,10 +115,6 @@ Do not reveal any preference based on order. Judge purely on quality.
         label_b: str,
         criteria: list[str],
     ) -> dict[str, Any]:
-        """
-        Run one blinded comparison.
-        label_a / label_b are only used for mapping and never shown to the judge.
-        """
         prompt = self._build_prompt(sequence_x=doc_a, sequence_y=doc_b, criteria=criteria)
 
         attempts = 0
@@ -131,21 +123,40 @@ Do not reveal any preference based on order. Judge purely on quality.
 
         while attempts < max_attempts:
             attempts += 1
-            data = chat_json(
-                system="You are a strict JSON evaluator. Output JSON only.",
-                user=prompt,
-                model="gpt-4o",
-                temperature=0,
-                max_output_tokens=1200,
-            )
+            print(f"  [run_single_comparison] Attempt {attempts}/{max_attempts} — X={label_a}, Y={label_b}")
 
-            winner = self._parse_winner(data)
+            try:
+                data = chat_json(
+                    system="You are a strict JSON evaluator. Output JSON only.",
+                    user=prompt,
+                    model="gpt-4o",
+                    temperature=0,
+                    max_output_tokens=1200,
+                )
+
+            except Exception as e:
+                print(f"  [run_single_comparison] Attempt {attempts} — EXCEPTION: {type(e).__name__}: {e}")
+                if attempts < max_attempts:
+                    sleep_time = 10 * attempts
+                    print(f"  [run_single_comparison] Sleeping {sleep_time}s before retry...")
+                    time.sleep(sleep_time)
+                continue
+
             reasoning = data.get("reasoning")
             if isinstance(reasoning, str) and reasoning.strip():
                 last_reasoning = reasoning.strip()
+            else:
+                print(f"  [run_single_comparison] Attempt {attempts} — reasoning missing or invalid: {reasoning!r}")
 
+            winner = self._parse_winner(data)
             if winner is None:
+                print(f"  [run_single_comparison] Attempt {attempts} — winner parsing FAILED. winner field was: {data.get('winner')!r}")
+                if attempts < max_attempts:
+                    print(f"  [run_single_comparison] Sleeping 20s before retry...")
+                    time.sleep(20)
                 continue
+
+            print(f"  [run_single_comparison] Attempt {attempts} — SUCCESS.")
 
             if winner == "x":
                 mapped_winner = label_a
@@ -161,6 +172,7 @@ Do not reveal any preference based on order. Judge purely on quality.
                 "criteria_scores": data.get("criteria_scores", {}),
             }
 
+        print(f"  [run_single_comparison] All {max_attempts} attempts failed. Returning tie as fallback.")
         return {
             "winner": "tie",
             "winner_xy": "tie",
@@ -185,6 +197,8 @@ Do not reveal any preference based on order. Judge purely on quality.
         run_details: list[dict[str, Any]] = []
 
         for run_idx in range(1, runs + 1):
+            print(f"\n[run_evaluation] Starting run {run_idx}/{runs}...")
+
             order = [
                 ("sequence_a", docs_a),
                 ("sequence_b", docs_b),
@@ -193,6 +207,8 @@ Do not reveal any preference based on order. Judge purely on quality.
 
             x_label, x_docs = order[0]
             y_label, y_docs = order[1]
+
+            print(f"[run_evaluation] Run {run_idx} — order shown: X={x_label}, Y={y_label}")
 
             result = self.run_single_comparison(
                 doc_a=x_docs,
@@ -204,6 +220,8 @@ Do not reveal any preference based on order. Judge purely on quality.
 
             winner = result["winner"]
             win_counts[winner] += 1
+            print(f"[run_evaluation] Run {run_idx} — winner: {winner}, counts so far: {win_counts}")
+
             run_details.append(
                 {
                     "run": run_idx,
@@ -213,6 +231,10 @@ Do not reveal any preference based on order. Judge purely on quality.
                     "criteria_scores": result.get("criteria_scores", {}),
                 }
             )
+
+            if run_idx < runs:
+                print(f"[run_evaluation] Sleeping 20s before next run...")
+                time.sleep(20)
 
         a_rate = round(win_counts["sequence_a"] / runs, 2) if runs else 0.0
         b_rate = round(win_counts["sequence_b"] / runs, 2) if runs else 0.0
@@ -230,6 +252,8 @@ Do not reveal any preference based on order. Judge purely on quality.
         else:
             pct = int(round(win_rate[overall_winner] * 100))
             consensus = f"{overall_winner} wins with {pct}% win rate"
+
+        print(f"\n[run_evaluation] DONE. Winner: {overall_winner} | consensus: {consensus}")
 
         return {
             "winner": overall_winner,
