@@ -18,7 +18,7 @@ RUN apt-get update && \
 
 # Download MySQL SSL certificate
 RUN mkdir -q /app/certs && \
-    wget https://www.digicert.com/CACerts/DigiCertGlobalRootCA.crt.pem -O /app/certs/DigiCertGlobalRootCA.crt.pem
+    wget -q https://www.digicert.com/CACerts/DigiCertGlobalRootCA.crt.pem -O /app/certs/DigiCertGlobalRootCA.crt.pem
 
 # Copy requirements first for caching
 COPY requirements.txt .

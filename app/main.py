@@ -23,6 +23,6 @@ app.include_router(gen_router)
 app.include_router(kb_router)
 app.include_router(db_router)
 
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+# if __name__ == "__main__":
+#     import uvicorn
+#     uvicorn.run(app, host="0.0.0.0", port=8000)
