@@ -245,7 +245,7 @@ const DocPlanGenerator: React.FC<DocPlanGeneratorProps> = ({ apiService, indexId
             {completedDurationMs !== null ? ` in ${formatDuration(completedDurationMs)}` : ''}. Download the results below.
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            {docs.map((doc: { title?: string; doc_index?: number }, i: number) => {
+            {docs.map((doc: any, i: number) => {
               const docTitle = doc?.title || `Document ${doc?.doc_index || i + 1}`;
               return (
                 <div className='downloads' key={doc?.doc_index ?? i}>

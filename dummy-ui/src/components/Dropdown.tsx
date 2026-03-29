@@ -94,7 +94,7 @@ const Dropdown = <T extends string>({
                 overflowY: options.length > 3 ? 'auto' : 'visible'
               }}
             >
-              {options.map((option, index) => (
+              {options.map((option, _index) => (
                 <div
                   key={option.value}
                   className={`

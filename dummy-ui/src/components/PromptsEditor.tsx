@@ -161,7 +161,7 @@ const PromptEditor: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       );
       if (!res.success) throw new Error(res.error || 'Failed to save prompt');
 
-      let updated = res.data;
+      const updated = res.data;
       if (editForm.status === 'active') {
         await apiService.activatePrompt(updated.name, updated.version);
         updated.status = 'active';
