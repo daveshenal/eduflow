@@ -73,7 +73,7 @@ const PromptEditor: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         status: p.status,
         description: p.description || '',
         content: p.prompt || '',
-        type: undefined as any,
+        type: (p.type as PromptTemplate['type']) || 'main',
       }));
       setPrompts(mapped);
     } catch (error) {
@@ -133,7 +133,7 @@ const PromptEditor: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         status: created.status,
         description: created.description || '',
         content: created.prompt || '',
-        type: undefined as any,
+        type: (created.type as PromptTemplate['type']) || 'main',
       };
 
       setPrompts(prev => [mapped, ...prev]);
@@ -161,7 +161,7 @@ const PromptEditor: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       );
       if (!res.success) throw new Error(res.error || 'Failed to save prompt');
 
-      let updated = res.data;
+      const updated = res.data;
       if (editForm.status === 'active') {
         await apiService.activatePrompt(updated.name, updated.version);
         updated.status = 'active';
@@ -174,7 +174,7 @@ const PromptEditor: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         status: updated.status,
         description: updated.description || '',
         content: updated.prompt || '',
-        type: undefined as any,
+        type: (updated.type as PromptTemplate['type']) || 'main',
       };
 
       setSelectedPrompt(mapped);

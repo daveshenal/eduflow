@@ -398,6 +398,7 @@ body::before {
   max-width: 80%;
   position: relative;
   animation: messageSlideIn 0.3s ease-out;
+  transition: all 0.3s ease;
 }
 
 .message.user {
@@ -824,11 +825,6 @@ body::before {
   outline-offset: 2px;
 }
 
-/* Improved message animations */
-.message {
-  transition: all 0.3s ease;
-}
-
 /* Loading state for buttons */
 .btn.loading {
   position: relative;
@@ -1008,18 +1004,6 @@ body::before {
   text-align: justify;
 }
 
-.chat-messages ul,
-.chat-messages ol {
-  margin-bottom: 18px;
-  padding-left: 28px;
-}
-
-.chat-messages li {
-  margin-bottom: 10px;
-  color: #374151;
-  line-height: 1.7;
-}
-
 .chat-messages ul ul,
 .chat-messages ol ol,
 .chat-messages ul ol,
@@ -1030,7 +1014,6 @@ body::before {
 
 .chat-messages blockquote {
   border-left: 4px solid #4f46e5;
-  padding-left: 20px;
   margin: 20px 0;
   font-style: italic;
   color: #6b7280;

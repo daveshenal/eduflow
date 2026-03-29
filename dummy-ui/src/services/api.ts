@@ -1,5 +1,33 @@
 import { APIResponse } from '../types';
 
+interface EduflowJobBody {
+  job_id: string;
+  index_id: string;
+  learning_focus: string;
+  topic: string;
+  target_audience: string;
+  duration: number;
+  num_docs: number;
+  callback_url?: string;
+  voice?: string;
+}
+
+interface BaselineJobBody {
+  job_id: string;
+  index_id: string;
+  prompts: string[];
+  duration: number;
+  callback_url?: string;
+}
+
+interface MemoryJobBody {
+  job_id: string;
+  index_id: string;
+  prompts: string[];
+  duration: number;
+  callback_url?: string;
+}
+
 class APIService {
   private baseUrl: string;
 
@@ -104,7 +132,7 @@ class APIService {
     try {
       const xhr = new XMLHttpRequest();
 
-      return new Promise((resolve, reject) => {
+      return new Promise((resolve) => {
         xhr.upload.addEventListener('progress', (event) => {
           if (event.lengthComputable && onProgress) {
             const progress = {
@@ -211,7 +239,7 @@ class APIService {
     numDocs: number;
     voice?: string;
   }): Promise<APIResponse> {
-    const body: any = {
+    const body: EduflowJobBody = {
       job_id: payload.jobId,
       index_id: payload.indexId,
       learning_focus: payload.learningFocus,
@@ -243,7 +271,7 @@ class APIService {
     prompts: string[];
     duration: number;
   }): Promise<APIResponse> {
-    const body: any = {
+    const body: BaselineJobBody = {
       job_id: payload.jobId,
       index_id: payload.indexId,
       prompts: payload.prompts,
@@ -268,7 +296,7 @@ class APIService {
     prompts: string[];
     duration: number;
   }): Promise<APIResponse> {
-    const body: any = {
+    const body: MemoryJobBody = {
       job_id: payload.jobId,
       index_id: payload.indexId,
       prompts: payload.prompts,

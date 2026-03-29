@@ -8,6 +8,18 @@ interface DocPlanGeneratorProps {
   onJobRunningChange?: (isRunning: boolean) => void;
 }
 
+interface JobStatus {
+  status: string;
+  message?: string;
+  error?: string | null;
+  result?: {
+    docs?: Array<{
+      title?: string;
+      doc_index?: number;
+    }>;
+  };
+}
+
 function parsePrompts(value: string): string[] {
   return value
     .split('\n')
@@ -18,7 +30,7 @@ function parsePrompts(value: string): string[] {
 const DocPlanGenerator: React.FC<DocPlanGeneratorProps> = ({ apiService, indexId, onJobRunningChange }) => {
   const [jobId, setJobId] = useState(() => `job-${Date.now()}`);
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
-  const [jobStatus, setJobStatus] = useState<any>(null);
+  const [jobStatus, setJobStatus] = useState<JobStatus | null>(null);
   const [isPolling, setIsPolling] = useState(false);
   const [lastKnownStatus, setLastKnownStatus] = useState<string | null>(null);
   const [callbackUrl, setCallbackUrl] = useState('');

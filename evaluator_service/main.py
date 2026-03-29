@@ -35,12 +35,12 @@ def health():
     return {"status": "healthy"}
 
 
-if __name__ == "__main__":
-    # Run application
-    import uvicorn
+# if __name__ == "__main__":
+#     # Run application
+#     import uvicorn
 
-    uvicorn.run(
-        app,
-        host="0.0.0.0",
-        port=8002,
-    )
+#     uvicorn.run(
+#         app,
+#         host="0.0.0.0",
+#         port=8002,
+#     )
