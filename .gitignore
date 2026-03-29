@@ -21,3 +21,4 @@ certs/DigiCertGlobalRootCA.crt.pem
 
 # Downloaded ai-saves
 /evaluator_service/evaluation/downloaded_jobs
+evaluator_service/evaluation/~$evaluation_results.xlsx
