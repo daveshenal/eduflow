@@ -73,7 +73,7 @@ const PromptEditor: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         status: p.status,
         description: p.description || '',
         content: p.prompt || '',
-        type: undefined as any,
+        type: (p.type as PromptTemplate['type']) || 'main',
       }));
       setPrompts(mapped);
     } catch (error) {
@@ -133,7 +133,7 @@ const PromptEditor: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         status: created.status,
         description: created.description || '',
         content: created.prompt || '',
-        type: undefined as any,
+        type: (created.type as PromptTemplate['type']) || 'main',
       };
 
       setPrompts(prev => [mapped, ...prev]);
@@ -174,7 +174,7 @@ const PromptEditor: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         status: updated.status,
         description: updated.description || '',
         content: updated.prompt || '',
-        type: undefined as any,
+        type: (updated.type as PromptTemplate['type']) || 'main',
       };
 
       setSelectedPrompt(mapped);

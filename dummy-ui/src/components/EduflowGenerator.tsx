@@ -8,10 +8,22 @@ interface EduflowGeneratorProps {
   onJobRunningChange?: (isRunning: boolean) => void;
 }
 
+interface JobStatus {
+  status: string;
+  message?: string;
+  error?: string | null;
+  result?: {
+    docs?: Array<{
+      title?: string;
+      doc_index?: number;
+    }>;
+  };
+}
+
 const EduflowGenerator: React.FC<EduflowGeneratorProps> = ({ apiService, indexId, onJobRunningChange }) => {
   const [jobId, setJobId] = useState(() => `job-${Date.now()}`);
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
-  const [jobStatus, setJobStatus] = useState<any>(null);
+  const [jobStatus, setJobStatus] = useState<JobStatus | null>(null);
   const [isPolling, setIsPolling] = useState(false);
   const [lastKnownStatus, setLastKnownStatus] = useState<string | null>(null);
   const [callbackUrl, setCallbackUrl] = useState('');
@@ -303,7 +315,7 @@ const EduflowGenerator: React.FC<EduflowGeneratorProps> = ({ apiService, indexId
             {completedDurationMs !== null ? ` in ${formatDuration(completedDurationMs)}` : ''}. Download the results below.
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            {docs.map((doc: any, i: number) => {
+            {docs.map((doc: { title?: string; doc_index?: number }, i: number) => {
               const docTitle = doc?.title || `Document ${doc?.doc_index || i + 1}`;
               return (
                 <div className='downloads' key={doc?.doc_index ?? i}>
