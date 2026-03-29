@@ -1,3 +1,5 @@
+"""API router for content generation endpoints."""
+
 import asyncio
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import StreamingResponse, JSONResponse

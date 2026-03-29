@@ -1,3 +1,5 @@
+"""Azure AI Search index management for knowledgebase."""
+
 import json
 from azure.search.documents.indexes.models import (
     SearchIndex,
@@ -348,6 +350,7 @@ class AIIndex:
             raise
 
     def monitor_indexer_status(self, indexer_name):
+        """Monitor the status of an indexer until completion."""
         print(f"Monitoring indexer {indexer_name}...")
         while True:
             status = self.search_indexer_client.get_indexer_status(

@@ -1,3 +1,5 @@
+"""Voiceover script generation service using Claude."""
+
 from config.settings import settings
 from app.prompts.prompt_management import get_prompt_manager, PromptNames
 from app.adapters.azure_sql import get_db_connection

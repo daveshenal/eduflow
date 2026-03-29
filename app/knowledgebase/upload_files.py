@@ -1,3 +1,5 @@
+"""Document upload and processing for knowledgebase."""
+
 from typing import List, Dict, Any, Optional
 import uuid
 from datetime import datetime, timezone
@@ -38,6 +40,7 @@ def _container_name(index_id: str) -> str:
 
 
 class FileType(Enum):
+    """Supported file types for document processing."""
     PDF = "pdf"
     DOCX = "docx"
     DOC = "doc"

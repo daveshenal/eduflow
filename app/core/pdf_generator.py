@@ -226,7 +226,7 @@ async def create_pdf(doc_id: int, doc_content: str, output_dir: Path) -> str:
         html_doc.write_pdf(str(pdf_path), stylesheets=[
                            css_doc], font_config=font_config)
 
-        logging.info(f"Generated PDF: {pdf_path}")
+        logging.info("Generated PDF: %s", pdf_path)
         return str(pdf_path)
 
     except Exception as pdf_error:

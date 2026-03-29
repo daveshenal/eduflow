@@ -1,3 +1,5 @@
+"""Curriculum planning service using Claude for generating learning plans."""
+
 import json
 import logging
 

@@ -1,3 +1,5 @@
+"""Azure Search retriever with caching and prioritization."""
+
 import functools
 import logging
 from langchain_community.vectorstores import AzureSearch
@@ -9,6 +11,7 @@ from config.settings import settings
 from langchain_openai import AzureOpenAIEmbeddings
 
 class CachedAzureSearch(AzureSearch):
+    """Cached wrapper for Azure Search vector store."""
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Store index_name from kwargs or get it from parent class
@@ -17,6 +20,7 @@ class CachedAzureSearch(AzureSearch):
 
     @functools.cached_property
     def _index_metadata(self):
+        """Cached index metadata property."""
         return self.client.get_index(self.index_name)
 
     def similarity_search_by_vector(
@@ -61,6 +65,7 @@ class CachedAzureSearch(AzureSearch):
         return docs
 
 class PrioritizedSearchManager:
+    """Singleton manager for Azure Search instances."""
     _instances = {}
 
     def __init__(self, index_name: str):
@@ -76,6 +81,7 @@ class PrioritizedSearchManager:
         self.search_key = settings.AZURE_SEARCH_KEY
 
     def get_vectorstore(self):
+        """Get cached vector store instance."""
         # Singleton cache to avoid re-instantiation and metadata calls
         if self.index_name not in self._instances:
             self._instances[self.index_name] = CachedAzureSearch(
@@ -111,10 +117,10 @@ class PrioritizedRetriever:
             docs = self._search_from_store(
                 self.store, query_embedding, self.k, filter_expr
             )
-            logging.info(f"Retrieved {len(docs)} docs from AI index")
+            logging.info("Retrieved %s docs from AI index", len(docs))
             return docs
         except Exception as e:
-            logging.warning(f"RAG search failed: {e}")
+            logging.warning("RAG search failed: %s", e)
             return []
 
     def _search_from_store(

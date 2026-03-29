@@ -1,3 +1,5 @@
+"""Database backup utility for prompts."""
+
 import asyncio
 import os
 from datetime import datetime
@@ -13,6 +15,7 @@ TABLES = [
 ]
 
 async def dump_all_tables():
+    """Dump all prompt tables to SQL file."""
     # Date prefix for backup file
     date_prefix = datetime.now().strftime("%Y%m%d_%H%M%S")
     backup_file = os.path.join(BACKUP_DIR, f"{date_prefix}_prompts_backup.sql")

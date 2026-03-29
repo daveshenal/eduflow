@@ -1,3 +1,5 @@
+"""API router for database operations, background jobs, and prompt management."""
+
 from typing import List, Optional, Any
 from datetime import datetime, timedelta
 import json
@@ -33,6 +35,7 @@ router = APIRouter()
 
 @router.delete("/bg_jobs/clear", summary="Clear all background jobs")
 async def api_clear_all_bg_jobs():
+    """Clear all background jobs from the database."""
     try:
         deleted_count = await clear_all_bg_jobs()
         return {"success": True, "deleted_jobs": deleted_count}
@@ -184,6 +187,7 @@ async def api_get_bg_job_status(job_id: str):
 
 @router.get("/prompts")
 async def prompts_root():
+    """Return API information and available prompt types."""
     return {
         "message": "Prompt Management API v1.0",
         "prompt_types": [name.value for name in PromptNames],
@@ -218,6 +222,7 @@ async def init_tables():
 # Create a new prompt (inactive by default)
 @router.post("/prompts/new", response_model=PromptResponse)
 async def create_prompt_endpoint(prompt: PromptCreate):
+    """Create a new prompt version."""
     manager = get_prompt_manager()
     try:
         async with get_db_connection() as db_conn:
@@ -231,6 +236,7 @@ async def create_prompt_endpoint(prompt: PromptCreate):
 # Get all prompts
 @router.get("/prompts/list", response_model=List[PromptResponse])
 async def get_all_prompts_endpoint(skip: int = 0, limit: int = 100):
+    """Retrieve all prompts with pagination."""
     manager = get_prompt_manager()
     try:
         async with get_db_connection() as db_conn:
@@ -242,6 +248,7 @@ async def get_all_prompts_endpoint(skip: int = 0, limit: int = 100):
 # Get all active prompts (must be before /prompts/active/{name})
 @router.get("/prompts/active", response_model=List[PromptResponse])
 async def get_all_active_prompts_endpoint():
+    """Retrieve all currently active prompts."""
     manager = get_prompt_manager()
     try:
         async with get_db_connection() as db_conn:
@@ -253,6 +260,7 @@ async def get_all_active_prompts_endpoint():
 # Get active prompt by name
 @router.get("/prompts/active/{name}", response_model=PromptResponse)
 async def get_active_prompt_endpoint(name: str):
+    """Retrieve the active prompt by name."""
     manager = get_prompt_manager()
     try:
         async with get_db_connection() as db_conn:
@@ -272,6 +280,7 @@ async def get_active_prompt_endpoint(name: str):
 # Get all versions of a prompt by name
 @router.get("/prompts/versions/{name}", response_model=List[PromptResponse])
 async def get_all_versions_endpoint(name: str):
+    """Retrieve all versions of a prompt by name."""
     manager = get_prompt_manager()
     try:
         async with get_db_connection() as db_conn:
@@ -285,6 +294,7 @@ async def get_all_versions_endpoint(name: str):
 # Get specific prompt by name and version
 @router.get("/prompts/{name}/{version}", response_model=PromptResponse)
 async def get_prompt_by_name_version_endpoint(name: str, version: str):
+    """Retrieve a specific prompt by name and version."""
     manager = get_prompt_manager()
     try:
         async with get_db_connection() as db_conn:
@@ -304,6 +314,7 @@ async def get_prompt_by_name_version_endpoint(name: str, version: str):
 # Activate a specific prompt version
 @router.post("/prompts/activate")
 async def activate_prompt_endpoint(request: ActivatePromptRequest):
+    """Activate a specific prompt version."""
     manager = get_prompt_manager()
     try:
         async with get_db_connection() as db_conn:
@@ -321,6 +332,7 @@ async def activate_prompt_endpoint(request: ActivatePromptRequest):
 # Update prompt content/description
 @router.put("/prompts/{name}/{version}", response_model=PromptResponse)
 async def update_prompt_endpoint(name: str, version: str, prompt_update: PromptUpdate):
+    """Update a prompt's content or description."""
     manager = get_prompt_manager()
     try:
         async with get_db_connection() as db_conn:
@@ -340,6 +352,7 @@ async def update_prompt_endpoint(name: str, version: str, prompt_update: PromptU
 # Delete a specific prompt version
 @router.delete("/prompts/{name}/{version}")
 async def delete_prompt_endpoint(name: str, version: str):
+    """Delete a specific prompt version."""
     manager = get_prompt_manager()
     try:
         async with get_db_connection() as db_conn:
@@ -357,4 +370,5 @@ async def delete_prompt_endpoint(name: str, version: str):
 # Get allowed prompt names (5 valid names)
 @router.get("/prompts/allowed-names")
 async def get_allowed_names_endpoint():
+    """Return the list of allowed prompt names."""
     return {"allowed_names": [name.value for name in PromptNames]}

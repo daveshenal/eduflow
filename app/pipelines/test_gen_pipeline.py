@@ -1,7 +1,10 @@
+"""Test pipeline for content generation."""
+
 from app.pipelines.gen_pipeline import send_job_completion_notification
 
 
 async def generate_content_test(params: dict):
+    """Generate test content for development."""
     import asyncio
 
     await asyncio.sleep(10)

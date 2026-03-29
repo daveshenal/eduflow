@@ -1,11 +1,13 @@
+"""Audio generation utilities using Azure Speech SDK."""
+
 import os
 import re
 import time
 import uuid
 import logging
-from pydantic import BaseModel
 from pathlib import Path
 from typing import Optional
+from pydantic import BaseModel
 from pydub import AudioSegment
 import azure.cognitiveservices.speech as speechsdk
 
@@ -18,6 +20,7 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 # Request/Response Models
 class TTSRequest(BaseModel):
+    """Model for text-to-speech synthesis requests."""
     text: str
     voice: Optional[str] = "en-US-JennyNeural"
     speed: Optional[str] = "medium"  # x-slow, slow, medium, fast, x-fast
@@ -25,6 +28,7 @@ class TTSRequest(BaseModel):
 
 # Helper function to create SSML
 def create_ssml(text: str, voice: str, speed: str, pitch: str) -> str:
+    """Create SSML markup for speech synthesis."""
     processed_text = re.sub(r'\.', '.<break time="300ms"/>', text)
 
     return f"""
@@ -78,7 +82,7 @@ def synthesize_text(request: TTSRequest) -> dict:
 
             # Log attempt info for production monitoring
             logging.info(
-                f"TTS synthesis attempt {attempt + 1}/{max_retries + 1} for text length: {len(request.text)}")
+                "TTS synthesis attempt %s/%s for text length: %s", attempt + 1, max_retries + 1, len(request.text))
 
             # Perform synthesis
             result = synthesizer.speak_ssml_async(ssml).get()
@@ -93,7 +97,7 @@ def synthesize_text(request: TTSRequest) -> dict:
                 # Log success for monitoring
                 if attempt > 0:
                     logging.info(
-                        f"TTS synthesis succeeded on attempt {attempt + 1}")
+                        "TTS synthesis succeeded on attempt %s", attempt + 1)
 
                 return {
                     'success': True,
@@ -103,7 +107,7 @@ def synthesize_text(request: TTSRequest) -> dict:
                     'attempts': attempt + 1  # Track retry count for monitoring
                 }
 
-            elif result.reason == speechsdk.ResultReason.Canceled:
+            if result.reason == speechsdk.ResultReason.Canceled:
                 cancellation = result.cancellation_details
                 error_msg = f"Speech synthesis canceled: {cancellation.reason}"
                 if cancellation.reason == speechsdk.CancellationReason.Error:
@@ -118,14 +122,13 @@ def synthesize_text(request: TTSRequest) -> dict:
                     # Calculate exponential backoff delay
                     delay = min(base_delay * (2 ** attempt), max_delay)
                     logging.warning(
-                        f"TTS synthesis failed (attempt {attempt + 1}): {error_msg}. Retrying in {delay}s...")
+                        "TTS synthesis failed (attempt %s): %s. Retrying in %ss...", attempt + 1, error_msg, delay)
                     time.sleep(delay)
                     continue  # Retry
-                else:
-                    # Non-retryable error or max retries reached
-                    logging.error(
-                        f"TTS synthesis failed permanently after {attempt + 1} attempts: {error_msg}")
-                    raise Exception(error_msg)
+                # Non-retryable error or max retries reached
+                logging.error(
+                    "TTS synthesis failed permanently after %s attempts: %s", attempt + 1, error_msg)
+                raise Exception(error_msg)
             else:
                 # Unexpected result - don't retry
                 error_msg = f"Unexpected synthesis result: {result.reason}"
@@ -137,12 +140,11 @@ def synthesize_text(request: TTSRequest) -> dict:
             if attempt < max_retries and "timeout" in str(e).lower():
                 delay = min(base_delay * (2 ** attempt), max_delay)
                 logging.warning(
-                    f"TTS synthesis exception (attempt {attempt + 1}): {str(e)}. Retrying in {delay}s...")
+                    "TTS synthesis exception (attempt %s): %s. Retrying in %ss...", attempt + 1, str(e), delay)
                 time.sleep(delay)
                 continue
-            else:
-                logging.error(f"TTS synthesis failed permanently: {str(e)}")
-                raise
+            logging.error("TTS synthesis failed permanently: %s", e)
+            raise
 
     # This should never be reached, but just in case
     raise Exception("Maximum retry attempts exceeded")
@@ -189,15 +191,15 @@ def generate_mp3_from_file(text_file_path: str, output_file_path: str, voice: st
         try:
             result = synthesize_text(request)
             mp3_files.append(result['file_path'])
-            logging.info(f"Chunk {i} synthesized: {result['file_path']}")
+            logging.info("Chunk %s synthesized: %s", i, result['file_path'])
         except Exception as e:
-            logging.info(f"Error in chunk {i}: {str(e)}")
+            logging.info("Error in chunk %s: %s", i, e)
             raise e
 
     # Merge all MP3s into one final file
     if mp3_files:
         merge_mp3_files(mp3_files, output_file_path)
-        logging.info(f"\nAll chunks merged into: {output_file_path}")
+        logging.info("\nAll chunks merged into: %s", output_file_path)
 
         # Clean up temporary chunk files
         for temp_file in mp3_files:

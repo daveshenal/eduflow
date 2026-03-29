@@ -1,3 +1,5 @@
+"""API router for knowledgebase management endpoints."""
+
 import logging
 from typing import List, Optional
 from fastapi import APIRouter, HTTPException, Query, UploadFile, File
@@ -19,6 +21,7 @@ router = APIRouter()
 
 @router.post("/run-ai-indexing/{index_id}")
 def run_ai_indexing(index_id: str):
+    """Set up AI indexing pipeline for the given index."""
     try:
         ai_index = AIIndex(index_id=index_id)
         ai_index.setup_complete_indexing_pipeline()
@@ -102,6 +105,7 @@ async def list_blobs(
     directory: Optional[str] = Query(
         None, description="Optional virtual directory/prefix to filter blobs"),
     ):
+    """List blobs in a container with optional directory filter."""
     try:
         return get_blobs(container=container, directory=directory)
     except FileNotFoundError as e:
@@ -117,6 +121,7 @@ async def blob_connection(
     container: str = Query(...,
                            description="Azure Blob container name to test"),
     ):
+    """Test connection to Azure Blob Storage container."""
     try:
         return test_blob_connection(container)
     except Exception as e:

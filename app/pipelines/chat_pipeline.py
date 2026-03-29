@@ -1,3 +1,5 @@
+"""Chat pipeline for streaming responses using Claude."""
+
 from app.adapters.azure_sql import get_db_connection
 from app.prompts.prompt_management import get_prompt_manager
 from app.retrievers.index_data_retriver import PrioritizedRetriever

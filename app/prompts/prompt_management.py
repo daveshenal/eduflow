@@ -1,3 +1,5 @@
+"""Prompt management system for database storage and retrieval."""
+
 from pydantic import BaseModel, Field
 from typing import Optional, List
 from datetime import datetime
@@ -26,6 +28,7 @@ class PromptNames(Enum):
 
 # Pydantic models for request/response
 class PromptCreate(BaseModel):
+    """Model for creating new prompts."""
     name: str = Field(..., max_length=100)
     version: str = Field(..., max_length=20)
     prompt: str
@@ -33,11 +36,13 @@ class PromptCreate(BaseModel):
 
 
 class PromptUpdate(BaseModel):
+    """Model for updating existing prompts."""
     prompt: Optional[str] = None
     description: Optional[str] = Field(None, max_length=255)
 
 
 class PromptResponse(BaseModel):
+    """Response model for prompt data."""
     id: str
     name: str
     version: str
@@ -52,6 +57,7 @@ class PromptResponse(BaseModel):
 
 
 class ActivatePromptRequest(BaseModel):
+    """Request model for activating a prompt version."""
     name: str
     version: str
 
@@ -62,6 +68,7 @@ class AsyncPromptManager:
     TABLE_NAME = "use_case_prompts"
 
     def _validate_name(self, name: str) -> bool:
+        """Validate if prompt name is allowed."""
         return name in VALID_PROMPT_NAMES
 
     async def create_prompt(self, prompt_data: PromptCreate, db_conn) -> PromptResponse:
@@ -233,4 +240,5 @@ class AsyncPromptManager:
 
 
 def get_prompt_manager() -> AsyncPromptManager:
+    """Get singleton prompt manager instance."""
     return AsyncPromptManager()
