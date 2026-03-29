@@ -77,8 +77,8 @@ def synthesize_text(request: TTSRequest) -> dict:
             speech_config.speech_synthesis_voice_name = request.voice
             synthesizer = speechsdk.SpeechSynthesizer(
                 speech_config=speech_config, audio_config=None)
-            ssml = create_ssml(request.text, request.voice,
-                               request.speed, request.pitch)
+            ssml = create_ssml(
+                request.text, request.voice, request.speed, request.pitch)
 
             # Log attempt info for production monitoring
             logging.info(
@@ -115,19 +115,25 @@ def synthesize_text(request: TTSRequest) -> dict:
 
                 # Check if this is a retryable error
                 is_timeout = "timeout" in error_msg.lower()
-                is_network_error = any(keyword in error_msg.lower() for keyword in
-                                     ["network", "connection", "service unavailable", "server error"])
+                is_network_error = any(
+                    keyword in error_msg.lower() for keyword in [
+                        "network", "connection", "service unavailable", "server error"
+                    ]
+                )
 
                 if (is_timeout or is_network_error) and attempt < max_retries:
                     # Calculate exponential backoff delay
                     delay = min(base_delay * (2 ** attempt), max_delay)
                     logging.warning(
-                        "TTS synthesis failed (attempt %s): %s. Retrying in %ss...", attempt + 1, error_msg, delay)
+                        "TTS synthesis failed (attempt %s): %s. "
+                        "Retrying in %ss...",
+                        attempt + 1, error_msg, delay)
                     time.sleep(delay)
                     continue  # Retry
                 # Non-retryable error or max retries reached
                 logging.error(
-                    "TTS synthesis failed permanently after %s attempts: %s", attempt + 1, error_msg)
+                    "TTS synthesis failed permanently after %s attempts: %s",
+                    attempt + 1, error_msg)
                 raise Exception(error_msg)
             else:
                 # Unexpected result - don't retry
@@ -140,7 +146,9 @@ def synthesize_text(request: TTSRequest) -> dict:
             if attempt < max_retries and "timeout" in str(e).lower():
                 delay = min(base_delay * (2 ** attempt), max_delay)
                 logging.warning(
-                    "TTS synthesis exception (attempt %s): %s. Retrying in %ss...", attempt + 1, str(e), delay)
+                    "TTS synthesis exception (attempt %s): %s. "
+                    "Retrying in %ss...",
+                    attempt + 1, str(e), delay)
                 time.sleep(delay)
                 continue
             logging.error("TTS synthesis failed permanently: %s", e)

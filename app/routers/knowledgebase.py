@@ -25,7 +25,10 @@ def run_ai_indexing(index_id: str):
     try:
         ai_index = AIIndex(index_id=index_id)
         ai_index.setup_complete_indexing_pipeline()
-        return {"status": "success", "message": f"AI index setup completed for index_id={index_id}."}
+        return {
+            "status": "success",
+            "message": f"AI index setup completed for index_id={index_id}."
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -34,7 +37,8 @@ def run_ai_indexing(index_id: str):
 async def upload_documents_to_knowledgebase(
     index_id: str,
     files: List[UploadFile] = File(...,
-                                   description="Document(s) to upload (PDF, DOCX, TXT)"),
+                                   description="Document(s) to upload "
+                                             "(PDF, DOCX, TXT)"),
     ):
     """
     Upload documents to the knowledgebase for a given index_id.
@@ -86,7 +90,8 @@ async def delete_documents_by_filename(
 
 @router.delete("/index/{index_id}")
 def delete_index_and_container(index_id: str):
-    """Delete the Azure AI Search index, indexer, skillset, data source, and blob container for the given index_id."""
+    """Delete the Azure AI Search index, indexer, skillset, data source,
+    and blob container for the given index_id."""
     try:
         ai_index = AIIndex(index_id=index_id)
         deleted = ai_index.delete_index_and_container()

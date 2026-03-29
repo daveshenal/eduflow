@@ -397,7 +397,9 @@ class AIIndex:
                     "failed_item_count": status.last_result.failed_item_count if status.last_result else None,
                     "start_time": status.last_result.start_time if status.last_result else None,
                     "end_time": status.last_result.end_time if status.last_result else None,
-                    "errors": [str(error) for error in status.last_result.errors] if status.last_result and status.last_result.errors else []
+                    "errors": [
+                        str(error) for error in status.last_result.errors
+                    ] if status.last_result and status.last_result.errors else []
                 }
             }
         except Exception as e:

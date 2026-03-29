@@ -118,7 +118,8 @@ async def api_get_bg_job_status(job_id: str):
                     if not blob_path_str:
                         return None
 
-                    # If the path already contains a virtual directory (e.g. `index-.../.../file.ext`), use it as-is.
+                    # If the path already contains a virtual directory
+                    # (e.g. `index-.../.../file.ext`), use it as-is.
                     # Otherwise infer it using the known artifact layout.
                     if "/" in blob_path_str or blob_path_str.startswith("index-"):
                         return blob_path_str
@@ -320,7 +321,12 @@ async def activate_prompt_endpoint(request: ActivatePromptRequest):
         async with get_db_connection() as db_conn:
             success = await manager.activate_prompt(request.name, request.version, db_conn)
             if success:
-                return {"message": f"Prompt '{request.name}' version '{request.version}' activated successfully"}
+                return {
+                    "message": (
+                        f"Prompt '{request.name}' version '{request.version}' "
+                        "activated successfully"
+                    )
+                }
             raise HTTPException(
                 status_code=400, detail="Failed to activate prompt")
     except ValueError as e:

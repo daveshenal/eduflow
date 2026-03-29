@@ -164,13 +164,16 @@ class AsyncPromptManager:
         """Get all prompts in the table"""
         async with db_conn.cursor(aiomysql.DictCursor) as cursor:
             await cursor.execute(
-                f"SELECT * FROM {self.TABLE_NAME} ORDER BY name, version LIMIT %s OFFSET %s",
+                f"SELECT * FROM {self.TABLE_NAME} ORDER BY name, version "
+                "LIMIT %s OFFSET %s",
                 (limit, skip)
             )
             rows = await cursor.fetchall()
             return [PromptResponse(**row) for row in rows]
 
-    async def get_by_name_version(self, name: str, version: str, db_conn) -> Optional[PromptResponse]:
+    async def get_by_name_version(
+        self, name: str, version: str, db_conn
+    ) -> Optional[PromptResponse]:
         """Get prompt by name and version"""
         if not self._validate_name(name):
             raise ValueError(f"Invalid name '{name}'")
@@ -185,7 +188,9 @@ class AsyncPromptManager:
                 return PromptResponse(**row)
             return None
 
-    async def update_prompt(self, name: str, version: str, prompt_update: PromptUpdate, db_conn) -> Optional[PromptResponse]:
+    async def update_prompt(
+        self, name: str, version: str, prompt_update: PromptUpdate, db_conn
+    ) -> Optional[PromptResponse]:
         """Update an existing prompt"""
         if not self._validate_name(name):
             raise ValueError(f"Invalid name '{name}'")
@@ -207,7 +212,10 @@ class AsyncPromptManager:
         update_fields.append("updated_at = CURRENT_TIMESTAMP")
         values.extend([name, version])
 
-        query = f"UPDATE {self.TABLE_NAME} SET {', '.join(update_fields)} WHERE name = %s AND version = %s"
+        query = (
+            f"UPDATE {self.TABLE_NAME} SET {', '.join(update_fields)} "
+            "WHERE name = %s AND version = %s"
+        )
 
         async with db_conn.cursor() as cursor:
             await cursor.execute(query, values)

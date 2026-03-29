@@ -9,19 +9,28 @@ async def generate_content_test(params: dict):
 
     await asyncio.sleep(10)
     return {
-        "title": "Comprehensive Assessment Excellence: Preventing Readmissions Through Enhanced Clinical Evaluation",
+        "title": (
+            "Comprehensive Assessment Excellence: Preventing Readmissions "
+            "Through Enhanced Clinical Evaluation"
+        ),
         "doc_duration": params['duration'],
         "docs": [
             {
                 "doc_index": 1,
-                "title": "Post-Hospital Assessment Excellence: Foundation for Readmission Prevention",
+                "title": (
+                    "Post-Hospital Assessment Excellence: Foundation for "
+                    "Readmission Prevention"
+                ),
                 "pdf_path": "index-595959/docs/job-12345/doc-1.pdf",
                 "audio_path": "index-595959/docs/job-12345/doc-1.mp3",
                 "voicescript_path": "index-595959/docs/job-12345/doc-1.txt",
             },
             {
                 "doc_index": 2,
-                "title": "Systematic Assessment Implementation: Building Patient Safety Through Comprehensive Evaluation",
+                "title": (
+                    "Systematic Assessment Implementation: Building Patient "
+                    "Safety Through Comprehensive Evaluation"
+                ),
                 "pdf_path": "index-595959/docs/job-12345/doc-2.pdf",
                 "audio_path": "index-595959/docs/job-12345/doc-2.mp3",
                 "voicescript_path": "index-595959/docs/job-12345/doc-2.txt",

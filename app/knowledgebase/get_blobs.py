@@ -16,7 +16,8 @@ def get_blobs(container: str, directory: Optional[str] = None, expiry_hours: int
       "prefix": Optional[str],
       "count": int,
       "items": [
-        {"name": str, "size": int|None, "content_type": str|None, "last_modified": iso|None, "etag": str|None, "url": str|None}
+        {"name": str, "size": int|None, "content_type": str|None,
+         "last_modified": iso|None, "etag": str|None, "url": str|None}
       ]
     }
     """
@@ -36,7 +37,8 @@ def get_blobs(container: str, directory: Optional[str] = None, expiry_hours: int
     for blob in blobs_iter:
         try:
             sas = generate_sas_token(container, blob.name, expiry_time)
-            url = f"https://{blob_service_client.account_name}.blob.core.windows.net/{container}/{blob.name}?{sas}"
+            url = (f"https://{blob_service_client.account_name}.blob.core.windows.net/"
+                   f"{container}/{blob.name}?{sas}")
         except Exception:
             url = None
 
@@ -49,7 +51,9 @@ def get_blobs(container: str, directory: Optional[str] = None, expiry_hours: int
             "name": blob.name,
             "size": getattr(blob, "size", None),
             "content_type": content_type,
-            "last_modified": blob.last_modified.isoformat() if getattr(blob, "last_modified", None) else None,
+            "last_modified": (
+                blob.last_modified.isoformat() if getattr(blob, "last_modified", None) else None
+            ),
             "etag": getattr(blob, "etag", None),
             "url": url,
         })

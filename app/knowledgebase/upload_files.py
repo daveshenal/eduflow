@@ -165,7 +165,10 @@ class DocumentProcessor:
                 )
             ]
         except ImportError as e:
-            error_msg = f"Missing required dependency for DOCX processing: {str(e)}. Please install python-docx: pip install python-docx"
+            error_msg = (
+                f"Missing required dependency for DOCX processing: {str(e)}. "
+                "Please install python-docx: pip install python-docx"
+            )
             logger.error(error_msg)
             raise Exception(error_msg)
         except Exception as e:

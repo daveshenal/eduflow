@@ -208,7 +208,8 @@ async def process_single_doc(claude_client, params: PlanBasedDocParams):
         {"role": "user", "content": "Generate the full document content now."},
     ]
 
-    doc_result = await generate_single_doc(claude_client, params.prompts['system_prompt'], user_messages)
+    doc_result = await generate_single_doc(
+        claude_client, params.prompts['system_prompt'], user_messages)
 
     return {
         "doc_id": params.doc_id,
@@ -246,7 +247,8 @@ async def process_single_doc_baseline(
         params.min_words, params.max_words, params.duration
     )
     user_messages = [
-        {"role": "user", "content": f"REQUEST:\n{params.user_prompt}\n\nCONSTRAINTS:\n{constraints}"},
+        {"role": "user",
+         "content": f"REQUEST:\n{params.user_prompt}\n\nCONSTRAINTS:\n{constraints}"},
         {"role": "user", "content": f"CONTEXT FROM KNOWLEDGEBASE:\n{context}"},
         {"role": "user",
             "content": "Generate the full document content now (HTML)."},
