@@ -142,26 +142,27 @@ def html_to_pdf(html_content, output_path, custom_css=None):
     try:
         # Create font configuration
         font_config = FontConfiguration()
-        
+
         # Prepare CSS styles
         default_styles = create_default_styles()
         if custom_css:
             combined_css = default_styles + "\n" + custom_css
         else:
             combined_css = default_styles
-        
+
         # Create HTML document
         html_doc = HTML(string=html_content)
-        
+
         # Create CSS document
         css_doc = CSS(string=combined_css, font_config=font_config)
-        
+
         # Generate PDF
-        html_doc.write_pdf(output_path, stylesheets=[css_doc], font_config=font_config)
-        
+        html_doc.write_pdf(output_path, stylesheets=[
+                           css_doc], font_config=font_config)
+
         print(f"PDF successfully created: {output_path}")
         return True
-        
+
     except Exception as e:
         print(f"Error creating PDF: {str(e)}")
         return False
@@ -192,7 +193,7 @@ async def create_pdf(doc_id: int, doc_content: str, output_dir: Path) -> str:
     try:
         pdf_filename = f"doc-{doc_id}.pdf"
         pdf_path = output_dir / pdf_filename
-        
+
         # HTML wrapper for the content
         html_content = f"""
         <!DOCTYPE html>
@@ -206,40 +207,45 @@ async def create_pdf(doc_id: int, doc_content: str, output_dir: Path) -> str:
         </body>
         </html>
         """
-        
+
         # Create font configuration
         font_config = FontConfiguration()
-        
+
         # Prepare CSS styles
         default_styles = create_default_styles()
-        
+
         # Create HTML document
         html_doc = HTML(string=html_content)
-        
+
         # Create CSS document
         css_doc = CSS(string=default_styles, font_config=font_config)
-        
+
         html_doc = HTML(string=html_content)
-        
+
         # Generate PDF
-        html_doc.write_pdf(str(pdf_path), stylesheets=[css_doc], font_config=font_config)
-        
+        html_doc.write_pdf(str(pdf_path), stylesheets=[
+                           css_doc], font_config=font_config)
+
         logging.info(f"Generated PDF: {pdf_path}")
         return str(pdf_path)
-        
+
     except Exception as pdf_error:
-        logging.error(f"Failed to create PDF for document {doc_id}: {pdf_error}")
+        logging.error(
+            f"Failed to create PDF for document {doc_id}: {pdf_error}")
         raise pdf_error
 
 def main():
     parser = argparse.ArgumentParser(description='Convert HTML to stylish PDF')
     parser.add_argument('input', help='Input HTML file path or HTML string')
-    parser.add_argument('-o', '--output', default='output.pdf', help='Output PDF file path')
-    parser.add_argument('-c', '--css', help='Custom CSS file path for additional styling')
-    parser.add_argument('-s', '--string', action='store_true', help='Treat input as HTML string instead of file path')
-    
+    parser.add_argument('-o', '--output', default='output.pdf',
+                        help='Output PDF file path')
+    parser.add_argument(
+        '-c', '--css', help='Custom CSS file path for additional styling')
+    parser.add_argument('-s', '--string', action='store_true',
+                        help='Treat input as HTML string instead of file path')
+
     args = parser.parse_args()
-    
+
     # Get HTML content
     if args.string:
         html_content = args.input
@@ -247,17 +253,17 @@ def main():
         html_content = read_file(args.input)
         if html_content is None:
             sys.exit(1)
-    
+
     # Get custom CSS if provided
     custom_css = None
     if args.css:
         custom_css = read_file(args.css)
         if custom_css is None:
             print("Warning: Could not read CSS file, proceeding without custom styles")
-    
+
     # Convert to PDF
     success = html_to_pdf(html_content, args.output, custom_css)
-    
+
     if not success:
         sys.exit(1)
 
@@ -273,7 +279,7 @@ if __name__ == "__main__":
         print("\nInstall dependencies:")
         print("pip install weasyprint")
         print("\nCreating sample HTML for demonstration...")
-        
+
         # Create sample HTML
         sample_html = """
         <!DOCTYPE html>
@@ -551,10 +557,10 @@ if __name__ == "__main__":
 </body>
 </html>
         """
-        
+
         # Convert sample HTML to PDF
         success = html_to_pdf(sample_html, "temp/docs/sample_output.pdf")
-        
+
         if success:
             print("\nSample PDF created: temp/docss/sample_output.pdf")
             print("\nTo use with your own HTML:")

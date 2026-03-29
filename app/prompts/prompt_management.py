@@ -66,7 +66,8 @@ class AsyncPromptManager:
 
     async def create_prompt(self, prompt_data: PromptCreate, db_conn) -> PromptResponse:
         if prompt_data.name not in VALID_PROMPT_NAMES:
-            raise ValueError(f"Invalid name '{prompt_data.name}'. Allowed: {sorted(VALID_PROMPT_NAMES)}")
+            raise ValueError(
+                f"Invalid name '{prompt_data.name}'. Allowed: {sorted(VALID_PROMPT_NAMES)}")
 
         async with db_conn.cursor() as cur:
             await cur.execute(
@@ -74,7 +75,8 @@ class AsyncPromptManager:
                 (prompt_data.name, prompt_data.version)
             )
             if (await cur.fetchone())[0] > 0:
-                raise ValueError(f"Prompt '{prompt_data.name}' version '{prompt_data.version}' already exists")
+                raise ValueError(
+                    f"Prompt '{prompt_data.name}' version '{prompt_data.version}' already exists")
 
         prompt_id = str(uuid.uuid4())
         now = datetime.utcnow()
@@ -98,35 +100,36 @@ class AsyncPromptManager:
             created_at=now,
             updated_at=now
         )
-    
+
     async def activate_prompt(self, name: str, version: str, db_conn) -> bool:
         """Activate a specific version and deactivate all others with the same name"""
         if not self._validate_name(name):
             raise ValueError(f"Invalid name '{name}'")
-        
+
         async with db_conn.cursor() as cursor:
             # First, deactivate all versions of this prompt name
             await cursor.execute(
                 f"UPDATE {self.TABLE_NAME} SET status = 'inactive' WHERE name = %s",
                 (name,)
             )
-            
+
             # Then activate the specific version
             await cursor.execute(
                 f"UPDATE {self.TABLE_NAME} SET status = 'active' WHERE name = %s AND version = %s",
                 (name, version)
             )
-            
+
             if cursor.rowcount == 0:
-                raise ValueError(f"Prompt '{name}' with version '{version}' not found")
-        
+                raise ValueError(
+                    f"Prompt '{name}' with version '{version}' not found")
+
         return True
-    
+
     async def get_active_prompt(self, name: str, db_conn) -> Optional[PromptResponse]:
         """Get the active prompt by name"""
         if not self._validate_name(name):
             raise ValueError(f"Invalid name '{name}'")
-        
+
         async with db_conn.cursor(aiomysql.DictCursor) as cursor:
             await cursor.execute(
                 f"SELECT * FROM {self.TABLE_NAME} WHERE name = %s AND status = 'active'",
@@ -136,12 +139,12 @@ class AsyncPromptManager:
             if row:
                 return PromptResponse(**row)
             return None
-    
+
     async def get_all_versions(self, name: str, db_conn) -> List[PromptResponse]:
         """Get all versions of a prompt by name"""
         if not self._validate_name(name):
             raise ValueError(f"Invalid name '{name}'")
-        
+
         async with db_conn.cursor(aiomysql.DictCursor) as cursor:
             await cursor.execute(
                 f"SELECT * FROM {self.TABLE_NAME} WHERE name = %s ORDER BY created_at DESC",
@@ -149,7 +152,7 @@ class AsyncPromptManager:
             )
             rows = await cursor.fetchall()
             return [PromptResponse(**row) for row in rows]
-    
+
     async def get_all_prompts(self, skip: int = 0, limit: int = 100, db_conn=None) -> List[PromptResponse]:
         """Get all prompts in the table"""
         async with db_conn.cursor(aiomysql.DictCursor) as cursor:
@@ -159,12 +162,12 @@ class AsyncPromptManager:
             )
             rows = await cursor.fetchall()
             return [PromptResponse(**row) for row in rows]
-    
+
     async def get_by_name_version(self, name: str, version: str, db_conn) -> Optional[PromptResponse]:
         """Get prompt by name and version"""
         if not self._validate_name(name):
             raise ValueError(f"Invalid name '{name}'")
-        
+
         async with db_conn.cursor(aiomysql.DictCursor) as cursor:
             await cursor.execute(
                 f"SELECT * FROM {self.TABLE_NAME} WHERE name = %s AND version = %s",
@@ -174,15 +177,15 @@ class AsyncPromptManager:
             if row:
                 return PromptResponse(**row)
             return None
-    
+
     async def update_prompt(self, name: str, version: str, prompt_update: PromptUpdate, db_conn) -> Optional[PromptResponse]:
         """Update an existing prompt"""
         if not self._validate_name(name):
             raise ValueError(f"Invalid name '{name}'")
-        
+
         update_fields = []
         values = []
-        
+
         update_data = prompt_update.dict(exclude_unset=True)
         if 'prompt' in update_data:
             update_fields.append("prompt = %s")
@@ -190,27 +193,28 @@ class AsyncPromptManager:
         if 'description' in update_data:
             update_fields.append("description = %s")
             values.append(update_data['description'])
-        
+
         if not update_fields:
             return await self.get_by_name_version(name, version, db_conn)
-        
+
         update_fields.append("updated_at = CURRENT_TIMESTAMP")
         values.extend([name, version])
-        
+
         query = f"UPDATE {self.TABLE_NAME} SET {', '.join(update_fields)} WHERE name = %s AND version = %s"
-        
+
         async with db_conn.cursor() as cursor:
             await cursor.execute(query, values)
             if cursor.rowcount == 0:
-                raise ValueError(f"Prompt '{name}' with version '{version}' not found")
-        
+                raise ValueError(
+                    f"Prompt '{name}' with version '{version}' not found")
+
         return await self.get_by_name_version(name, version, db_conn)
-    
+
     async def delete_prompt(self, name: str, version: str, db_conn) -> bool:
         """Delete a specific prompt version"""
         if not self._validate_name(name):
             raise ValueError(f"Invalid name '{name}'")
-        
+
         async with db_conn.cursor() as cursor:
             await cursor.execute(
                 f"DELETE FROM {self.TABLE_NAME} WHERE name = %s AND version = %s",

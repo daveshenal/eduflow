@@ -37,13 +37,13 @@ async def stream_endpoint(request: Request):
             "Connection": "keep-alive",
         },
     )
-    
+
 # Endpoint to test background job
 @router.post("/gen/start-test")
 async def start_docs_generation(request: Request):
     """Start Doc generation as background job."""
     payload = await request.json()
-    
+
     try:
         # Validate the payload
         params = validate_payload(payload)
@@ -55,7 +55,7 @@ async def start_docs_generation(request: Request):
 
     # Start background task
     asyncio.create_task(generate_content_background_task_test(params))
-    
+
     # Return job ID immediately
     return JSONResponse(
         content={
@@ -66,13 +66,13 @@ async def start_docs_generation(request: Request):
             "Cache-Control": "no-cache",
         },
     )
-    
+
 # Endpoint to start background job
 @router.post("/gen/start")
 async def start_content_generation(request: Request):
     """Start content generation as background job."""
     payload = await request.json()
-    
+
     try:
         # Validate the payload
         params = validate_payload(payload)
@@ -83,8 +83,9 @@ async def start_content_generation(request: Request):
         )
 
     # await generate_content_background_task(params, claude_client)
-    asyncio.create_task(generate_content_background_task(params, claude_client))
-    
+    asyncio.create_task(
+        generate_content_background_task(params, claude_client))
+
     return JSONResponse(
         content={
             "status": "started",
@@ -111,7 +112,8 @@ async def start_baseline_generation(request: Request):
         return JSONResponse(status_code=400, content={"error": str(e)})
 
     # await generate_content_baseline_background_task(params, claude_client)
-    asyncio.create_task(generate_content_baseline_background_task(params, claude_client))
+    asyncio.create_task(
+        generate_content_baseline_background_task(params, claude_client))
     return JSONResponse(
         content={
             "status": "started",
@@ -136,7 +138,8 @@ async def start_memory_generation(request: Request):
         return JSONResponse(status_code=400, content={"error": str(e)})
 
     # await generate_content_memory_background_task(params, claude_client)
-    asyncio.create_task(generate_content_memory_background_task(params, claude_client))
+    asyncio.create_task(
+        generate_content_memory_background_task(params, claude_client))
     return JSONResponse(
         content={
             "status": "started",

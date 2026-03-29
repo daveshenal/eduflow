@@ -12,8 +12,9 @@ class CachedAzureSearch(AzureSearch):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Store index_name from kwargs or get it from parent class
-        self.index_name = kwargs.get('index_name') or getattr(self, 'index_name', None)
-    
+        self.index_name = kwargs.get(
+            'index_name') or getattr(self, 'index_name', None)
+
     @functools.cached_property
     def _index_metadata(self):
         return self.client.get_index(self.index_name)
@@ -34,7 +35,7 @@ class CachedAzureSearch(AzureSearch):
             k_nearest_neighbors=k,
             fields="content_vector"
         )
-        
+
         results = self.client.search(
             search_text="*",
             vector_queries=[vector_query],
@@ -54,7 +55,8 @@ class CachedAzureSearch(AzureSearch):
                 "created_at": result.get("created_at"),
                 "title": result.get("title"),
             }
-            doc = Document(page_content=result.get('content', ''), metadata=metadata)
+            doc = Document(page_content=result.get(
+                'content', ''), metadata=metadata)
             docs.append((doc, score))
         return docs
 
@@ -84,7 +86,7 @@ class PrioritizedSearchManager:
                 vector_field_name="content_vector"
             )
         return self._instances[self.index_name]
-    
+
 class PrioritizedRetriever:
     """Retriever over the single AI index"""
 
@@ -131,25 +133,27 @@ class PrioritizedRetriever:
             )
             return [doc for doc, _ in scored_docs][:k]
         except Exception as e:
-            logging.warning(f"Search error in store with filter {filters}: {e}")
+            logging.warning(
+                f"Search error in store with filter {filters}: {e}")
             return []
-        
+
     def format_context_with_sources(self, docs: List[Document]) -> str:
         """Format context with clear source attribution using real file names"""
         if not docs:
             return "No relevant documents found in knowledge bases."
-        
+
         context_parts = []
         context_parts.append("=== FROM KNOWLEDGE SOURCES ===")
-        
+
         for i, doc in enumerate(docs, 1):
             source_name = doc.metadata.get("source_name", f"document_{i}")
             # print(f"\nSource {i} - {source_name}:\n{doc.page_content}\n")
             # context_parts.append(f"\nSource {i} - {source_name}:\n{doc.page_content}\n")
-            context_parts.append(f"\nSource - {source_name}:\n{doc.page_content}\n")
+            context_parts.append(
+                f"\nSource - {source_name}:\n{doc.page_content}\n")
 
         return "\n".join(context_parts)
-    
+
     @staticmethod
     def build_ai_filter(branch_state: str = "", certifications: str = None) -> str:
         """Construct Azure Search filter from branchState and certification list.
@@ -160,13 +164,15 @@ class PrioritizedRetriever:
         # Parse certifications (comma-separated string). Empty or None means none.
         provided_raw = []
         if certifications is not None:
-            parts = [p.strip().strip('"\'') for p in certifications.split(',')] if certifications.strip() else []
+            parts = [p.strip().strip('"\'') for p in certifications.split(
+                ',')] if certifications.strip() else []
             provided_raw = [p for p in parts if p]
 
         branch_state = (branch_state or "").strip().lower()
 
         known_accreditations = {"tjc", "chap", "achc"}
-        provided = {str(a).lower() for a in provided_raw if str(a).lower() in known_accreditations}
+        provided = {str(a).lower() for a in provided_raw if str(
+            a).lower() in known_accreditations}
         categories_to_exclude = sorted(list(known_accreditations - provided))
 
         state_clauses = ["state eq null", "state eq ''", "state eq 'null'"]
@@ -175,6 +181,7 @@ class PrioritizedRetriever:
         state_filter = f"({ ' or '.join(state_clauses) })"
 
         if categories_to_exclude:
-            category_filter = " and ".join([f"category ne '{c}'" for c in categories_to_exclude])
+            category_filter = " and ".join(
+                [f"category ne '{c}'" for c in categories_to_exclude])
             return f"{state_filter} and {category_filter}"
         return state_filter

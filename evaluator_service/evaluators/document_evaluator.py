@@ -55,7 +55,8 @@ def _write_llm_concepts_artifact(
 
     lines.append("INTRODUCES (for later scaffolding)")
     for i in range(len(documents)):
-        concepts = introduces_concepts[i] if i < len(introduces_concepts) else None
+        concepts = introduces_concepts[i] if i < len(
+            introduces_concepts) else None
         lines.append(f"Doc {i+1}:")
         if not concepts:
             lines.append("  - (none)")

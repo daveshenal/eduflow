@@ -1,14 +1,19 @@
+"""Upload generated PDFs, audio, voicescripts, and JSON logs to Azure Blob Storage."""
+
+import io
 import json
-from pathlib import Path
 import logging
 import mimetypes
-import io
+from dataclasses import dataclass
+from pathlib import Path
+
+from azure.storage.blob import ContentSettings
 
 from app.adapters.azure_blob import get_ai_saves_container_client
-from azure.storage.blob import ContentSettings
 
 
 def _iter_local_files(directory: Path):
+    """Return file paths under directory, or empty list if missing."""
     if not directory.exists():
         return []
     return [p for p in directory.iterdir() if p.is_file()]
@@ -34,6 +39,7 @@ def upload_artifacts(
     uploads = {"pdf": [], "audio_mp3": [], "voicescripts": []}
 
     def _upload_file(local_path: Path, prefix: str):
+        """Upload one local file under prefix; return blob path."""
         blob_path = f"{prefix}/{local_path.name}"
         content_settings = None
         mime, _ = mimetypes.guess_type(local_path.name)
@@ -73,24 +79,27 @@ def upload_artifacts(
         return uploads
 
     except Exception as e:
-        logging.error(f"Failed to upload generated artifacts: {e}")
+        logging.error("Failed to upload generated artifacts: %s", e)
         raise
-    
-    
-def upload_generation_logs(
-    job_id:str,
-    index_id: str,
-    params: dict,
-    plan: dict,
-    response: dict,
+
+
+@dataclass
+class GenerationLogUpload:
+    """Blob upload bundle for plan, params, response, and usage JSON logs."""
+    job_id: str
+    index_id: str
+    params: dict
+    plan: dict
+    response: dict
     usage: dict
-) -> dict:
+
+
+def upload_generation_logs(payload: GenerationLogUpload) -> None:
     """
     Upload logs for generated artifacts to Azure Blob Storage in the structure:
       index-{index_id}/{job_id}/logs/<files>
     """
-
-    base_prefix = f"index-{index_id}/{job_id}/logs"
+    base_prefix = f"index-{payload.index_id}/{payload.job_id}/logs"
 
     container_client = get_ai_saves_container_client()
 
@@ -98,7 +107,8 @@ def upload_generation_logs(
         """Upload a JSON dict directly to blob storage without saving locally."""
 
         blob_path = f"{prefix}/{blob_name}"
-        json_bytes = json.dumps(data, indent=2, ensure_ascii=False).encode("utf-8")
+        json_bytes = json.dumps(
+            data, indent=2, ensure_ascii=False).encode("utf-8")
 
         container_client.upload_blob(
             name=blob_path,
@@ -109,18 +119,20 @@ def upload_generation_logs(
         return blob_path
 
     try:
-        blob_path = _upload_json(plan, "plan.json", f"{base_prefix}")
-        logging.info(f"Uploaded plan to: {blob_path}")
-        
-        blob_path = _upload_json(params, "input_params.json", f"{base_prefix}")
-        logging.info(f"Uploaded input params to: {blob_path}")
-        
-        blob_path = _upload_json(response, "response.json", f"{base_prefix}")
-        logging.info(f"Uploaded response to: {blob_path}")
-        
-        blob_path = _upload_json(usage, "usage.json", f"{base_prefix}")
-        logging.info(f"Uploaded usage to: {blob_path}")
-        
+        blob_path = _upload_json(payload.plan, "plan.json", f"{base_prefix}")
+        logging.info("Uploaded plan to: %s", blob_path)
+
+        blob_path = _upload_json(
+            payload.params, "input_params.json", f"{base_prefix}")
+        logging.info("Uploaded input params to: %s", blob_path)
+
+        blob_path = _upload_json(
+            payload.response, "response.json", f"{base_prefix}")
+        logging.info("Uploaded response to: %s", blob_path)
+
+        blob_path = _upload_json(payload.usage, "usage.json", f"{base_prefix}")
+        logging.info("Uploaded usage to: %s", blob_path)
+
         logging.info(
             "Uploaded generation logs to container '%s' with base prefix '%s'",
             container_client.container_name,
@@ -128,5 +140,5 @@ def upload_generation_logs(
         )
 
     except Exception as plan_upload_error:
-        logging.warning(f"Failed to upload plan: {plan_upload_error}")
+        logging.warning("Failed to upload plan: %s", plan_upload_error)
         raise

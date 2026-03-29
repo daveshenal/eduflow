@@ -26,7 +26,7 @@ class TTSRequest(BaseModel):
 # Helper function to create SSML
 def create_ssml(text: str, voice: str, speed: str, pitch: str) -> str:
     processed_text = re.sub(r'\.', '.<break time="300ms"/>', text)
-    
+
     return f"""
     <speak version='1.0' xml:lang='en-US' xmlns:mstts='https://www.w3.org/2001/mstts'>
         <voice name='{voice}'>
@@ -66,31 +66,35 @@ def synthesize_text(request: TTSRequest) -> dict:
     max_retries = 3
     base_delay = 1  # Base delay in seconds
     max_delay = 15  # Maximum delay in seconds
-    
+
     for attempt in range(max_retries + 1):
         try:
             # Configure and create synthesizer
             speech_config.speech_synthesis_voice_name = request.voice
-            synthesizer = speechsdk.SpeechSynthesizer(speech_config=speech_config, audio_config=None)
-            ssml = create_ssml(request.text, request.voice, request.speed, request.pitch)
-            
+            synthesizer = speechsdk.SpeechSynthesizer(
+                speech_config=speech_config, audio_config=None)
+            ssml = create_ssml(request.text, request.voice,
+                               request.speed, request.pitch)
+
             # Log attempt info for production monitoring
-            logging.info(f"TTS synthesis attempt {attempt + 1}/{max_retries + 1} for text length: {len(request.text)}")
-            
+            logging.info(
+                f"TTS synthesis attempt {attempt + 1}/{max_retries + 1} for text length: {len(request.text)}")
+
             # Perform synthesis
             result = synthesizer.speak_ssml_async(ssml).get()
-            
+
             if result.reason == speechsdk.ResultReason.SynthesizingAudioCompleted:
                 file_id = str(uuid.uuid4())
                 filename = f"{file_id}.mp3"
                 file_path = OUTPUT_DIR / filename
                 with open(file_path, "wb") as audio_file:
                     audio_file.write(result.audio_data)
-                
+
                 # Log success for monitoring
                 if attempt > 0:
-                    logging.info(f"TTS synthesis succeeded on attempt {attempt + 1}")
-                    
+                    logging.info(
+                        f"TTS synthesis succeeded on attempt {attempt + 1}")
+
                 return {
                     'success': True,
                     'message': "Speech synthesized successfully",
@@ -98,45 +102,48 @@ def synthesize_text(request: TTSRequest) -> dict:
                     'file_path': str(file_path),
                     'attempts': attempt + 1  # Track retry count for monitoring
                 }
-                
+
             elif result.reason == speechsdk.ResultReason.Canceled:
                 cancellation = result.cancellation_details
                 error_msg = f"Speech synthesis canceled: {cancellation.reason}"
                 if cancellation.reason == speechsdk.CancellationReason.Error:
                     error_msg += f" - {cancellation.error_details}"
-                
+
                 # Check if this is a retryable error
                 is_timeout = "timeout" in error_msg.lower()
-                is_network_error = any(keyword in error_msg.lower() for keyword in 
+                is_network_error = any(keyword in error_msg.lower() for keyword in
                                      ["network", "connection", "service unavailable", "server error"])
-                
+
                 if (is_timeout or is_network_error) and attempt < max_retries:
                     # Calculate exponential backoff delay
                     delay = min(base_delay * (2 ** attempt), max_delay)
-                    logging.warning(f"TTS synthesis failed (attempt {attempt + 1}): {error_msg}. Retrying in {delay}s...")
+                    logging.warning(
+                        f"TTS synthesis failed (attempt {attempt + 1}): {error_msg}. Retrying in {delay}s...")
                     time.sleep(delay)
                     continue  # Retry
                 else:
                     # Non-retryable error or max retries reached
-                    logging.error(f"TTS synthesis failed permanently after {attempt + 1} attempts: {error_msg}")
+                    logging.error(
+                        f"TTS synthesis failed permanently after {attempt + 1} attempts: {error_msg}")
                     raise Exception(error_msg)
             else:
                 # Unexpected result - don't retry
                 error_msg = f"Unexpected synthesis result: {result.reason}"
                 logging.error(error_msg)
                 raise Exception(error_msg)
-                
+
         except Exception as e:
             # Handle non-Azure SDK exceptions (file I/O, etc.)
             if attempt < max_retries and "timeout" in str(e).lower():
                 delay = min(base_delay * (2 ** attempt), max_delay)
-                logging.warning(f"TTS synthesis exception (attempt {attempt + 1}): {str(e)}. Retrying in {delay}s...")
+                logging.warning(
+                    f"TTS synthesis exception (attempt {attempt + 1}): {str(e)}. Retrying in {delay}s...")
                 time.sleep(delay)
                 continue
             else:
                 logging.error(f"TTS synthesis failed permanently: {str(e)}")
                 raise
-    
+
     # This should never be reached, but just in case
     raise Exception("Maximum retry attempts exceeded")
 
@@ -191,18 +198,19 @@ def generate_mp3_from_file(text_file_path: str, output_file_path: str, voice: st
     if mp3_files:
         merge_mp3_files(mp3_files, output_file_path)
         logging.info(f"\nAll chunks merged into: {output_file_path}")
-        
+
         # Clean up temporary chunk files
         for temp_file in mp3_files:
             try:
                 os.remove(temp_file)
             except Exception as e:
-                logging.info(f"Warning: Could not remove temp file {temp_file}: {e}")
-        
+                logging.info(
+                    f"Warning: Could not remove temp file {temp_file}: {e}")
+
         return output_file_path
     else:
         raise Exception("No MP3 files were generated")
-    
+
 # if __name__ == "__main__":
 #     import time
 

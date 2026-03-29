@@ -1,22 +1,37 @@
-from datetime import datetime, timezone
+"""Curriculum plan generation pipeline: plan → PDFs, optional voice, upload, callback."""
+
+import json
 import logging
+import shutil
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict
-import json
-import shutil
+
 import httpx
 
 from config.settings import settings
 from app.retrievers.index_data_retriver import PrioritizedRetriever
 from app.adapters.azure_sql import get_db_connection, create_bg_job, update_bg_job
-from app.core.content_upload import upload_artifacts, upload_generation_logs
-from app.core.curriculem_plan_service import get_word_targets, fetch_plan_prompts, format_plan_prompt, generate_plan
-from app.core.content_service import fetch_pdf_prompts, process_single_doc
+from app.core.content_upload import (
+    GenerationLogUpload,
+    upload_artifacts,
+    upload_generation_logs,
+)
+from app.core.curriculem_plan_service import (
+    get_word_targets,
+    fetch_plan_prompts,
+    format_plan_prompt,
+    generate_plan,
+)
+from app.core.content_service import fetch_pdf_prompts, process_single_doc, PlanBasedDocParams
 from app.core.pdf_generator import create_pdf
 from app.core.voicescript_service import generate_voiceover_script
 from app.core.audio_generator import generate_mp3_from_file
 
+
 class BackgroundJob:
+    """In-memory job record for tracking async generation (used by callers holding state)."""
+
     def __init__(self, job_id: str, index_id: str, callback_url: str):
         self.job_id = job_id
         self.index_id = index_id
@@ -28,6 +43,7 @@ class BackgroundJob:
         self.updated_at = self.created_at
 
     def update(self, status: str, message: str, result: Dict = None, error: str = None):
+        """Update status, optional result/error, and refresh updated_at."""
         self.status = status
         self.message = message
         self.result = result
@@ -37,8 +53,6 @@ class BackgroundJob:
 
 def validate_payload(payload: dict) -> dict:
     """Validate and extract required fields from payload."""
-    
-    # Required fields
     required_fields = [
         "job_id",
         "index_id",
@@ -48,23 +62,19 @@ def validate_payload(payload: dict) -> dict:
         "duration",
         "num_docs",
     ]
-    
-    # List to store missing fields
+
     missing_fields = []
 
-    # Check for missing required fields
     for field in required_fields:
         if field not in payload:
             missing_fields.append(field)
-    
-    # If any fields are missing, raise an error with a list of missing fields
+
     if missing_fields:
-        raise ValueError(f"Missing required fields: {', '.join(missing_fields)}")
-    
-    # Extract and return fields from payload
+        raise ValueError(
+            f"Missing required fields: {', '.join(missing_fields)}")
+
     return {
         "job_id": payload.get("job_id"),
-        # Optional: when omitted, we rely on status polling from the frontend.
         "callback_url": payload.get("callback_url"),
         "index_id": payload.get("index_id"),
         "learning_focus": payload.get("learning_focus"),
@@ -72,7 +82,6 @@ def validate_payload(payload: dict) -> dict:
         "target_audience": payload.get("target_audience"),
         "duration": int(payload.get("duration")),
         "num_docs": int(payload.get("num_docs")),
-        # Voice is optional; may be None / missing
         "voice": payload.get("voice"),
     }
 
@@ -81,28 +90,32 @@ def setup_output_directories(job_id: str) -> dict:
     """Create and return output directory paths for a specific job."""
     base_dir = Path("temp/generated_content") / job_id
     base_dir.mkdir(parents=True, exist_ok=True)
-    
+
     dirs = {
         'plan': base_dir / "plan",
         'pdfs': base_dir / "pdfs",
         'voiceovers': base_dir / "voicescripts",
         'audio': base_dir / "audio_mp3s"
     }
-    
+
     for dir_path in dirs.values():
         dir_path.mkdir(parents=True, exist_ok=True)
-    
+
     return dirs
 
 
 def clean_local_directories(job_id: str):
-    """Delete the entire job directory."""
+    """Delete the entire job directory under temp/generated_content."""
     job_dir = Path("temp/generated_content") / job_id
     try:
         if job_dir.exists() and job_dir.is_dir():
             shutil.rmtree(job_dir, ignore_errors=True)
     except Exception as cleanup_error:
-        logging.warning(f"Failed to clean up job directory {job_id}: {cleanup_error}")
+        logging.warning(
+            "Failed to clean up job directory %s: %s",
+            job_id,
+            cleanup_error,
+        )
 
 
 async def generate_content_background_task(params: dict, claude_client):
@@ -117,45 +130,50 @@ async def generate_content_background_task(params: dict, claude_client):
             status="queued",
             message="Generating docs...",
         )
-        # Call the docs generation function
         doc_outputs = await generate_content(params, claude_client)
-        
+
         if doc_outputs.get("success") is False:
             print(doc_outputs.get("error"))
             await update_bg_job(
                 job_id=job_id,
                 status="Failed",
                 message="Docs generation failed",
-                error_text=json.dumps(doc_outputs.get("error")) if doc_outputs else None,
+                error_text=json.dumps(doc_outputs.get(
+                    "error")) if doc_outputs else None,
             )
-            
+
             clean_local_directories(job_id)
-            # Send notification with error
-            notification_payload = await send_job_completion_notification(params, result=None, error=doc_outputs.get("error"))
+            await send_job_completion_notification(
+                params, result=None, error=doc_outputs.get("error"),
+            )
         else:
             await update_bg_job(
                 job_id=job_id,
                 status="completed",
                 message="Docs generation completed successfully",
-                result_text=json.dumps(doc_outputs.get("returns")) if doc_outputs else None,
+                result_text=json.dumps(doc_outputs.get(
+                    "returns")) if doc_outputs else None,
             )
-            
+
             results = doc_outputs.get("returns")
             logs = doc_outputs.get("logs")
-            
-            notification_payload = await send_job_completion_notification(params, result=results, error=None)
-            logging.info(f"Sent job completed notification for job {job_id}")
-            upload_generation_logs(
-                job_id=job_id,
-                index_id=params.get("index_id"),
-                params=params,
-                plan=logs.get("plan"),
-                response=notification_payload,
-                usage=logs.get("token_usage")
+
+            notification_payload = await send_job_completion_notification(
+                params, result=results, error=None,
             )
-        
+            logging.info("Sent job completed notification for job %s", job_id)
+            upload_generation_logs(
+                GenerationLogUpload(
+                    job_id=job_id,
+                    index_id=params.get("index_id"),
+                    params=params,
+                    plan=logs.get("plan"),
+                    response=notification_payload,
+                    usage=logs.get("token_usage"),
+                )
+            )
+
     except Exception as e:
-        # Ensure the DB reflects unexpected crashes too.
         try:
             await update_bg_job(
                 job_id=job_id,
@@ -164,39 +182,48 @@ async def generate_content_background_task(params: dict, claude_client):
                 error_text=str(e),
             )
         except Exception:
-            logging.exception("Failed to update background job failure status for %s", job_id)
-        # Best-effort cleanup in case we crashed before the normal "success=False" return.
+            logging.exception(
+                "Failed to update background job failure status for %s",
+                job_id,
+            )
         try:
             clean_local_directories(job_id)
         except Exception:
-            logging.exception("Failed to clean up local job directory for %s", job_id)
+            logging.exception(
+                "Failed to clean up local job directory for %s",
+                job_id,
+            )
         await send_job_completion_notification(params, result=None, error=str(e))
-        logging.error(f"Background job {params.get('job_id')} failed: {e}")
+        logging.error(
+            "Background job %s failed: %s",
+            params.get('job_id'),
+            e,
+        )
 
 
 async def generate_content(params: dict, claude_client):
     """Generate a curriculum plan and create PDF files."""
-    
+
     total_input_tokens = 0
     total_output_tokens = 0
     total_speech_characters = 0
     try:
         dirs = setup_output_directories(params["job_id"])
-        
+
         min_words, max_words = get_word_targets(params['duration'])
 
-        # === PLAN GENERATION (prompts from prompt manager) ===
         async with get_db_connection() as db_conn:
             plan_prompts = await fetch_plan_prompts(db_conn)
-        user_prompt = format_plan_prompt(plan_prompts, params, min_words, max_words)
-        plan_response = await generate_plan(claude_client, plan_prompts['system_prompt'], user_prompt)
+        user_prompt = format_plan_prompt(
+            plan_prompts, params, min_words, max_words)
+        plan_response = await generate_plan(
+            claude_client, plan_prompts['system_prompt'], user_prompt,
+        )
 
-        # Extract plan result and accumulate tokens
         plan_result = plan_response["plan"]
         total_input_tokens += plan_response["tokens"]["input"]
         total_output_tokens += plan_response["tokens"]["output"]
 
-        # === CONTENT + PDF GENERATION ===
         docs = (plan_result or {}).get("docs") or []
         if not docs:
             raise ValueError("Plan contains no docs to generate")
@@ -217,24 +244,32 @@ async def generate_content(params: dict, claude_client):
             except (TypeError, ValueError):
                 raise ValueError(f"Invalid doc id from plan: {doc_id_raw!r}")
 
-            # Generate pdf content
             result = await process_single_doc(
-                claude_client, doc, doc_id, plan_result, docs, retriever,
-                pdf_prompts, min_words, max_words, params["duration"],
+                claude_client,
+                PlanBasedDocParams(
+                    doc=doc,
+                    doc_id=doc_id,
+                    plan_result=plan_result,
+                    docs=docs,
+                    retriever=retriever,
+                    prompts=pdf_prompts,
+                    min_words=min_words,
+                    max_words=max_words,
+                    duration=params["duration"],
+                ),
             )
-            
-            # # Accumulate tokens from pdf generation
+
             total_input_tokens += result["tokens"]["input"]
             total_output_tokens += result["tokens"]["output"]
             content_html = result.get("content_html")
 
             try:
-                pdf_path = await create_pdf(doc_id, content_html, dirs["pdfs"])
+                await create_pdf(doc_id, content_html, dirs["pdfs"])
             except Exception as pdf_error:
-                logging.error("Failed to create PDF for doc %s: %s", doc_id, pdf_error)
+                logging.error(
+                    "Failed to create PDF for doc %s: %s", doc_id, pdf_error)
                 raise
-            
-            # Generate voiceover + audio only if a voice was provided
+
             if params.get("voice"):
                 try:
                     voiceover_payload = {
@@ -247,22 +282,19 @@ async def generate_content(params: dict, claude_client):
                         payload=voiceover_payload,
                         claude_client=claude_client,
                     )
-                    
-                    # Accumulate tokens from voiceover generation
+
                     total_input_tokens += voiceover_response["tokens"]["input"]
                     total_output_tokens += voiceover_response["tokens"]["output"]
-                    
+
                     voiceover_script = voiceover_response["script"]
-                    
-                    # Count characters for Azure Speech
+
                     total_speech_characters += len(voiceover_script)
-                    
+
                     voiceover_filename = f"voicescript-{doc_id}.txt"
                     voiceover_path = dirs['voiceovers'] / voiceover_filename
                     with open(voiceover_path, 'w', encoding='utf-8') as f:
                         f.write(voiceover_script)
 
-                    # Generate MP3
                     try:
                         mp3_filename = f"voiceover-{doc_id}.mp3"
                         mp3_path = dirs['audio'] / mp3_filename
@@ -275,10 +307,18 @@ async def generate_content(params: dict, claude_client):
                         )
 
                     except Exception as mp3_error:
-                        logging.error(f"Failed to generate MP3 for document {doc_id}: {mp3_error}")
+                        logging.error(
+                            "Failed to generate MP3 for document %s: %s",
+                            doc_id,
+                            mp3_error,
+                        )
                         raise mp3_error
                 except Exception as voiceover_error:
-                    logging.error(f"Failed to generate voiceover for document {doc_id}: {voiceover_error}")
+                    logging.error(
+                        "Failed to generate voiceover for document %s: %s",
+                        doc_id,
+                        voiceover_error,
+                    )
                     raise voiceover_error
 
         token_usage = {
@@ -286,8 +326,7 @@ async def generate_content(params: dict, claude_client):
             "total_output_tokens": total_output_tokens,
             "total_speech_characters": total_speech_characters
         }
-        
-        #=== UPLOAD ALL ARTIFACTS TO AZURE BLOB ===
+
         try:
             upload_result = upload_artifacts(
                 job_id=params["job_id"],
@@ -297,12 +336,14 @@ async def generate_content(params: dict, claude_client):
                 voicescripts_dir=dirs['voiceovers'],
             )
         except Exception as upload_error:
-            logging.error(f"Failed to upload doc artifacts to Azure Blob: {upload_error}")
+            logging.error(
+                "Failed to upload doc artifacts to Azure Blob: %s",
+                upload_error,
+            )
             raise upload_error
-        
+
         clean_local_directories(params["job_id"])
-        
-        # Initialize an empty list for the generated documents
+
         generated_docs = []
         for i, doc in enumerate(docs):
             doc_id_raw = doc.get("id")
@@ -310,35 +351,47 @@ async def generate_content(params: dict, claude_client):
                 doc_id = int(doc_id_raw)
             except (TypeError, ValueError):
                 raise ValueError(f"Invalid doc id from plan: {doc_id_raw!r}")
-            
-            # Find the corresponding uploaded file paths by matching filenames
+
             pdf_filename = f"doc-{doc_id}.pdf"
             mp3_filename = f"voiceover-{doc_id}.mp3"
             txt_filename = f"voicescript-{doc_id}.txt"
-            
-            # Find the uploaded paths that match this doc's files
-            pdf_path = next((path for path in upload_result["pdf"] if pdf_filename in path), None)
-            audio_path = next((path for path in upload_result["audio_mp3"] if mp3_filename in path), None)
-            voicescript_path = next((path for path in upload_result["voicescripts"] if txt_filename in path), None)
-            
+
+            pdf_path = next(
+                (path for path in upload_result["pdf"]
+                 if pdf_filename in path),
+                None,
+            )
+            audio_path = next(
+                (path for path in upload_result["audio_mp3"]
+                 if mp3_filename in path),
+                None,
+            )
+            voicescript_path = next(
+                (path for path in upload_result["voicescripts"]
+                 if txt_filename in path),
+                None,
+            )
+
             if not pdf_path:
-                logging.error(f"Missing uploaded PDF artifact for doc {doc_id}")
-                raise ValueError(f"Uploaded PDF artifact missing for doc {doc_id}")
-            
+                logging.error(
+                    "Missing uploaded PDF artifact for doc %s", doc_id)
+                raise ValueError(
+                    f"Uploaded PDF artifact missing for doc {doc_id}")
+
             doc_data = {
                 "doc_index": i + 1,
                 "title": doc.get("title"),
                 "pdf_path": pdf_path,
             }
-            # Only include audio / voicescript paths if they exist (voice was provided)
             if audio_path:
                 doc_data["audio_path"] = audio_path
             if voicescript_path:
                 doc_data["voicescript_path"] = voicescript_path
-            
+
             generated_docs.append(doc_data)
 
-        curriculum_metadata = (plan_result or {}).get("curriculum_metadata") or {}
+        curriculum_metadata = (plan_result or {}).get(
+            "curriculum_metadata") or {}
         curriculum_title = curriculum_metadata.get("title") or ""
         return {
             "success": True,
@@ -352,20 +405,17 @@ async def generate_content(params: dict, claude_client):
                 "plan": plan_result
             }
         }
-        
+
     except Exception as e:
         return {
             "success": False,
             "error": str(e)
         }
-        
+
+
 async def send_job_completion_notification(params: dict, result: dict = None, error: str = None):
-    """Send job completion notification to the callback URL.
-    
-    if completed: error = none
-    if faild; result = none
-    """
-    
+    """POST completion or failure payload to callback_url when provided."""
+
     callback_url = (params.get("callback_url") or "").strip()
     job_id = params.get("job_id")
 
@@ -375,16 +425,15 @@ async def send_job_completion_notification(params: dict, result: dict = None, er
             "status": "notification_skipped",
             "error": "No callback_url provided",
         }
-    
-    # Prepare the notification payload with dummy data for now
+
     notification_payload = {
         "job_id": job_id,
         "status": "completed" if error is None else "failed",
         "error": error,
         "index_id": str(params.get("index_id")),
-        "generated_sequence": result   
+        "generated_sequence": result
     }
-    
+
     try:
         async with httpx.AsyncClient() as client:
             response = await client.post(
@@ -398,7 +447,9 @@ async def send_job_completion_notification(params: dict, result: dict = None, er
 
             if response.status_code != 200:
                 logging.error(
-                    f"Failed to send notification for job {job_id}. Status: {response.status_code}"
+                    "Failed to send notification for job %s. Status: %s",
+                    job_id,
+                    response.status_code,
                 )
                 return {
                     "job_id": job_id,
@@ -409,14 +460,22 @@ async def send_job_completion_notification(params: dict, result: dict = None, er
             return notification_payload
 
     except httpx.RequestError as e:
-        logging.error(f"Request error while sending notification for job {job_id}: {e}")
+        logging.error(
+            "Request error while sending notification for job %s: %s",
+            job_id,
+            e,
+        )
         return {
             "job_id": job_id,
             "status": "notification_failed",
             "error": str(e),
         }
     except Exception as e:
-        logging.error(f"Unexpected error while sending notification for job {job_id}: {e}")
+        logging.error(
+            "Unexpected error while sending notification for job %s: %s",
+            job_id,
+            e,
+        )
         return {
             "job_id": job_id,
             "status": "notification_failed",

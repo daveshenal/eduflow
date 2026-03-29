@@ -38,7 +38,8 @@ class AIIndex:
     def __init__(self, index_id: str):
         self.search_index_client = get_search_index_client()
         self.search_indexer_client = get_search_indexer_client()
-        self.blob_service_client = BlobServiceClient.from_connection_string(settings.AZURE_STORAGE_CONNECTION_STRING)
+        self.blob_service_client = BlobServiceClient.from_connection_string(
+            settings.AZURE_STORAGE_CONNECTION_STRING)
         self.index = f"ai-index-{index_id}"
         self.azure_oai_endpoint = settings.AZURE_OPENAI_ENDPOINT
         self.azure_oai_key = settings.AZURE_OPENAI_KEY
@@ -46,34 +47,36 @@ class AIIndex:
         self.emb_model_name = settings.AZURE_OPENAI_EMBEDDING_DEPLOYMENT
         self.storage_connection_string = settings.AZURE_STORAGE_CONNECTION_STRING
         self.blob_container_name = f"ai-{index_id}"
-        self.chunk_size = settings.MAX_CHUNK_SIZE     
-        self.chunk_overlap = settings.CHUNK_OVERLAP     
+        self.chunk_size = settings.MAX_CHUNK_SIZE
+        self.chunk_overlap = settings.CHUNK_OVERLAP
         self.emb_dimentions = settings.EMBEDDING_DIMENSIONS
-        
+
     def create_blob_container(self):
         """Create Azure Blob Storage container if it doesn't exist"""
-        
+
         try:
             container_client = self.blob_service_client.create_container(
                 name=self.blob_container_name,
                 public_access=None  # Private container
             )
-            print(f"Container '{self.blob_container_name}' created successfully")
+            print(
+                f"Container '{self.blob_container_name}' created successfully")
             return container_client
-            
+
         except ResourceExistsError:
             print(f"Container '{self.blob_container_name}' already exists")
             return self.blob_service_client.get_container_client(self.blob_container_name)
-            
+
         except Exception as e:
-            print(f"Error creating container '{self.blob_container_name}': {e}")
+            print(
+                f"Error creating container '{self.blob_container_name}': {e}")
             raise
 
     def create_search_index(self):
         """Create Azure AI Search index with vector search capabilities and vectorizer"""
-        
+
         print(f"Creating or updating index: {self.index}")
-        
+
         # Define the search fields
         fields = [
             SearchableField(
@@ -83,22 +86,28 @@ class AIIndex:
                 searchable=True,
                 analyzer_name="keyword"
             ),
-            SimpleField(name="parent_id", type=SearchFieldDataType.String, filterable=True),  # Required for indexProjections
-            SimpleField(name="category", type=SearchFieldDataType.String, filterable=True),
-            SimpleField(name="source_name", type=SearchFieldDataType.String, filterable=True),
-            SimpleField(name="source_path", type=SearchFieldDataType.String, filterable=True),
-            SimpleField(name="created_at", type=SearchFieldDataType.DateTimeOffset, filterable=True),
+            SimpleField(name="parent_id", type=SearchFieldDataType.String,
+                        filterable=True),  # Required for indexProjections
+            SimpleField(name="category",
+                        type=SearchFieldDataType.String, filterable=True),
+            SimpleField(name="source_name",
+                        type=SearchFieldDataType.String, filterable=True),
+            SimpleField(name="source_path",
+                        type=SearchFieldDataType.String, filterable=True),
+            SimpleField(
+                name="created_at", type=SearchFieldDataType.DateTimeOffset, filterable=True),
             SearchableField(name="title", type=SearchFieldDataType.String),
             SearchableField(name="content", type=SearchFieldDataType.String),
             SearchField(
                 name="content_vector",
-                type=SearchFieldDataType.Collection(SearchFieldDataType.Single),
+                type=SearchFieldDataType.Collection(
+                    SearchFieldDataType.Single),
                 vector_search_dimensions=settings.EMBEDDING_DIMENSIONS,
                 vector_search_profile_name="default-vector-profile",
                 hidden=False  # ensures retrievable
             )
         ]
-        
+
         # Configure vectorizer
         vectorizer = AzureOpenAIVectorizer(
             vectorizer_name="content-vectorizer",
@@ -110,7 +119,7 @@ class AIIndex:
                 model_name=self.emb_model_name
             )
         )
-        
+
         # Configure vector search with vectorizer
         vector_search = VectorSearch(
             profiles=[
@@ -128,14 +137,14 @@ class AIIndex:
             ],
             vectorizers=[vectorizer]
         )
-        
+
         # Create the search index
         index = SearchIndex(
             name=self.index,
             fields=fields,
             vector_search=vector_search
         )
-        
+
         try:
             result = self.search_index_client.create_or_update_index(index)
             print(f"Index {self.index} created successfully with vectorizer")
@@ -146,7 +155,7 @@ class AIIndex:
 
     def create_blob_data_source(self):
         """Create a blob data source for the indexer"""
-        
+
         data_source = SearchIndexerDataSourceConnection(
             name=f"{self.index}-blob-datasource",
             type=SearchIndexerDataSourceType.AZURE_BLOB,
@@ -155,9 +164,10 @@ class AIIndex:
                 name=self.blob_container_name
             )
         )
-        
+
         try:
-            result = self.search_indexer_client.create_or_update_data_source_connection(data_source)
+            result = self.search_indexer_client.create_or_update_data_source_connection(
+                data_source)
             print(f"Data source created successfully: {data_source.name}")
             return result
         except Exception as e:
@@ -166,7 +176,7 @@ class AIIndex:
 
     def create_skillset(self):
         """Create a skillset for document processing and chunking with indexProjections"""
-        
+
         # Text splitting skill for chunking
         split_skill = SplitSkill(
             name="split-skill",
@@ -183,7 +193,7 @@ class AIIndex:
                 OutputFieldMappingEntry(name="textItems", target_name="pages")
             ]
         )
-        
+
         # Azure OpenAI Embedding skill
         embedding_skill = AzureOpenAIEmbeddingSkill(
             name="embedding-skill",
@@ -198,11 +208,12 @@ class AIIndex:
                 InputFieldMappingEntry(name="text", source="/document/pages/*")
             ],
             outputs=[
-                OutputFieldMappingEntry(name="embedding", target_name="content_vector")
+                OutputFieldMappingEntry(
+                    name="embedding", target_name="content_vector")
             ],
             dimensions=self.emb_dimentions
         )
-        
+
         # Define index projections
         index_projection = SearchIndexerIndexProjection(
             selectors=[
@@ -211,12 +222,18 @@ class AIIndex:
                     parent_key_field_name="parent_id",
                     source_context="/document/pages/*",
                     mappings=[
-                        InputFieldMappingEntry(name="category", source="/document/category"),
-                        InputFieldMappingEntry(name="source_name", source="/document/metadata_storage_name"),
-                        InputFieldMappingEntry(name="source_path", source="/document/metadata_storage_path"),
-                        InputFieldMappingEntry(name="created_at", source="/document/created_at"),
-                        InputFieldMappingEntry(name="content", source="/document/pages/*"),
-                        InputFieldMappingEntry(name="content_vector", source="/document/pages/*/content_vector"),
+                        InputFieldMappingEntry(
+                            name="category", source="/document/category"),
+                        InputFieldMappingEntry(
+                            name="source_name", source="/document/metadata_storage_name"),
+                        InputFieldMappingEntry(
+                            name="source_path", source="/document/metadata_storage_path"),
+                        InputFieldMappingEntry(
+                            name="created_at", source="/document/created_at"),
+                        InputFieldMappingEntry(
+                            name="content", source="/document/pages/*"),
+                        InputFieldMappingEntry(
+                            name="content_vector", source="/document/pages/*/content_vector"),
                     ]
                 )
             ],
@@ -232,9 +249,10 @@ class AIIndex:
             skills=[split_skill, embedding_skill],
             index_projection=index_projection
         )
-        
+
         try:
-            result = self.search_indexer_client.create_or_update_skillset(skillset)
+            result = self.search_indexer_client.create_or_update_skillset(
+                skillset)
             print(f"Skillset created successfully: {skillset.name}")
             return result
         except Exception as e:
@@ -243,7 +261,7 @@ class AIIndex:
 
     def create_indexer(self):
         """Create an indexer to process documents from blob storage"""
-        
+
         # Configure indexing parameters
         indexing_parameters = IndexingParameters(
             batch_size=5,  # Reduced batch size for better error handling
@@ -257,7 +275,7 @@ class AIIndex:
                 "failOnUnprocessableDocument": False,
             }
         )
-        
+
         # Field mappings from blob metadata to index fields (for parent document)
         field_mappings = [
             FieldMapping(
@@ -285,7 +303,7 @@ class AIIndex:
                 target_field_name="content"
             ),
         ]
-        
+
         indexer = SearchIndexer(
             name=f"{self.index}-indexer",
             description="Indexer for processing blob documents",
@@ -297,9 +315,10 @@ class AIIndex:
             # output_field_mappings parameter removed - using indexProjections in skillset
             schedule=None
         )
-        
+
         try:
-            result = self.search_indexer_client.create_or_update_indexer(indexer)
+            result = self.search_indexer_client.create_or_update_indexer(
+                indexer)
             print(f"Indexer created successfully: {indexer.name}")
             return result
         except Exception as e:
@@ -308,21 +327,21 @@ class AIIndex:
 
     def run_indexer(self):
         """Run the indexer to process documents"""
-        
+
         indexer_name = f"{self.index}-indexer"
-        
+
         try:
             # Reset the indexer first to clear any previous state
             self.search_indexer_client.reset_indexer(indexer_name)
             print(f"Indexer {indexer_name} reset successfully")
-            
+
             # Run the indexer
             result = self.search_indexer_client.run_indexer(indexer_name)
             print(f"Indexer {indexer_name} started successfully")
-            
+
             # Monitor indexer status
             self.monitor_indexer_status(indexer_name)
-            
+
             return result
         except Exception as e:
             print(f"Error running indexer: {e}")
@@ -331,8 +350,10 @@ class AIIndex:
     def monitor_indexer_status(self, indexer_name):
         print(f"Monitoring indexer {indexer_name}...")
         while True:
-            status = self.search_indexer_client.get_indexer_status(indexer_name)
-            print(json.dumps(status.as_dict(), indent=2))  # Dump full status object
+            status = self.search_indexer_client.get_indexer_status(
+                indexer_name)
+            # Dump full status object
+            print(json.dumps(status.as_dict(), indent=2))
 
             execution_status = status.last_result.status if status.last_result else "Unknown"
             print(f"Indexer status: {execution_status}")
@@ -340,7 +361,8 @@ class AIIndex:
             if execution_status in ["success", "partialSuccess"]:
                 if status.last_result:
                     print(f"Items processed: {status.last_result.item_count}")
-                    print(f"Items failed: {status.last_result.failed_item_count}")
+                    print(
+                        f"Items failed: {status.last_result.failed_item_count}")
                 break
 
             elif execution_status in ["transientFailure", "persistentFailure"]:
@@ -356,12 +378,13 @@ class AIIndex:
 
     def get_indexer_status(self, indexer_name=None):
         """Get the current status of an indexer"""
-        
+
         if not indexer_name:
             indexer_name = f"{self.index}-indexer"
-        
+
         try:
-            status = self.search_indexer_client.get_indexer_status(indexer_name)
+            status = self.search_indexer_client.get_indexer_status(
+                indexer_name)
             return {
                 "name": indexer_name,
                 "status": status.status,
@@ -380,29 +403,29 @@ class AIIndex:
 
     def setup_complete_indexing_pipeline(self):
         """Set up the complete indexing pipeline"""
-        
+
         print("Setting up complete indexing pipeline...")
-        
+
         # Create the blob container first
         print("1. Creating blob container...")
         self.create_blob_container()
-        
+
         # Create the search index
         print("2. Creating search index...")
         self.create_search_index()
-        
+
         # Create blob data source
         print("3. Creating blob data source...")
         self.create_blob_data_source()
-        
+
         # Create skillset
         print("4. Creating skillset...")
         self.create_skillset()
-        
+
         # # Create indexer
         # print("5. Creating indexer...")
         # self.create_indexer()
-        
+
         print("Indexing pipeline setup complete!")
 
     def delete_index_and_container(self):
@@ -411,7 +434,8 @@ class AIIndex:
         and the associated blob container for this index_id.
         Order: indexer -> skillset -> data source -> index -> blob container.
         """
-        deleted = {"indexer": False, "skillset": False, "data_source": False, "index": False, "container": False}
+        deleted = {"indexer": False, "skillset": False,
+            "data_source": False, "index": False, "container": False}
         errors = []
 
         # Delete indexer (must be first - it references index, skillset, data source)
@@ -439,7 +463,8 @@ class AIIndex:
         # Delete data source
         data_source_name = f"{self.index}-blob-datasource"
         try:
-            self.search_indexer_client.delete_data_source_connection(data_source_name)
+            self.search_indexer_client.delete_data_source_connection(
+                data_source_name)
             deleted["data_source"] = True
             print(f"Deleted data source: {data_source_name}")
         except ResourceNotFoundError:
@@ -459,12 +484,14 @@ class AIIndex:
 
         # Delete blob container
         try:
-            container_client = self.blob_service_client.get_container_client(self.blob_container_name)
+            container_client = self.blob_service_client.get_container_client(
+                self.blob_container_name)
             container_client.delete_container()
             deleted["container"] = True
             print(f"Deleted blob container: {self.blob_container_name}")
         except ResourceNotFoundError:
-            print(f"Blob container {self.blob_container_name} not found, skipping")
+            print(
+                f"Blob container {self.blob_container_name} not found, skipping")
         except Exception as e:
             errors.append(f"container: {e}")
 

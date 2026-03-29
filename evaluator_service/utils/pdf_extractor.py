@@ -38,4 +38,5 @@ def extract_text_from_pdf(pdf_path: str) -> str:
                 text_parts.append(page_text)
         return "\n".join(text_parts) if text_parts else ""
     except Exception as e:
-        raise ValueError(f"Failed to extract text from PDF {pdf_path}: {str(e)}") from e
+        raise ValueError(
+            f"Failed to extract text from PDF {pdf_path}: {str(e)}") from e

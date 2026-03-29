@@ -37,7 +37,8 @@ class PairwiseSequenceInput(BaseModel):
 class PairwiseEvaluateRequest(BaseModel):
     sequence_a: PairwiseSequenceInput
     sequence_b: PairwiseSequenceInput
-    criteria: list[str] = Field(default_factory=lambda: DEFAULT_PAIRWISE_CRITERIA.copy())
+    criteria: list[str] = Field(
+        default_factory=lambda: DEFAULT_PAIRWISE_CRITERIA.copy())
     runs: int = Field(default=3, ge=1)
 
 
@@ -64,7 +65,8 @@ class RubricSequenceInput(BaseModel):
 
 class RubricEvaluateRequest(BaseModel):
     sequence: RubricSequenceInput
-    criteria: list[str] = Field(default_factory=lambda: DEFAULT_PAIRWISE_CRITERIA.copy())
+    criteria: list[str] = Field(
+        default_factory=lambda: DEFAULT_PAIRWISE_CRITERIA.copy())
     runs: int = Field(default=3, ge=1)
 
     model_config = {
@@ -141,7 +143,8 @@ class RubricEvaluateResponse(BaseModel):
 
 @router.post("/custom")
 async def evaluate(
-    files: list[UploadFile] = File(..., description="PDF files to evaluate (max 10)"),
+    files: list[UploadFile] = File(...,
+                                   description="PDF files to evaluate (max 10)"),
 ):
     """
     POST /evaluate/custom - Accept up to 10 PDF files and return custom evaluation metrics.
@@ -225,7 +228,8 @@ async def evaluate_pairwise(payload: PairwiseEvaluateRequest):
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Pairwise evaluation failed: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Pairwise evaluation failed: {str(e)}")
 
     return result
 
@@ -253,6 +257,7 @@ async def evaluate_rubric(payload: RubricEvaluateRequest):
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Rubric evaluation failed: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Rubric evaluation failed: {str(e)}")
 
     return result

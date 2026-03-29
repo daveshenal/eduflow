@@ -1,6 +1,9 @@
-import aiomysql
+"""Async MySQL connection pool helpers and background job CRUD."""
+
 import ssl
 from contextlib import asynccontextmanager
+
+import aiomysql
 
 from config.settings import settings
 
@@ -62,6 +65,7 @@ async def create_tables():
 # Async MySQL connection
 @asynccontextmanager
 async def get_db_connection():
+    """Yield a single aiomysql connection with SSL; closes it after the block."""
     ssl_context = ssl.create_default_context()
     conn = await aiomysql.connect(
         host=settings.MYSQL_HOST,
@@ -86,6 +90,7 @@ async def create_bg_job(
     status: str = "queued",
     message: str = "Job queued for processing",
 ):
+    """Insert a new background_jobs row."""
     query = (
         "INSERT INTO background_jobs (job_id, index_id, callback_url, status, message) "
         "VALUES (%s, %s, %s, %s, %s)"
@@ -112,6 +117,7 @@ async def update_bg_job(
     result_text: str | None = None,
     error_text: str | None = None,
 ):
+    """Update status, message, and optional result/error for a job."""
     fields = ["status = %s", "message = %s", "updated_at = CURRENT_TIMESTAMP"]
     values = [status, message]
     if result_text is not None:
@@ -129,7 +135,11 @@ async def update_bg_job(
 
 
 async def get_bg_job(job_id: str):
-    query = "SELECT job_id, index_id, callback_url, status, message, result, error, created_at, updated_at FROM background_jobs WHERE job_id = %s"
+    """Fetch one background job by id as a dict row or None."""
+    query = (
+        "SELECT job_id, index_id, callback_url, status, message, result, error, "
+        "created_at, updated_at FROM background_jobs WHERE job_id = %s"
+    )
     async with get_db_connection() as conn:
         async with conn.cursor(aiomysql.DictCursor) as cursor:
             await cursor.execute(query, (job_id,))
@@ -160,6 +170,7 @@ async def get_all_bg_jobs():
 
 
 async def clear_all_bg_jobs():
+    """Delete all rows from background_jobs; return deleted row count."""
     query = "DELETE FROM background_jobs"
     async with get_db_connection() as conn:
         async with conn.cursor() as cursor:

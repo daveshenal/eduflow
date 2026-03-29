@@ -67,7 +67,7 @@ class DocumentProcessor:
         chunk_size: int = 500,
         chunk_overlap: int = 100,
         ):
-        
+
         self.index_id = index_id
         self.search_client = get_search_client(_index_name(index_id))
 
@@ -191,7 +191,7 @@ class DocumentProcessor:
     def _prepare_documents_for_search(
         self, documents: List[Document], filename: str
      ) -> List[Dict[str, Any]]:
-        
+
         """Prepare documents for Azure Search index (AIIndex schema)."""
         search_docs = []
 
@@ -223,9 +223,10 @@ class DocumentProcessor:
     def process_document(
         self, filename: str, data: bytes
         ) -> ProcessingResult:
-        
+
         """Process a document through the complete pipeline."""
-        logger.info(f"Processing document: {filename} for index_id: {self.index_id}")
+        logger.info(
+            f"Processing document: {filename} for index_id: {self.index_id}")
 
         try:
             documents = self._load_document_from_bytes(filename, data)
@@ -320,7 +321,7 @@ class DocumentManager:
     def upload_and_process(
         self, filename: str, data: bytes
         ) -> Dict[str, Any]:
-        
+
         """Upload file to blob storage and process into search index."""
         self._validate_index_and_container_exist()
 
@@ -361,7 +362,7 @@ class DocumentManager:
     def batch_process(
         self, files: List[tuple]
         ) -> Dict[str, Any]:
-        
+
         """Process multiple files in batch."""
         results = []
         total_success = 0
@@ -405,7 +406,8 @@ class DocumentManager:
             doc_ids = [{"chunk_id": r["chunk_id"]} for r in results]
             if doc_ids:
                 self.processor.search_client.delete_documents(doc_ids)
-                logger.info(f"Deleted {len(doc_ids)} documents for index {self.index_id}")
+                logger.info(
+                    f"Deleted {len(doc_ids)} documents for index {self.index_id}")
                 return {"deleted_count": len(doc_ids), "success": True}
             else:
                 return {"deleted_count": 0, "success": True, "message": "No documents found"}
@@ -464,7 +466,8 @@ class DocumentManager:
         if chunk_ids:
             to_delete = [{"chunk_id": cid} for cid in chunk_ids]
             self.processor.search_client.delete_documents(to_delete)
-            logger.info(f"Deleted {len(chunk_ids)} chunks for filename {filename}")
+            logger.info(
+                f"Deleted {len(chunk_ids)} chunks for filename {filename}")
 
         return {
             "success": True,

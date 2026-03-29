@@ -22,7 +22,8 @@ async def generate_chat_stream(payload: dict, claude_client):
             k=settings.INDEX_TOP_K,
             min_score=settings.MIN_SCORE,
         )
-        docs = retriever.get_relevant_documents(query=message, filter_expr=None)
+        docs = retriever.get_relevant_documents(
+            query=message, filter_expr=None)
         context = retriever.format_context_with_sources(docs)
 
         user_messages = [
@@ -34,7 +35,8 @@ async def generate_chat_stream(payload: dict, claude_client):
             prompt_manager = get_prompt_manager()
             obj = await prompt_manager.get_active_prompt("developer_chatbot", db_conn)
             if obj is None:
-                raise ValueError("No active prompt found for 'developer_chatbot'")
+                raise ValueError(
+                    "No active prompt found for 'developer_chatbot'")
             chatbot_prompt = obj.prompt
 
         async with claude_client.messages.stream(
