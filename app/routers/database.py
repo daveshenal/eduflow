@@ -1,3 +1,5 @@
+"""API router for database operations, background jobs, and prompt management."""
+
 from typing import List, Optional, Any
 from datetime import datetime, timedelta
 import json
@@ -33,12 +35,14 @@ router = APIRouter()
 
 @router.delete("/bg_jobs/clear", summary="Clear all background jobs")
 async def api_clear_all_bg_jobs():
+    """Clear all background jobs from the database."""
     try:
         deleted_count = await clear_all_bg_jobs()
         return {"success": True, "deleted_jobs": deleted_count}
     except Exception as e:
         # Optional: log the error here
-        raise HTTPException(status_code=500, detail=f"Failed to clear jobs: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to clear jobs: {str(e)}")
 
 
 @router.get("/bg_jobs", summary="List all background jobs with summary")
@@ -64,7 +68,8 @@ async def api_list_all_bg_jobs():
             "jobs": jobs,
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to fetch background jobs: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to fetch background jobs: {str(e)}")
 
 
 @router.get("/bg_jobs/{job_id}", summary="Get background job status")
@@ -77,7 +82,8 @@ async def api_get_bg_job_status(job_id: str):
     try:
         job = await get_bg_job(job_id)
         if not job:
-            raise HTTPException(status_code=404, detail=f"No background job found for job_id={job_id}")
+            raise HTTPException(
+                status_code=404, detail=f"No background job found for job_id={job_id}")
 
         status = job.get("status") or "unknown"
         message = job.get("message")
@@ -112,7 +118,8 @@ async def api_get_bg_job_status(job_id: str):
                     if not blob_path_str:
                         return None
 
-                    # If the path already contains a virtual directory (e.g. `index-.../.../file.ext`), use it as-is.
+                    # If the path already contains a virtual directory
+                    # (e.g. `index-.../.../file.ext`), use it as-is.
                     # Otherwise infer it using the known artifact layout.
                     if "/" in blob_path_str or blob_path_str.startswith("index-"):
                         return blob_path_str
@@ -148,9 +155,12 @@ async def api_get_bg_job_status(job_id: str):
                         continue
 
                     doc = dict(doc)  # shallow copy for safety
-                    doc["pdf_url"] = to_sas_url(doc.get("pdf_path"), kind="pdf")
-                    doc["audio_url"] = to_sas_url(doc.get("audio_path"), kind="audio_mp3")
-                    doc["voicescript_url"] = to_sas_url(doc.get("voicescript_path"), kind="voicescripts")
+                    doc["pdf_url"] = to_sas_url(
+                        doc.get("pdf_path"), kind="pdf")
+                    doc["audio_url"] = to_sas_url(
+                        doc.get("audio_path"), kind="audio_mp3")
+                    doc["voicescript_url"] = to_sas_url(
+                        doc.get("voicescript_path"), kind="voicescripts")
                     enriched_docs.append(doc)
 
                 result["docs"] = enriched_docs
@@ -166,10 +176,11 @@ async def api_get_bg_job_status(job_id: str):
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Internal server error: {str(e)}")
 
 
- 
+
 ############################################
 # ----------- Prompts Manager ------------ #
 ############################################
@@ -177,6 +188,7 @@ async def api_get_bg_job_status(job_id: str):
 
 @router.get("/prompts")
 async def prompts_root():
+    """Return API information and available prompt types."""
     return {
         "message": "Prompt Management API v1.0",
         "prompt_types": [name.value for name in PromptNames],
@@ -207,10 +219,11 @@ async def init_tables():
         return {"status": "success", "message": "Tables created or verified."}
     except Exception as e:
         return {"status": "error", "message": str(e)}
-    
+
 # Create a new prompt (inactive by default)
 @router.post("/prompts/new", response_model=PromptResponse)
 async def create_prompt_endpoint(prompt: PromptCreate):
+    """Create a new prompt version."""
     manager = get_prompt_manager()
     try:
         async with get_db_connection() as db_conn:
@@ -218,48 +231,57 @@ async def create_prompt_endpoint(prompt: PromptCreate):
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Internal server error: {str(e)}")
 
 # Get all prompts
 @router.get("/prompts/list", response_model=List[PromptResponse])
 async def get_all_prompts_endpoint(skip: int = 0, limit: int = 100):
+    """Retrieve all prompts with pagination."""
     manager = get_prompt_manager()
     try:
         async with get_db_connection() as db_conn:
             return await manager.get_all_prompts(skip, limit, db_conn)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Internal server error: {str(e)}")
 
 # Get all active prompts (must be before /prompts/active/{name})
 @router.get("/prompts/active", response_model=List[PromptResponse])
 async def get_all_active_prompts_endpoint():
+    """Retrieve all currently active prompts."""
     manager = get_prompt_manager()
     try:
         async with get_db_connection() as db_conn:
             return await manager.get_all_active_prompts(db_conn)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Internal server error: {str(e)}")
 
 # Get active prompt by name
 @router.get("/prompts/active/{name}", response_model=PromptResponse)
 async def get_active_prompt_endpoint(name: str):
+    """Retrieve the active prompt by name."""
     manager = get_prompt_manager()
     try:
         async with get_db_connection() as db_conn:
             prompt = await manager.get_active_prompt(name, db_conn)
             if prompt is None:
-                raise HTTPException(status_code=404, detail=f"No active prompt found for '{name}'")
+                raise HTTPException(
+                    status_code=404, detail=f"No active prompt found for '{name}'")
             return prompt
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Internal server error: {str(e)}")
 
 # Get all versions of a prompt by name
 @router.get("/prompts/versions/{name}", response_model=List[PromptResponse])
 async def get_all_versions_endpoint(name: str):
+    """Retrieve all versions of a prompt by name."""
     manager = get_prompt_manager()
     try:
         async with get_db_connection() as db_conn:
@@ -267,73 +289,92 @@ async def get_all_versions_endpoint(name: str):
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Internal server error: {str(e)}")
 
 # Get specific prompt by name and version
 @router.get("/prompts/{name}/{version}", response_model=PromptResponse)
 async def get_prompt_by_name_version_endpoint(name: str, version: str):
+    """Retrieve a specific prompt by name and version."""
     manager = get_prompt_manager()
     try:
         async with get_db_connection() as db_conn:
             prompt = await manager.get_by_name_version(name, version, db_conn)
             if prompt is None:
-                raise HTTPException(status_code=404, detail=f"Prompt '{name}' version '{version}' not found")
+                raise HTTPException(
+                    status_code=404, detail=f"Prompt '{name}' version '{version}' not found")
             return prompt
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Internal server error: {str(e)}")
 
 # Activate a specific prompt version
 @router.post("/prompts/activate")
 async def activate_prompt_endpoint(request: ActivatePromptRequest):
+    """Activate a specific prompt version."""
     manager = get_prompt_manager()
     try:
         async with get_db_connection() as db_conn:
             success = await manager.activate_prompt(request.name, request.version, db_conn)
             if success:
-                return {"message": f"Prompt '{request.name}' version '{request.version}' activated successfully"}
-            raise HTTPException(status_code=400, detail="Failed to activate prompt")
+                return {
+                    "message": (
+                        f"Prompt '{request.name}' version '{request.version}' "
+                        "activated successfully"
+                    )
+                }
+            raise HTTPException(
+                status_code=400, detail="Failed to activate prompt")
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Internal server error: {str(e)}")
 
 # Update prompt content/description
 @router.put("/prompts/{name}/{version}", response_model=PromptResponse)
 async def update_prompt_endpoint(name: str, version: str, prompt_update: PromptUpdate):
+    """Update a prompt's content or description."""
     manager = get_prompt_manager()
     try:
         async with get_db_connection() as db_conn:
             updated_prompt = await manager.update_prompt(name, version, prompt_update, db_conn)
             if updated_prompt is None:
-                raise HTTPException(status_code=404, detail=f"Prompt '{name}' version '{version}' not found")
+                raise HTTPException(
+                    status_code=404, detail=f"Prompt '{name}' version '{version}' not found")
             return updated_prompt
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Internal server error: {str(e)}")
 
 # Delete a specific prompt version
 @router.delete("/prompts/{name}/{version}")
 async def delete_prompt_endpoint(name: str, version: str):
+    """Delete a specific prompt version."""
     manager = get_prompt_manager()
     try:
         async with get_db_connection() as db_conn:
             success = await manager.delete_prompt(name, version, db_conn)
             if not success:
-                raise HTTPException(status_code=404, detail=f"Prompt '{name}' version '{version}' not found")
+                raise HTTPException(
+                    status_code=404, detail=f"Prompt '{name}' version '{version}' not found")
             return {"message": f"Prompt '{name}' version '{version}' deleted successfully"}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Internal server error: {str(e)}")
 
 # Get allowed prompt names (5 valid names)
 @router.get("/prompts/allowed-names")
 async def get_allowed_names_endpoint():
+    """Return the list of allowed prompt names."""
     return {"allowed_names": [name.value for name in PromptNames]}

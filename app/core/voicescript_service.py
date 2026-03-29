@@ -1,3 +1,5 @@
+"""Voiceover script generation service using Claude."""
+
 from config.settings import settings
 from app.prompts.prompt_management import get_prompt_manager, PromptNames
 from app.adapters.azure_sql import get_db_connection
@@ -6,10 +8,11 @@ async def fetch_voicescript_prompts(db_conn) -> dict:
     """Fetch voice script prompt from database."""
     manager = get_prompt_manager()
     voice_prompt_resp = await manager.get_active_prompt(PromptNames.VOICESCRIPT.value, db_conn)
-    
+
     if not voice_prompt_resp:
-        raise ValueError("No active prompt found for 'voice_script'. Activate a version via /prompts/activate.")
-    
+        raise ValueError(
+            "No active prompt found for 'voice_script'. Activate a version via /prompts/activate.")
+
     return {"voice_script_prompt": voice_prompt_resp.prompt}
 
 async def generate_voiceover_script(payload: dict, claude_client) -> dict:
@@ -31,7 +34,7 @@ async def generate_voiceover_script(payload: dict, claude_client) -> dict:
     # Fetch prompt from database
     async with get_db_connection() as db_conn:
         prompts = await fetch_voicescript_prompts(db_conn)
-    
+
     # Format the system prompt with parameters
     system_prompt = prompts['voice_script_prompt'].format(
         tone=tone,
@@ -76,7 +79,7 @@ async def generate_voiceover_script(payload: dict, claude_client) -> dict:
             else:
                 parts.append(getattr(block, "text", ""))
         script = "".join(parts).strip()
-        
+
         # Return both script and token usage
         return {
             "script": script,

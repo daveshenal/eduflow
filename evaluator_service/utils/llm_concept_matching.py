@@ -167,7 +167,8 @@ def llm_match_concepts(
                 conf = 0.0
             if suggested is not None and (not isinstance(suggested, str) or suggested not in candidate_set):
                 suggested = None
-            all_details[q] = {"confidence": float(conf), "suggested": suggested}
+            all_details[q] = {"confidence": float(
+                conf), "suggested": suggested}
 
     # Fill any missing (can happen if duplicates were in original queries list).
     for q in q_list:

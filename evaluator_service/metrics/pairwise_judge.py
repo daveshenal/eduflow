@@ -56,7 +56,8 @@ class PairwiseJudge:
         definitions = self._criteria_definitions()
         rendered_criteria = []
         for c in criteria:
-            rendered_criteria.append(f"- {c}: {definitions.get(c, 'Evaluate this criterion carefully')}")
+            rendered_criteria.append(
+                f"- {c}: {definitions.get(c, 'Evaluate this criterion carefully')}")
 
         criteria_text = "\n".join(rendered_criteria)
         sequence_x_content = self._format_sequence(sequence_x)
@@ -115,7 +116,8 @@ Do not reveal any preference based on order. Judge purely on quality.
         label_b: str,
         criteria: list[str],
     ) -> dict[str, Any]:
-        prompt = self._build_prompt(sequence_x=doc_a, sequence_y=doc_b, criteria=criteria)
+        prompt = self._build_prompt(
+            sequence_x=doc_a, sequence_y=doc_b, criteria=criteria)
 
         attempts = 0
         max_attempts = 3
@@ -123,7 +125,8 @@ Do not reveal any preference based on order. Judge purely on quality.
 
         while attempts < max_attempts:
             attempts += 1
-            print(f"  [run_single_comparison] Attempt {attempts}/{max_attempts} — X={label_a}, Y={label_b}")
+            print(
+                f"  [run_single_comparison] Attempt {attempts}/{max_attempts} — X={label_a}, Y={label_b}")
 
             try:
                 data = chat_json(
@@ -135,10 +138,12 @@ Do not reveal any preference based on order. Judge purely on quality.
                 )
 
             except Exception as e:
-                print(f"  [run_single_comparison] Attempt {attempts} — EXCEPTION: {type(e).__name__}: {e}")
+                print(
+                    f"  [run_single_comparison] Attempt {attempts} — EXCEPTION: {type(e).__name__}: {e}")
                 if attempts < max_attempts:
                     sleep_time = 10 * attempts
-                    print(f"  [run_single_comparison] Sleeping {sleep_time}s before retry...")
+                    print(
+                        f"  [run_single_comparison] Sleeping {sleep_time}s before retry...")
                     time.sleep(sleep_time)
                 continue
 
@@ -146,13 +151,16 @@ Do not reveal any preference based on order. Judge purely on quality.
             if isinstance(reasoning, str) and reasoning.strip():
                 last_reasoning = reasoning.strip()
             else:
-                print(f"  [run_single_comparison] Attempt {attempts} — reasoning missing or invalid: {reasoning!r}")
+                print(
+                    f"  [run_single_comparison] Attempt {attempts} — reasoning missing or invalid: {reasoning!r}")
 
             winner = self._parse_winner(data)
             if winner is None:
-                print(f"  [run_single_comparison] Attempt {attempts} — winner parsing FAILED. winner field was: {data.get('winner')!r}")
+                print(
+                    f"  [run_single_comparison] Attempt {attempts} — winner parsing FAILED. winner field was: {data.get('winner')!r}")
                 if attempts < max_attempts:
-                    print(f"  [run_single_comparison] Sleeping 20s before retry...")
+                    print(
+                        f"  [run_single_comparison] Sleeping 20s before retry...")
                     time.sleep(20)
                 continue
 
@@ -172,7 +180,8 @@ Do not reveal any preference based on order. Judge purely on quality.
                 "criteria_scores": data.get("criteria_scores", {}),
             }
 
-        print(f"  [run_single_comparison] All {max_attempts} attempts failed. Returning tie as fallback.")
+        print(
+            f"  [run_single_comparison] All {max_attempts} attempts failed. Returning tie as fallback.")
         return {
             "winner": "tie",
             "winner_xy": "tie",
@@ -191,7 +200,8 @@ Do not reveal any preference based on order. Judge purely on quality.
         docs_b = self._normalize_documents(sequence_b.get("documents", []))
 
         if not docs_a or not docs_b:
-            raise ValueError("Both sequences must include at least one document.")
+            raise ValueError(
+                "Both sequences must include at least one document.")
 
         win_counts = {"sequence_a": 0, "sequence_b": 0, "tie": 0}
         run_details: list[dict[str, Any]] = []
@@ -208,7 +218,8 @@ Do not reveal any preference based on order. Judge purely on quality.
             x_label, x_docs = order[0]
             y_label, y_docs = order[1]
 
-            print(f"[run_evaluation] Run {run_idx} — order shown: X={x_label}, Y={y_label}")
+            print(
+                f"[run_evaluation] Run {run_idx} — order shown: X={x_label}, Y={y_label}")
 
             result = self.run_single_comparison(
                 doc_a=x_docs,
@@ -220,7 +231,8 @@ Do not reveal any preference based on order. Judge purely on quality.
 
             winner = result["winner"]
             win_counts[winner] += 1
-            print(f"[run_evaluation] Run {run_idx} — winner: {winner}, counts so far: {win_counts}")
+            print(
+                f"[run_evaluation] Run {run_idx} — winner: {winner}, counts so far: {win_counts}")
 
             run_details.append(
                 {
@@ -253,7 +265,8 @@ Do not reveal any preference based on order. Judge purely on quality.
             pct = int(round(win_rate[overall_winner] * 100))
             consensus = f"{overall_winner} wins with {pct}% win rate"
 
-        print(f"\n[run_evaluation] DONE. Winner: {overall_winner} | consensus: {consensus}")
+        print(
+            f"\n[run_evaluation] DONE. Winner: {overall_winner} | consensus: {consensus}")
 
         return {
             "winner": overall_winner,

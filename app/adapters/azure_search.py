@@ -1,3 +1,5 @@
+"""Azure AI Search client factories for query and index management."""
+
 from azure.core.credentials import AzureKeyCredential
 from azure.search.documents import SearchClient
 from azure.search.documents.indexes import SearchIndexClient, SearchIndexerClient
@@ -14,17 +16,20 @@ def get_search_client(index_name: str) -> SearchClient:
 
 
 def get_search_index_client():
+    """Return a client for creating and managing search indexes."""
     search_index_client = SearchIndexClient(
         endpoint=settings.AZURE_SEARCH_ENDPOINT,
         credential=AzureKeyCredential(settings.AZURE_SEARCH_KEY)
     )
-    
+
     return search_index_client
 
+
 def get_search_indexer_client():
+    """Return a client for search indexer operations."""
     search_indexer_client = SearchIndexerClient(
         endpoint=settings.AZURE_SEARCH_ENDPOINT,
         credential=AzureKeyCredential(settings.AZURE_SEARCH_KEY)
     )
-    
+
     return search_indexer_client

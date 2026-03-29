@@ -1,3 +1,5 @@
+"""FastAPI application entrypoint: CORS, routers, and optional uvicorn dev server."""
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routers.gen import router as gen_router

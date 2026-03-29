@@ -123,7 +123,8 @@ Be strict and consistent. Use the full range of the scale.
 
         while attempts < max_attempts:
             attempts += 1
-            print(f"[run_single_scoring] Attempt {attempts}/{max_attempts} starting...")
+            print(
+                f"[run_single_scoring] Attempt {attempts}/{max_attempts} starting...")
 
             try:
                 data = chat_json(
@@ -135,10 +136,12 @@ Be strict and consistent. Use the full range of the scale.
                 )
 
             except Exception as e:
-                print(f"[run_single_scoring] Attempt {attempts} — EXCEPTION: {type(e).__name__}: {e}")
+                print(
+                    f"[run_single_scoring] Attempt {attempts} — EXCEPTION: {type(e).__name__}: {e}")
                 if attempts < max_attempts:
                     sleep_time = 10 * attempts
-                    print(f"[run_single_scoring] Sleeping {sleep_time}s before retry...")
+                    print(
+                        f"[run_single_scoring] Sleeping {sleep_time}s before retry...")
                     time.sleep(sleep_time)
                 continue
 
@@ -146,21 +149,25 @@ Be strict and consistent. Use the full range of the scale.
             if isinstance(reasoning, str) and reasoning.strip():
                 last_reasoning = reasoning.strip()
             else:
-                print(f"[run_single_scoring] Attempt {attempts} — reasoning missing or invalid: {reasoning!r}")
+                print(
+                    f"[run_single_scoring] Attempt {attempts} — reasoning missing or invalid: {reasoning!r}")
 
             parsed_scores = self._parse_scores(data, criteria)
             if parsed_scores is None:
-                print(f"[run_single_scoring] Attempt {attempts} — score parsing FAILED. scores field was: {data.get('scores')!r}")
+                print(
+                    f"[run_single_scoring] Attempt {attempts} — score parsing FAILED. scores field was: {data.get('scores')!r}")
                 if attempts < max_attempts:
                     sleep_time = 20
-                    print(f"[run_single_scoring] Sleeping {sleep_time}s before retry...")
+                    print(
+                        f"[run_single_scoring] Sleeping {sleep_time}s before retry...")
                     time.sleep(sleep_time)
                 continue
 
             print(f"[run_single_scoring] Attempt {attempts} — SUCCESS")
             return {"scores": parsed_scores, "reasoning": last_reasoning}
 
-        print(f"[run_single_scoring] All {max_attempts} attempts failed. Using fallback scores.")
+        print(
+            f"[run_single_scoring] All {max_attempts} attempts failed. Using fallback scores.")
         fallback_scores = {criterion: 3 for criterion in criteria}
         return {"scores": fallback_scores, "reasoning": last_reasoning}
 
@@ -170,14 +177,17 @@ Be strict and consistent. Use the full range of the scale.
         architecture = sequence.get("architecture", "unknown")
 
         if not documents:
-            raise ValueError("sequence.documents must include at least one document.")
+            raise ValueError(
+                "sequence.documents must include at least one document.")
 
         run_details: list[dict[str, Any]] = []
-        per_criterion_values: dict[str, list[int]] = {c: [] for c in selected_criteria}
+        per_criterion_values: dict[str, list[int]] = {
+            c: [] for c in selected_criteria}
 
         for idx in range(1, runs + 1):
             print(f"\n[run_evaluation] Starting run {idx}/{runs}...")
-            result = self.run_single_scoring(documents=documents, criteria=selected_criteria)
+            result = self.run_single_scoring(
+                documents=documents, criteria=selected_criteria)
             scores: dict[str, int] = result["scores"]
             print(f"[run_evaluation] Run {idx} scores: {scores}")
 
@@ -210,7 +220,8 @@ Be strict and consistent. Use the full range of the scale.
         all_scores: list[int] = []
         for criterion in selected_criteria:
             all_scores.extend(per_criterion_values[criterion])
-        overall_mean = self._round2(sum(all_scores) / len(all_scores)) if all_scores else 0.0
+        overall_mean = self._round2(
+            sum(all_scores) / len(all_scores)) if all_scores else 0.0
 
         return {
             "architecture": architecture,

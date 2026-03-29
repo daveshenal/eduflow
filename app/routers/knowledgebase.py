@@ -1,3 +1,5 @@
+"""API router for knowledgebase management endpoints."""
+
 import logging
 from typing import List, Optional
 from fastapi import APIRouter, HTTPException, Query, UploadFile, File
@@ -15,14 +17,18 @@ router = APIRouter()
 ############################################
 # ------------ Index Manager ------------- #
 ############################################
-    
+
 
 @router.post("/run-ai-indexing/{index_id}")
 def run_ai_indexing(index_id: str):
+    """Set up AI indexing pipeline for the given index."""
     try:
         ai_index = AIIndex(index_id=index_id)
         ai_index.setup_complete_indexing_pipeline()
-        return {"status": "success", "message": f"AI index setup completed for index_id={index_id}."}
+        return {
+            "status": "success",
+            "message": f"AI index setup completed for index_id={index_id}."
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -30,7 +36,9 @@ def run_ai_indexing(index_id: str):
 @router.post("/knowledgebase/{index_id}/upload")
 async def upload_documents_to_knowledgebase(
     index_id: str,
-    files: List[UploadFile] = File(..., description="Document(s) to upload (PDF, DOCX, TXT)"),
+    files: List[UploadFile] = File(...,
+                                   description="Document(s) to upload "
+                                             "(PDF, DOCX, TXT)"),
     ):
     """
     Upload documents to the knowledgebase for a given index_id.
@@ -62,7 +70,8 @@ async def upload_documents_to_knowledgebase(
 @router.delete("/knowledgebase/{index_id}/documents")
 async def delete_documents_by_filename(
     index_id: str,
-    filename: str = Query(..., description="Exact file name to delete (matches source_name in index)"),
+    filename: str = Query(
+        ..., description="Exact file name to delete (matches source_name in index)"),
     ):
     """
     Delete all indexed chunks and the blob for a given filename in the knowledgebase.
@@ -81,7 +90,8 @@ async def delete_documents_by_filename(
 
 @router.delete("/index/{index_id}")
 def delete_index_and_container(index_id: str):
-    """Delete the Azure AI Search index, indexer, skillset, data source, and blob container for the given index_id."""
+    """Delete the Azure AI Search index, indexer, skillset, data source,
+    and blob container for the given index_id."""
     try:
         ai_index = AIIndex(index_id=index_id)
         deleted = ai_index.delete_index_and_container()
@@ -97,25 +107,30 @@ def delete_index_and_container(index_id: str):
 @router.get("/blobs")
 async def list_blobs(
     container: str = Query(..., description="Azure Blob container name"),
-    directory: Optional[str] = Query(None, description="Optional virtual directory/prefix to filter blobs"),
+    directory: Optional[str] = Query(
+        None, description="Optional virtual directory/prefix to filter blobs"),
     ):
+    """List blobs in a container with optional directory filter."""
     try:
         return get_blobs(container=container, directory=directory)
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         logging.exception("Failed to list blobs")
-        raise HTTPException(status_code=500, detail=f"Failed to list blobs: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to list blobs: {str(e)}")
 
 
 @router.get("/test-blob-connection")
 async def blob_connection(
-    container: str = Query(..., description="Azure Blob container name to test"),
+    container: str = Query(...,
+                           description="Azure Blob container name to test"),
     ):
+    """Test connection to Azure Blob Storage container."""
     try:
         return test_blob_connection(container)
     except Exception as e:
         raise HTTPException(
-            status_code=500, 
+            status_code=500,
             detail=f"Error connecting to Blob Storage: {str(e)}"
         )

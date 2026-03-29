@@ -50,7 +50,8 @@ def semantic_match(
       2) Substring match on normalized strings
       3) Embedding cosine similarity over normalized strings
     """
-    candidate_list = [c for c in candidates if isinstance(c, str) and (c or "").strip()]
+    candidate_list = [c for c in candidates if isinstance(
+        c, str) and (c or "").strip()]
     query_norm = normalize(query)
     if not query_norm or not candidate_list:
         return False, None, 0.0
@@ -108,7 +109,8 @@ def hybrid_match(
     """
     Backwards-compatible wrapper around `semantic_match` returning only (matched, candidate).
     """
-    matched, candidate, _ = semantic_match(query, candidate_list, threshold=threshold)
+    matched, candidate, _ = semantic_match(
+        query, candidate_list, threshold=threshold)
     return matched, candidate
 
 
@@ -118,6 +120,7 @@ def find_best_match(
     threshold: float = 0.7,
 ) -> str | None:
     """Find the best-matching candidate key using the shared matcher."""
-    _, candidate, _ = semantic_match(query, candidate_keys, threshold=threshold)
+    _, candidate, _ = semantic_match(
+        query, candidate_keys, threshold=threshold)
     return candidate
 

@@ -43,7 +43,8 @@ def calculate_cpv(docs: list[ConceptDoc]) -> dict[str, Any]:
 
     for doc in docs:
         new_count = 0
-        current_introduces = [c.strip() for c in doc.INTRODUCES if isinstance(c, str) and c.strip()]
+        current_introduces = [
+            c.strip() for c in doc.INTRODUCES if isinstance(c, str) and c.strip()]
 
         # Determine which of the current INTRODUCES are genuinely new vs any prior INTRODUCES.
         # We match "current -> prior" and treat a null match as new.

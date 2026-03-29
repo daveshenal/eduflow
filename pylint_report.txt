@@ -1,0 +1,355 @@
+﻿************* Module core.audio_generator
+app\core\audio_generator.py:85:0: C0301: Line too long (115/100) (line-too-long)
+app\core\audio_generator.py:169:0: C0301: Line too long (157/100) (line-too-long)
+app\core\audio_generator.py:65:0: R0914: Too many local variables (18/15) (too-many-locals)
+app\core\audio_generator.py:110:12: R1720: Unnecessary "else" after "raise", remove the "else" and de-indent the code inside it (no-else-raise)
+app\core\audio_generator.py:137:16: W0719: Raising too general exception: Exception (broad-exception-raised)
+app\core\audio_generator.py:142:16: W0719: Raising too general exception: Exception (broad-exception-raised)
+app\core\audio_generator.py:158:4: W0719: Raising too general exception: Exception (broad-exception-raised)
+app\core\audio_generator.py:208:4: R1705: Unnecessary "else" after "return", remove the "else" and de-indent the code inside it (no-else-return)
+app\core\audio_generator.py:216:19: W0718: Catching too general exception Exception (broad-exception-caught)
+app\core\audio_generator.py:217:16: W1203: Use lazy % formatting in logging functions (logging-fstring-interpolation)
+app\core\audio_generator.py:222:8: W0719: Raising too general exception: Exception (broad-exception-raised)
+************* Module core.content_service
+app\core\content_service.py:50:0: R0902: Too many instance attributes (9/7) (too-many-instance-attributes)
+app\core\content_service.py:66:27: R1714: Consider merging these comparisons with 'in' by using 'params.doc_id in (1, params.total_docs)'. Use a set instead if elements are hashable. (consider-using-in)
+app\core\content_service.py:161:0: R0902: Too many instance attributes (9/7) (too-many-instance-attributes)
+app\core\content_service.py:269:0: R0902: Too many instance attributes (8/7) (too-many-instance-attributes)
+************* Module core.content_upload
+app\core\content_upload.py:49:15: W0718: Catching too general exception Exception (broad-exception-caught)
+************* Module core.curriculem_plan_service
+app\core\curriculem_plan_service.py:65:8: W0707: Consider explicitly re-raising using 'raise ValueError(error_msg) from ke' (raise-missing-from)
+app\core\curriculem_plan_service.py:80:4: W1203: Use lazy % formatting in logging functions (logging-fstring-interpolation)
+app\core\curriculem_plan_service.py:82:4: W1203: Use lazy % formatting in logging functions (logging-fstring-interpolation)
+app\core\curriculem_plan_service.py:97:11: W0718: Catching too general exception Exception (broad-exception-caught)
+app\core\curriculem_plan_service.py:104:19: W0718: Catching too general exception Exception (broad-exception-caught)
+************* Module core.pdf_generator
+app\core\pdf_generator.py:166:11: W0718: Catching too general exception Exception (broad-exception-caught)
+app\core\pdf_generator.py:175:11: W0718: Catching too general exception Exception (broad-exception-caught)
+app\core\pdf_generator.py:233:8: W1203: Use lazy % formatting in logging functions (logging-fstring-interpolation)
+app\core\pdf_generator.py:237:0: C0116: Missing function or method docstring (missing-function-docstring)
+app\core\pdf_generator.py:265:4: W0621: Redefining name 'success' from outer scope (line 562) (redefined-outer-name)
+app\core\pdf_generator.py:284:8: C0103: Constant name "sample_html" doesn't conform to UPPER_CASE naming style (invalid-name)
+app\core\pdf_generator.py:562:8: C0103: Constant name "success" doesn't conform to UPPER_CASE naming style (invalid-name)
+************* Module core.voicescript_service
+app\core\voicescript_service.py:26:0: C0325: Unnecessary parens after '=' keyword (superfluous-parens)
+app\core\voicescript_service.py:49:0: C0301: Line too long (125/100) (line-too-long)
+************* Module knowledgebase.ai_index
+app\knowledgebase\ai_index.py:397:0: C0301: Line too long (110/100) (line-too-long)
+app\knowledgebase\ai_index.py:37:0: R0902: Too many instance attributes (13/7) (too-many-instance-attributes)
+app\knowledgebase\ai_index.py:364:12: R1723: Unnecessary "elif" after "break", remove the leading "el" from "elif" (no-else-break)
+app\knowledgebase\ai_index.py:405:15: W0718: Catching too general exception Exception (broad-exception-caught)
+app\knowledgebase\ai_index.py:454:15: W0718: Catching too general exception Exception (broad-exception-caught)
+app\knowledgebase\ai_index.py:465:15: W0718: Catching too general exception Exception (broad-exception-caught)
+app\knowledgebase\ai_index.py:477:15: W0718: Catching too general exception Exception (broad-exception-caught)
+app\knowledgebase\ai_index.py:487:15: W0718: Catching too general exception Exception (broad-exception-caught)
+app\knowledgebase\ai_index.py:500:15: W0718: Catching too general exception Exception (broad-exception-caught)
+app\knowledgebase\ai_index.py:436:4: R0915: Too many statements (54/50) (too-many-statements)
+app\knowledgebase\ai_index.py:35:0: C0411: standard import "time" should be placed before third party imports "azure.search.documents.indexes.models.SearchIndex", "azure.storage.blob.BlobServiceClient", "azure.core.exceptions.ResourceExistsError" and first party imports "app.adapters.azure_search.get_search_index_client", "config.settings.settings"  (wrong-import-order)
+************* Module knowledgebase.get_blobs
+app\knowledgebase\get_blobs.py:42:15: W0718: Catching too general exception Exception (broad-exception-caught)
+************* Module knowledgebase.index_manager
+app\knowledgebase\index_manager.py:14:0: C0301: Line too long (107/100) (line-too-long)
+app\knowledgebase\index_manager.py:16:8: W0707: Consider explicitly re-raising using 'raise HTTPException(status_code=500, detail=str(e)) from e' (raise-missing-from)
+************* Module knowledgebase.upload_files
+app\knowledgebase\upload_files.py:115:15: W0718: Catching too general exception Exception (broad-exception-caught)
+app\knowledgebase\upload_files.py:107:12: R1705: Unnecessary "elif" after "return", remove the leading "el" from "elif" (no-else-return)
+app\knowledgebase\upload_files.py:116:12: W1203: Use lazy % formatting in logging functions (logging-fstring-interpolation)
+app\knowledgebase\upload_files.py:143:12: W0707: Consider explicitly re-raising using 'raise Exception(error_msg) from e' (raise-missing-from)
+app\knowledgebase\upload_files.py:143:12: W0719: Raising too general exception: Exception (broad-exception-raised)
+app\knowledgebase\upload_files.py:148:12: C0415: Import outside toplevel (docx) (import-outside-toplevel)
+app\knowledgebase\upload_files.py:173:12: W0707: Consider explicitly re-raising using 'raise Exception(error_msg) from e' (raise-missing-from)
+app\knowledgebase\upload_files.py:173:12: W0719: Raising too general exception: Exception (broad-exception-raised)
+app\knowledgebase\upload_files.py:177:12: W0707: Consider explicitly re-raising using 'raise Exception(error_msg) from e' (raise-missing-from)
+app\knowledgebase\upload_files.py:177:12: W0719: Raising too general exception: Exception (broad-exception-raised)
+app\knowledgebase\upload_files.py:193:15: W0718: Catching too general exception Exception (broad-exception-caught)
+app\knowledgebase\upload_files.py:194:12: W1203: Use lazy % formatting in logging functions (logging-fstring-interpolation)
+app\knowledgebase\upload_files.py:223:15: W0718: Catching too general exception Exception (broad-exception-caught)
+app\knowledgebase\upload_files.py:224:12: W1203: Use lazy % formatting in logging functions (logging-fstring-interpolation)
+app\knowledgebase\upload_files.py:234:8: W1203: Use lazy % formatting in logging functions (logging-fstring-interpolation)
+app\knowledgebase\upload_files.py:290:15: W0718: Catching too general exception Exception (broad-exception-caught)
+app\knowledgebase\upload_files.py:246:12: W1203: Use lazy % formatting in logging functions (logging-fstring-interpolation)
+app\knowledgebase\upload_files.py:249:12: W1203: Use lazy % formatting in logging functions (logging-fstring-interpolation)
+app\knowledgebase\upload_files.py:281:19: W0718: Catching too general exception Exception (broad-exception-caught)
+app\knowledgebase\upload_files.py:282:16: W1203: Use lazy % formatting in logging functions (logging-fstring-interpolation)
+app\knowledgebase\upload_files.py:291:12: W1203: Use lazy % formatting in logging functions (logging-fstring-interpolation)
+app\knowledgebase\upload_files.py:63:0: R0903: Too few public methods (1/2) (too-few-public-methods)
+app\knowledgebase\upload_files.py:314:12: W0707: Consider explicitly re-raising using 'except ResourceNotFoundError as exc' and 'raise ValueError(f"Search index '{index_name}' does not exist. ") from exc' (raise-missing-from)
+app\knowledgebase\upload_files.py:323:12: W0707: Consider explicitly re-raising using 'except ResourceNotFoundError as exc' and 'raise ValueError(f"Blob container '{self.container_name}' does not exist. ") from exc' (raise-missing-from)
+app\knowledgebase\upload_files.py:360:15: W0718: Catching too general exception Exception (broad-exception-caught)
+app\knowledgebase\upload_files.py:342:12: W1203: Use lazy % formatting in logging functions (logging-fstring-interpolation)
+app\knowledgebase\upload_files.py:361:12: W1203: Use lazy % formatting in logging functions (logging-fstring-interpolation)
+app\knowledgebase\upload_files.py:387:19: W0718: Catching too general exception Exception (broad-exception-caught)
+app\knowledgebase\upload_files.py:421:15: W0718: Catching too general exception Exception (broad-exception-caught)
+app\knowledgebase\upload_files.py:413:12: R1705: Unnecessary "else" after "return", remove the "else" and de-indent the code inside it (no-else-return)
+app\knowledgebase\upload_files.py:415:16: W1203: Use lazy % formatting in logging functions (logging-fstring-interpolation)
+app\knowledgebase\upload_files.py:422:12: W1203: Use lazy % formatting in logging functions (logging-fstring-interpolation)
+app\knowledgebase\upload_files.py:469:19: W0718: Catching too general exception Exception (broad-exception-caught)
+app\knowledgebase\upload_files.py:470:16: W1203: Use lazy % formatting in logging functions (logging-fstring-interpolation)
+app\knowledgebase\upload_files.py:475:12: W1203: Use lazy % formatting in logging functions (logging-fstring-interpolation)
+app\knowledgebase\upload_files.py:16:0: C0411: third party import "langchain.schema.Document" should be placed before first party import "config.settings.settings"  (wrong-import-order)
+app\knowledgebase\upload_files.py:19:0: C0411: third party import "azure.core.exceptions.ResourceNotFoundError" should be placed before first party import "config.settings.settings"  (wrong-import-order)
+app\knowledgebase\upload_files.py:16:0: C0412: Imports from package langchain are not grouped (ungrouped-imports)
+************* Module pipelines.chat_pipeline
+app\pipelines\chat_pipeline.py:10:0: C0301: Line too long (113/100) (line-too-long)
+app\pipelines\chat_pipeline.py:9:0: R0914: Too many local variables (17/15) (too-many-locals)
+app\pipelines\chat_pipeline.py:60:11: W0718: Catching too general exception Exception (broad-exception-caught)
+************* Module pipelines.gen_baseline_pipeline
+app\pipelines\gen_baseline_pipeline.py:69:0: R0914: Too many local variables (22/15) (too-many-locals)
+app\pipelines\gen_baseline_pipeline.py:143:11: W0718: Catching too general exception Exception (broad-exception-caught)
+app\pipelines\gen_baseline_pipeline.py:146:15: W0718: Catching too general exception Exception (broad-exception-caught)
+************* Module pipelines.gen_memory_pipeline
+app\pipelines\gen_memory_pipeline.py:46:0: R0914: Too many local variables (24/15) (too-many-locals)
+app\pipelines\gen_memory_pipeline.py:139:11: W0718: Catching too general exception Exception (broad-exception-caught)
+app\pipelines\gen_memory_pipeline.py:142:15: W0718: Catching too general exception Exception (broad-exception-caught)
+************* Module pipelines.gen_pipeline
+app\pipelines\gen_pipeline.py:32:0: R0902: Too many instance attributes (9/7) (too-many-instance-attributes)
+app\pipelines\gen_pipeline.py:50:8: W0201: Attribute 'error' defined outside __init__ (attribute-defined-outside-init)
+app\pipelines\gen_pipeline.py:32:0: R0903: Too few public methods (1/2) (too-few-public-methods)
+app\pipelines\gen_pipeline.py:113:11: W0718: Catching too general exception Exception (broad-exception-caught)
+app\pipelines\gen_pipeline.py:176:11: W0718: Catching too general exception Exception (broad-exception-caught)
+app\pipelines\gen_pipeline.py:184:15: W0718: Catching too general exception Exception (broad-exception-caught)
+app\pipelines\gen_pipeline.py:191:15: W0718: Catching too general exception Exception (broad-exception-caught)
+app\pipelines\gen_pipeline.py:204:0: R0914: Too many local variables (46/15) (too-many-locals)
+app\pipelines\gen_pipeline.py:409:11: W0718: Catching too general exception Exception (broad-exception-caught)
+app\pipelines\gen_pipeline.py:245:16: W0707: Consider explicitly re-raising using 'except (TypeError, ValueError) as exc' and 'raise ValueError(f'Invalid doc id from plan: {doc_id_raw!r}') from exc' (raise-missing-from)
+app\pipelines\gen_pipeline.py:353:16: W0707: Consider explicitly re-raising using 'except (TypeError, ValueError) as exc' and 'raise ValueError(f'Invalid doc id from plan: {doc_id_raw!r}') from exc' (raise-missing-from)
+app\pipelines\gen_pipeline.py:204:0: R0912: Too many branches (14/12) (too-many-branches)
+app\pipelines\gen_pipeline.py:204:0: R0915: Too many statements (87/50) (too-many-statements)
+app\pipelines\gen_pipeline.py:473:11: W0718: Catching too general exception Exception (broad-exception-caught)
+************* Module pipelines.pipeline_helpers
+app\pipelines\pipeline_helpers.py:39:0: R0913: Too many arguments (7/5) (too-many-arguments)
+app\pipelines\pipeline_helpers.py:100:11: W0718: Catching too general exception Exception (broad-exception-caught)
+************* Module pipelines.test_gen_pipeline
+app\pipelines\test_gen_pipeline.py:8:4: C0415: Import outside toplevel (asyncio) (import-outside-toplevel)
+app\pipelines\test_gen_pipeline.py:52:11: W0718: Catching too general exception Exception (broad-exception-caught)
+app\pipelines\test_gen_pipeline.py:54:32: E0601: Using variable 'job_id' before assignment (used-before-assignment)
+************* Module prompts.dump_prompts
+app\prompts\dump_prompts.py:40:0: C0301: Line too long (115/100) (line-too-long)
+************* Module prompts.prompt_management
+app\prompts\prompt_management.py:163:0: C0301: Line too long (107/100) (line-too-long)
+app\prompts\prompt_management.py:55:4: C0115: Missing class docstring (missing-class-docstring)
+app\prompts\prompt_management.py:55:4: R0903: Too few public methods (0/2) (too-few-public-methods)
+app\prompts\prompt_management.py:74:4: C0116: Missing function or method docstring (missing-function-docstring)
+app\prompts\prompt_management.py:4:0: C0411: standard import "typing.Optional" should be placed before third party import "pydantic.BaseModel" (wrong-import-order)
+app\prompts\prompt_management.py:5:0: C0411: standard import "datetime.datetime" should be placed before third party import "pydantic.BaseModel" (wrong-import-order)
+app\prompts\prompt_management.py:6:0: C0411: standard import "uuid" should be placed before third party import "pydantic.BaseModel" (wrong-import-order)
+app\prompts\prompt_management.py:8:0: C0411: standard import "enum.Enum" should be placed before third party imports "pydantic.BaseModel", "aiomysql" (wrong-import-order)
+************* Module retrievers.index_data_retriver
+app\retrievers\index_data_retriver.py:24:15: E1101: Instance of 'SearchClient' has no 'get_index' member (no-member)
+app\retrievers\index_data_retriver.py:24:15: E1101: Instance of 'SearchClient' has no 'get_index' member (no-member)
+app\retrievers\index_data_retriver.py:26:4: W0221: Variadics removed in overriding 'CachedAzureSearch.similarity_search_by_vector' method (arguments-differ)
+app\retrievers\index_data_retriver.py:67:0: R0903: Too few public methods (1/2) (too-few-public-methods)
+app\retrievers\index_data_retriver.py:110:4: C0116: Missing function or method docstring (missing-function-docstring)
+app\retrievers\index_data_retriver.py:122:15: W0718: Catching too general exception Exception (broad-exception-caught)
+app\retrievers\index_data_retriver.py:141:15: W0718: Catching too general exception Exception (broad-exception-caught)
+app\retrievers\index_data_retriver.py:142:12: W1203: Use lazy % formatting in logging functions (logging-fstring-interpolation)
+app\retrievers\index_data_retriver.py:6:0: C0411: standard import "typing.List" should be placed before third party import "langchain_community.vectorstores.AzureSearch" (wrong-import-order)
+app\retrievers\index_data_retriver.py:11:0: C0411: third party import "langchain_openai.AzureOpenAIEmbeddings" should be placed before first party import "config.settings.settings"  (wrong-import-order)
+************* Module routers.database
+app\routers\database.py:44:8: W0707: Consider explicitly re-raising using 'raise HTTPException(status_code=500, detail=f'Failed to clear jobs: {str(e)}') from e' (raise-missing-from)
+app\routers\database.py:71:8: W0707: Consider explicitly re-raising using 'raise HTTPException(status_code=500, detail=f'Failed to fetch background jobs: {str(e)}') from e' (raise-missing-from)
+app\routers\database.py:76:0: R0914: Too many local variables (17/15) (too-many-locals)
+app\routers\database.py:101:23: W0718: Catching too general exception Exception (broad-exception-caught)
+app\routers\database.py:114:16: R0911: Too many return statements (7/6) (too-many-return-statements)
+app\routers\database.py:149:27: W0718: Catching too general exception Exception (broad-exception-caught)
+app\routers\database.py:179:8: W0707: Consider explicitly re-raising using 'raise HTTPException(status_code=500, detail=f'Internal server error: {str(e)}') from e' (raise-missing-from)
+app\routers\database.py:76:0: R0915: Too many statements (51/50) (too-many-statements)
+app\routers\database.py:209:11: W0718: Catching too general exception Exception (broad-exception-caught)
+app\routers\database.py:205:16: R1705: Unnecessary "else" after "return", remove the "else" and de-indent the code inside it (no-else-return)
+app\routers\database.py:220:11: W0718: Catching too general exception Exception (broad-exception-caught)
+app\routers\database.py:232:8: W0707: Consider explicitly re-raising using 'raise HTTPException(status_code=400, detail=str(e)) from e' (raise-missing-from)
+app\routers\database.py:234:8: W0707: Consider explicitly re-raising using 'raise HTTPException(status_code=500, detail=f'Internal server error: {str(e)}') from e' (raise-missing-from)
+app\routers\database.py:246:8: W0707: Consider explicitly re-raising using 'raise HTTPException(status_code=500, detail=f'Internal server error: {str(e)}') from e' (raise-missing-from)
+app\routers\database.py:258:8: W0707: Consider explicitly re-raising using 'raise HTTPException(status_code=500, detail=f'Internal server error: {str(e)}') from e' (raise-missing-from)
+app\routers\database.py:274:8: W0707: Consider explicitly re-raising using 'raise HTTPException(status_code=400, detail=str(e)) from e' (raise-missing-from)
+app\routers\database.py:278:8: W0707: Consider explicitly re-raising using 'raise HTTPException(status_code=500, detail=f'Internal server error: {str(e)}') from e' (raise-missing-from)
+app\routers\database.py:290:8: W0707: Consider explicitly re-raising using 'raise HTTPException(status_code=400, detail=str(e)) from e' (raise-missing-from)
+app\routers\database.py:292:8: W0707: Consider explicitly re-raising using 'raise HTTPException(status_code=500, detail=f'Internal server error: {str(e)}') from e' (raise-missing-from)
+app\routers\database.py:308:8: W0707: Consider explicitly re-raising using 'raise HTTPException(status_code=400, detail=str(e)) from e' (raise-missing-from)
+app\routers\database.py:312:8: W0707: Consider explicitly re-raising using 'raise HTTPException(status_code=500, detail=f'Internal server error: {str(e)}') from e' (raise-missing-from)
+app\routers\database.py:333:8: W0707: Consider explicitly re-raising using 'raise HTTPException(status_code=400, detail=str(e)) from e' (raise-missing-from)
+app\routers\database.py:335:8: W0707: Consider explicitly re-raising using 'raise HTTPException(status_code=500, detail=f'Internal server error: {str(e)}') from e' (raise-missing-from)
+app\routers\database.py:351:8: W0707: Consider explicitly re-raising using 'raise HTTPException(status_code=400, detail=str(e)) from e' (raise-missing-from)
+app\routers\database.py:355:8: W0707: Consider explicitly re-raising using 'raise HTTPException(status_code=500, detail=f'Internal server error: {str(e)}') from e' (raise-missing-from)
+app\routers\database.py:371:8: W0707: Consider explicitly re-raising using 'raise HTTPException(status_code=400, detail=str(e)) from e' (raise-missing-from)
+app\routers\database.py:373:8: W0707: Consider explicitly re-raising using 'raise HTTPException(status_code=500, detail=f'Internal server error: {str(e)}') from e' (raise-missing-from)
+************* Module routers.gen
+app\routers\gen.py:28:0: C0301: Line too long (115/100) (line-too-long)
+************* Module routers.knowledgebase
+app\routers\knowledgebase.py:47:0: C0301: Line too long (113/100) (line-too-long)
+app\routers\knowledgebase.py:33:8: W0707: Consider explicitly re-raising using 'raise HTTPException(status_code=500, detail=str(e)) from e' (raise-missing-from)
+app\routers\knowledgebase.py:56:8: R1705: Unnecessary "else" after "return", remove the "else" and de-indent the code inside it (no-else-return)
+app\routers\knowledgebase.py:64:8: W0707: Consider explicitly re-raising using 'raise HTTPException(status_code=400, detail=str(e)) from e' (raise-missing-from)
+app\routers\knowledgebase.py:67:8: W0707: Consider explicitly re-raising using 'raise HTTPException(status_code=500, detail=str(e)) from e' (raise-missing-from)
+app\routers\knowledgebase.py:85:8: W0707: Consider explicitly re-raising using 'raise HTTPException(status_code=400, detail=str(e)) from e' (raise-missing-from)
+app\routers\knowledgebase.py:88:8: W0707: Consider explicitly re-raising using 'raise HTTPException(status_code=500, detail=str(e)) from e' (raise-missing-from)
+app\routers\knowledgebase.py:104:8: W0707: Consider explicitly re-raising using 'raise HTTPException(status_code=500, detail=str(e)) from e' (raise-missing-from)
+app\routers\knowledgebase.py:117:8: W0707: Consider explicitly re-raising using 'raise HTTPException(status_code=404, detail=str(e)) from e' (raise-missing-from)
+app\routers\knowledgebase.py:120:8: W0707: Consider explicitly re-raising using 'raise HTTPException(status_code=500, detail=f'Failed to list blobs: {str(e)}') from e' (raise-missing-from)
+app\routers\knowledgebase.py:133:8: W0707: Consider explicitly re-raising using 'raise HTTPException(status_code=500, detail=f'Error connecting to Blob Storage: {str(e)}') from e' (raise-missing-from)
+app\routers\knowledgebase.py:1:0: R0801: Similar lines in 2 files
+==pipelines.gen_baseline_pipeline:[93:110]
+==pipelines.gen_pipeline:[253:272]
+                    retriever=retriever,
+                    prompts=pdf_prompts,
+                    min_words=min_words,
+                    max_words=max_words,
+                    duration=params["duration"],
+                ),
+            )
+            total_input_tokens += result["tokens"]["input"]
+            total_output_tokens += result["tokens"]["output"]
+            content_html = result.get("content_html")
+            try:
+                await create_pdf(doc_id, content_html, dirs["pdfs"])
+            except Exception as pdf_error:
+                logging.error(
+                    "Failed to create PDF for doc %s: %s", doc_id, pdf_error)
+                raise
+ (duplicate-code)
+app\routers\knowledgebase.py:1:0: R0801: Similar lines in 2 files
+==pipelines.gen_baseline_pipeline:[65:86]
+==pipelines.gen_memory_pipeline:[42:66]
+    )
+
+
+async def generate_content_memory(params: dict, claude_client):
+    """
+    Generate docs from user prompts; each prompt is the retrieval query for that doc.
+    Maintains a running memory summary of previous docs for subsequent prompts.
+    """
+    total_input_tokens = 0
+    total_output_tokens = 0
+    try:
+        dirs = setup_output_directories(params["job_id"])
+        min_words, max_words = get_word_targets(params["duration"])
+        prompts_list = params["prompts"]
+
+        retriever = PrioritizedRetriever(
+            index_id=params["index_id"],
+            k=settings.INDEX_TOP_K,
+            min_score=settings.MIN_SCORE,
+        )
+
+        async with get_db_connection() as db_conn:
+            pdf_prompts = await fetch_pdf_prompts(db_conn)
+ (duplicate-code)
+app\routers\knowledgebase.py:1:0: R0801: Similar lines in 2 files
+==pipelines.gen_baseline_pipeline:[110:126]
+==pipelines.gen_memory_pipeline:[102:118]
+        token_usage = {
+            "total_input_tokens": total_input_tokens,
+            "total_output_tokens": total_output_tokens,
+        }
+
+        upload_result = upload_artifacts(
+            job_id=params["job_id"],
+            index_id=params["index_id"],
+            pdfs_dir=dirs["pdfs"],
+            audio_dir=dirs["audio"],
+            voicescripts_dir=dirs["voiceovers"],
+        )
+
+        generated_docs = build_prompt_based_generated_docs(
+            prompts_list, upload_result)
+ (duplicate-code)
+app\routers\knowledgebase.py:1:0: R0801: Similar lines in 2 files
+==pipelines.gen_baseline_pipeline:[98:110]
+==pipelines.gen_memory_pipeline:[80:93]
+                ),
+            )
+            total_input_tokens += result["tokens"]["input"]
+            total_output_tokens += result["tokens"]["output"]
+            content_html = result.get("content_html")
+            try:
+                await create_pdf(doc_id, content_html, dirs["pdfs"])
+            except Exception as pdf_error:
+                logging.error(
+                    "Failed to create PDF for doc %s: %s", doc_id, pdf_error)
+                raise
+ (duplicate-code)
+app\routers\knowledgebase.py:1:0: R0801: Similar lines in 2 files
+==pipelines.gen_pipeline:[122:130]
+==pipelines.pipeline_helpers:[52:60]
+    job_id = params.get("job_id")
+    try:
+        callback_url = (params.get("callback_url") or "").strip()
+        await create_bg_job(
+            job_id=job_id,
+            index_id=params.get("index_id"),
+            callback_url=callback_url,
+            status="queued", (duplicate-code)
+app\routers\knowledgebase.py:1:0: R0801: Similar lines in 2 files
+==core.content_service:[126:134]
+==core.curriculem_plan_service:[71:79]
+    response = await claude_client.messages.create(
+        model=settings.CLAUDE_MODEL_DOC,
+        max_tokens=settings.MAX_TOKEN,
+        system=system_prompt,
+        temperature=0.3,
+        messages=user_messages,
+    )
+ (duplicate-code)
+app\routers\knowledgebase.py:1:0: R0801: Similar lines in 2 files
+==pipelines.gen_baseline_pipeline:[91:98]
+==pipelines.gen_memory_pipeline:[72:79]
+                    user_prompt=user_prompt,
+                    doc_id=doc_id,
+                    retriever=retriever,
+                    prompts=pdf_prompts,
+                    min_words=min_words,
+                    max_words=max_words,
+                    duration=params["duration"], (duplicate-code)
+app\routers\knowledgebase.py:1:0: R0801: Similar lines in 2 files
+==pipelines.gen_baseline_pipeline:[140:147]
+==pipelines.gen_memory_pipeline:[136:143]
+            },
+        }
+    except Exception as e:
+        try:
+            clean_local_directories(params["job_id"])
+        except Exception:
+            logging.exception( (duplicate-code)
+app\routers\knowledgebase.py:1:0: R0801: Similar lines in 2 files
+==pipelines.gen_baseline_pipeline:[77:86]
+==pipelines.gen_pipeline:[230:239]
+        retriever = PrioritizedRetriever(
+            index_id=params["index_id"],
+            k=settings.INDEX_TOP_K,
+            min_score=settings.MIN_SCORE,
+        )
+
+        async with get_db_connection() as db_conn:
+            pdf_prompts = await fetch_pdf_prompts(db_conn)
+ (duplicate-code)
+app\routers\knowledgebase.py:1:0: R0801: Similar lines in 2 files
+==core.content_service:[374:380]
+==core.curriculem_plan_service:[85:91]
+    parts = []
+    for block in getattr(response, "content", []) or []:
+        if isinstance(block, dict):
+            parts.append(block.get("text", ""))
+        else:
+            parts.append(getattr(block, "text", "")) (duplicate-code)
+app\routers\knowledgebase.py:1:0: R0801: Similar lines in 2 files
+==pipelines.gen_pipeline:[164:170]
+==pipelines.pipeline_helpers:[88:94]
+            upload_generation_logs(
+                GenerationLogUpload(
+                    job_id=job_id,
+                    index_id=params.get("index_id"),
+                    params=params,
+                    plan=logs.get("plan"), (duplicate-code)
+app\routers\knowledgebase.py:1:0: R0801: Similar lines in 2 files
+==pipelines.gen_memory_pipeline:[74:79]
+==pipelines.gen_pipeline:[253:258]
+                    retriever=retriever,
+                    prompts=pdf_prompts,
+                    min_words=min_words,
+                    max_words=max_words,
+                    duration=params["duration"], (duplicate-code)
+
+------------------------------------------------------------------
+Your code has been rated at 9.03/10 (previous run: 8.92/10, +0.11)
+

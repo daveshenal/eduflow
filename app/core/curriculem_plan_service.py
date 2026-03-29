@@ -1,6 +1,7 @@
+"""Curriculum planning service using Claude for generating learning plans."""
+
 import json
 import logging
-from pathlib import Path
 
 from config.settings import settings
 from app.prompts.prompt_management import get_prompt_manager, PromptNames
@@ -16,9 +17,11 @@ async def fetch_plan_prompts(db_conn) -> dict:
     system_prompt_resp = await manager.get_active_prompt(PromptNames.MAIN_PROMPT.value, db_conn)
     planner_prompt_resp = await manager.get_active_prompt(PromptNames.CURR_PLANNER.value, db_conn)
     if not system_prompt_resp:
-        raise ValueError("No active prompt found for 'main_prompt'. Activate a version via /prompts/activate.")
+        raise ValueError(
+            "No active prompt found for 'main_prompt'. Activate a version via /prompts/activate.")
     if not planner_prompt_resp:
-        raise ValueError("No active prompt found for 'curr_planner'. Activate a version via /prompts/activate.")
+        raise ValueError(
+            "No active prompt found for 'curr_planner'. Activate a version via /prompts/activate.")
     return {
         "system_prompt": system_prompt_resp.prompt,
         "planner_prompt": planner_prompt_resp.prompt,
@@ -44,7 +47,7 @@ def format_plan_prompt(prompts: dict, params: dict, min_words: int, max_words: i
     """Format the user prompt template with actual values."""
     duration_display = f"{params['duration']} minutes"
     total_duration = f"{params['num_docs'] * int(params['duration'])} minutes"
-    
+
     try:
         return prompts['planner_prompt'].format(
             target_audience=params['target_audience'],
@@ -65,7 +68,7 @@ def format_plan_prompt(prompts: dict, params: dict, min_words: int, max_words: i
 async def generate_plan(claude_client, system_prompt: str, user_prompt: str) -> dict:
     """Generate plan using Claude."""
     user_messages = [{"role": "user", "content": user_prompt}]
-    
+
     response = await claude_client.messages.create(
         model=settings.CLAUDE_MODEL_DOC,
         max_tokens=settings.MAX_TOKEN,
@@ -73,10 +76,12 @@ async def generate_plan(claude_client, system_prompt: str, user_prompt: str) -> 
         temperature=0.3,
         messages=user_messages,
     )
-    
-    logging.info(f"Plan generation - Input tokens: {response.usage.input_tokens}")
-    logging.info(f"Plan generation - Output tokens: {response.usage.output_tokens}")
-    
+
+    logging.info(
+        f"Plan generation - Input tokens: {response.usage.input_tokens}")
+    logging.info(
+        f"Plan generation - Output tokens: {response.usage.output_tokens}")
+
     # Join content blocks into a single string
     parts = []
     for block in getattr(response, "content", []) or []:
@@ -85,7 +90,7 @@ async def generate_plan(claude_client, system_prompt: str, user_prompt: str) -> 
         else:
             parts.append(getattr(block, "text", ""))
     full_text = "".join(parts).strip()
-    
+
     # Parse JSON if possible, else return raw text
     try:
         plan_result = json.loads(full_text)
@@ -100,7 +105,7 @@ async def generate_plan(claude_client, system_prompt: str, user_prompt: str) -> 
                 plan_result = {"raw": full_text}
         else:
             plan_result = {"raw": full_text}
-    
+
     # Return both plan result and token usage
     return {
         "plan": plan_result,
