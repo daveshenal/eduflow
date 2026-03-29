@@ -28,7 +28,7 @@ async def fetch_plan_prompts(db_conn) -> dict:
 def get_word_targets(duration: int) -> tuple[int, int]:
     """Get min/max word counts based on duration."""
     duration_to_words = {
-        5: (800, 1200),
+        5: (800, 1000),
         10: (1500, 2000),
     }
 

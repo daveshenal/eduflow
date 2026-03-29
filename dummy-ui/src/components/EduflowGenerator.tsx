@@ -146,26 +146,7 @@ const EduflowGenerator: React.FC<EduflowGeneratorProps> = ({ apiService, indexId
   }, [jobStatus, lastKnownStatus]);
 
   const statusLower = String(jobStatus?.status || '').toLowerCase();
-  // const docs = jobStatus?.result?.docs || [];
-
-  const docs = [
-    {
-      title: 'OASIS-Based Clinical Assessment Mastery for Home Health Nurses',
-      pdf_url: '#',
-      audio_url: '#',
-      voicescript_url: '#',
-    },
-    {
-      title: 'OASIS Fundamentals: Building the Foundation for Clinical Excellence',
-      pdf_url: '#',
-      audio_url: '#',
-    },
-    {
-      title: 'Clinical Assessment Techniques: Mastering OASIS Data Collection',
-      pdf_url: '#',
-      voicescript_url: '#',
-    },
-  ];
+  const docs = jobStatus?.result?.docs || [];
   return (
     <div className="editor-container">
       <ToastMessage message={toast} onClear={() => setToast(null)} />

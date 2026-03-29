@@ -8,9 +8,11 @@ function App() {
     <ConfigProvider>
       <Router>
         <div className="App">
-          <Routes>
-            <Route path="/" element={<ChatInterface />} />
-          </Routes>
+          <main>
+            <Routes>
+              <Route path="/" element={<ChatInterface />} />
+            </Routes>
+          </main>
         </div>
       </Router>
     </ConfigProvider>
