@@ -16,6 +16,9 @@ interface JobStatus {
     docs?: Array<{
       title?: string;
       doc_index?: number;
+      pdf_url?: string;
+      audio_url?: string;
+      voicescript_url?: string;
     }>;
   };
 }
@@ -315,33 +318,33 @@ const EduflowGenerator: React.FC<EduflowGeneratorProps> = ({ apiService, indexId
             {completedDurationMs !== null ? ` in ${formatDuration(completedDurationMs)}` : ''}. Download the results below.
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            {docs.map((doc: any, i: number) => {
+            {docs.map((doc, i) => {
               const docTitle = doc?.title || `Document ${doc?.doc_index || i + 1}`;
               return (
                 <div className='downloads' key={doc?.doc_index ?? i}>
 
-                <div className = 'dropdown' style={{ fontWeight: 500, marginBottom: '0.6rem' }}>
-                  {docTitle}:
-                </div>
+                  <div className='dropdown' style={{ fontWeight: 500, marginBottom: '0.6rem' }}>
+                    {docTitle}:
+                  </div>
 
-                <div className = 'dropdown' style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
-                  {doc?.pdf_url && (
-                    <a className="doc-link" href={doc.pdf_url} target="_blank" rel="noreferrer">
-                      Download PDF
-                    </a>
-                  )}
-                  {doc?.audio_url && (
-                    <a className="doc-link" href={doc.audio_url} target="_blank" rel="noreferrer">
-                      Download MP3
-                    </a>
-                  )}
-                  {doc?.voicescript_url && (
-                    <a className="doc-link" href={doc.voicescript_url} target="_blank" rel="noreferrer">
-                      Download Voice Script
-                    </a>
-                  )}
+                  <div className='dropdown' style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
+                    {doc?.pdf_url && (
+                      <a className="doc-link" href={doc.pdf_url} target="_blank" rel="noreferrer">
+                        Download PDF
+                      </a>
+                    )}
+                    {doc?.audio_url && (
+                      <a className="doc-link" href={doc.audio_url} target="_blank" rel="noreferrer">
+                        Download MP3
+                      </a>
+                    )}
+                    {doc?.voicescript_url && (
+                      <a className="doc-link" href={doc.voicescript_url} target="_blank" rel="noreferrer">
+                        Download Voice Script
+                      </a>
+                    )}
+                  </div>
                 </div>
-              </div>
               );
             })}
           </div>
