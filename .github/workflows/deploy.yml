@@ -12,6 +12,7 @@ on:
       - "docker-compose.yml"
       - ".gitignore"
       - ".dockerignore"
+      - "pylint_report.txt"
   workflow_dispatch:
 
 jobs:

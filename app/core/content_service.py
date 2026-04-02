@@ -126,6 +126,7 @@ async def generate_single_doc(claude_client, system_prompt: str, user_messages: 
     """Generate content for a single document."""
     response = await claude_client.messages.create(
         model=settings.CLAUDE_MODEL_DOC,
+        cache_control={"type": "ephemeral"},
         max_tokens=settings.MAX_TOKEN,
         system=system_prompt,
         temperature=0.3,
@@ -360,6 +361,7 @@ async def update_memory_summary(
     response = await claude_client.messages.create(
         model=settings.CLAUDE_MODEL_DOC,
         max_tokens=settings.MAX_TOKEN,
+        cache_control={"type": "ephemeral"},
         system=base_system_prompt,
         temperature=0.3,
         messages=messages,

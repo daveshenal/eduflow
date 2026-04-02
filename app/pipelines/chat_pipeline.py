@@ -45,6 +45,7 @@ async def generate_chat_stream(payload: dict, claude_client):
             model=settings.CLAUDE_MODEL_CHATBOT,
             max_tokens=1024,
             system=chatbot_prompt,
+            cache_control={"type": "ephemeral"},
             temperature=0.3,
             messages=user_messages
         ) as stream:

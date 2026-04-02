@@ -63,6 +63,7 @@ async def generate_voiceover_script(payload: dict, claude_client) -> dict:
         response = await claude_client.messages.create(
             model=settings.CLAUDE_MODEL_DOC,
             max_tokens=settings.MAX_TOKEN,
+            cache_control={"type": "ephemeral"},
             system=system_prompt,
             temperature=0.3,
             messages=user_messages,
