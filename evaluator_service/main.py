@@ -11,6 +11,7 @@ from fastapi import FastAPI
 
 # Import evaluation router from routes.evaluate
 from evaluator_service.routes.evaluate import router as evaluate_router
+from evaluator_service.routes.faithfulness import router as faithfulness_router
 
 # Create FastAPI app
 app = FastAPI(
@@ -21,6 +22,7 @@ app = FastAPI(
 
 # Register router with app
 app.include_router(evaluate_router)
+app.include_router(faithfulness_router)
 
 
 @app.get("/")
@@ -35,12 +37,12 @@ def health():
     return {"status": "healthy"}
 
 
-# if __name__ == "__main__":
-#     # Run application
-#     import uvicorn
+if __name__ == "__main__":
+    # Run application
+    import uvicorn
 
-#     uvicorn.run(
-#         app,
-#         host="0.0.0.0",
-#         port=8002,
-#     )
+    uvicorn.run(
+        app,
+        host="0.0.0.0",
+        port=8002,
+    )
