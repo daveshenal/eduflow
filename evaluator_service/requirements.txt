@@ -1,5 +1,6 @@
 # Document Evaluation Microservice - Required Packages
 # Install with: pip install -r requirements.txt
+# Align RAG dependencies with repo root requirements.txt for faithfulness scoring.
 
 # API Framework
 fastapi==0.116.0
@@ -11,6 +12,14 @@ PyPDF2
 # Azure OpenAI client + settings loader (used for GPT-4o + embeddings)
 openai>=1.0.0
 pydantic-settings>=2.0.0
+python-dotenv>=1.0.0
 
-# Local embedding model (sentence-transformers)
+# Azure Search + LangChain (PrioritizedRetriever, same as gen_pipeline)
+azure-core==1.34.0
+azure-search-documents==11.5.3
+langchain==0.3.26
+langchain-community==0.3.27
+langchain-openai==0.3.27
+
+# Local embedding model (sentence-transformers) — optional for other eval code paths
 sentence-transformers

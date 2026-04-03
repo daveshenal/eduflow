@@ -11,9 +11,10 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 COPY evaluator_service/requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the evaluator service and shared config it imports.
+# Copy the evaluator service, shared config, and app retriever code used by faithfulness.
 COPY evaluator_service ./evaluator_service
 COPY config ./config
+COPY app ./app
 
 EXPOSE 8002
 
