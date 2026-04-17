@@ -13,6 +13,7 @@ on:
       - ".gitignore"
       - ".dockerignore"
       - "pylint_report.txt"
+      - "LICENSE.txt"
   workflow_dispatch:
 
 jobs:
